@@ -1,3 +1,8 @@
+#include <cassert>
+#include <regex>
+#include <sstream>
+#include <string>
+
 #include <silk/ast/ast.h>
 #include <silk/ast/expr.h>
 #include <silk/ast/stmt.h>
@@ -60,6 +65,25 @@ inline auto Interpreter::is_empty(const Stmt::Stmt& ex) -> bool {
     std::get<std::unique_ptr<Stmt::Empty>>(ex);
     return true;
   } catch (std::bad_variant_access) { return false; };
+}
+
+inline auto Interpreter::interpolate_str(std::string str) -> std::string {
+  std::ostringstream output {};
+
+  std::regex  var_regex(R"#(\$(\w+)\$)#");
+  std::smatch match;
+
+  while (std::regex_search(str, match, var_regex)) {
+    assert(match.size() == 2);
+
+    output << match.prefix();
+    output << _env.get(match[1])->string();
+    str = match.suffix();
+  }
+
+  output << str;
+
+  return output.str();
 }
 
 inline auto Interpreter::shortcircuits(TokenType t) -> bool {
@@ -223,7 +247,7 @@ auto Interpreter::evaluate(const Expr::BoolLiteral& boolean) -> ObjectPtr {
 }
 
 auto Interpreter::evaluate(const Expr::StringLiteral& str) -> ObjectPtr {
-  return obj::make(str.value);
+  return obj::make(interpolate_str(str.value));
 }
 
 auto Interpreter::evaluate(const Expr::VidLiteral&) -> ObjectPtr {

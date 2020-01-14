@@ -36,6 +36,8 @@ struct Interpreter :
   inline auto is_empty(const Expr::Expr& ex) -> bool;
   inline auto is_empty(const Stmt::Stmt& ex) -> bool;
 
+  inline auto interpolate_str(std::string str) -> std::string;
+
   inline auto shortcircuits(TokenType t) -> bool;
 
   auto evaluate(const Expr::Empty&) -> ObjectPtr override;
