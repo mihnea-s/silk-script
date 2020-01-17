@@ -1,9 +1,11 @@
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <memory>
+#include <sstream>
 #include <string>
 
 #include <fmt/core.h>
@@ -16,6 +18,8 @@
 #include <silk/runtime/structs.h>
 
 using Fct = std::function<ObjectPtr(std::vector<ObjectPtr>&)>;
+
+constexpr int variable_args = -1;
 
 auto make_fct(
   Interpreter::Environment& env,
@@ -31,7 +35,7 @@ auto make_fct(std::size_t arg_count, Fct fct) {
   return ObjectPtr {new NativeFunction {std::move(fct), arg_count}};
 }
 
-struct SilkFile : NativeInstance {
+struct StdFile : NativeInstance {
   std::fstream f;
 
   // clang-format off
@@ -48,7 +52,7 @@ struct SilkFile : NativeInstance {
     })},
     {"rline", make_fct(0, [&](auto& args) {
       auto line = std::string{};
-      f >> line;
+      std::getline(f, line);
       return obj::make(line);
     })},
     {"eof", make_fct(0, [&](auto& args) {
@@ -57,7 +61,7 @@ struct SilkFile : NativeInstance {
   };
   // clang-format on
 
-  SilkFile(std::string file, std::ios_base::openmode mode) : f(file, mode) {
+  StdFile(std::string file, std::ios_base::openmode mode) : f(file, mode) {
   }
 
   ObjectPtr get(const std::string& name) override {
@@ -69,33 +73,142 @@ struct SilkFile : NativeInstance {
 };
 
 struct StdList : NativeInstance {
-  std::vector<ObjectPtr> l;
+  std::vector<ObjectPtr> _list;
 
   // clang-format off
   const std::map<std::string, ObjectPtr> methods = {
     {"at", make_fct(1, [&](auto& args) {
       auto index_obj = args.at(0);
       auto index = obj::cast_to<Integer>(index_obj);
-      return l.at(index.value);
+      return _list.at(index.value);
     })},
+
+    {"in", make_fct(2, [&](auto& args) {
+      auto index_obj = args.at(0);
+      auto index = obj::cast_to<Integer>(index_obj);
+     
+      auto old = _list.at(index.value);
+      _list[index.value] = args.at(1);
+      return old;
+    })},
+
     {"add", make_fct(1, [&](auto& args) {
-      l.push_back(args.at(0));
+      _list.push_back(args.at(0));
       return args.at(0);
     })},
-    {"len", make_fct(0, [&](auto& args) {
-      return obj::make((std::int64_t)l.size());
+
+    {"addAll", make_fct(variable_args, [&](auto& args) {
+      _list.insert(_list.end(), args.begin(), args.end());
+      return obj::make((std::int64_t)args.size());
     })},
+
+    {"len", make_fct(0, [&](auto& args) {
+      return obj::make((std::int64_t)_list.size());
+    })},
+
     {"rem", make_fct(1, [&](auto& args) {
       auto index_obj = args.at(0);
       auto index = obj::cast_to<Integer>(index_obj);
-      auto removed = l.at(index.value);
-      l.erase(l.begin() + index.value);
+      auto removed = _list.at(index.value);
+      _list.erase(_list.begin() + index.value);
       return removed;
     })},
+
     {"each", make_fct(1, [&](auto& args) {
       auto& applied = obj::cast_to<Callable>(args.at(0));
-      for (auto& elem : l) {
+      for (auto& elem : _list) {
         auto arg = std::vector{elem};
+        applied.call(arg);
+      }
+      return obj::make<Vid>();
+    })},
+
+    {"eachi", make_fct(1, [&](auto& args) {
+      auto& applied = obj::cast_to<Callable>(args.at(0));
+      for (std::int64_t i = 0; i < _list.size(); i++) {
+        auto arg = std::vector{obj::make(i), _list[i]};
+        applied.call(arg);
+      }
+      return obj::make<Vid>();
+    })},
+
+    {"sort", make_fct(0, [&](auto&) {
+      std::sort(
+        _list.begin(),
+        _list.end(),
+        [](auto& lobj, auto& robj) {
+          auto& left = obj::cast_to<Orderable>(lobj);
+          auto& right = obj::cast_to<Orderable>(robj);
+          return left > right;
+        }
+      );
+      return obj::make<Vid>();
+    })},
+
+    {"reduce", make_fct(2, [&](auto& args) {
+      auto value = args.at(0);
+      auto& applied = obj::cast_to<Callable>(args.at(1));
+
+      for (auto& elem : _list) {
+        auto arg = std::vector{value, elem};
+        try {
+          applied.call(arg);
+        } catch (Interpreter::Interrupt& ret) {
+          value = ret.value;
+        }
+      }
+
+      return value;
+    })},
+  };
+  // clang-format on
+
+  StdList(std::vector<ObjectPtr>&& from) : _list(std::move(from)) {
+  }
+
+  ObjectPtr get(const std::string& name) override {
+    if (methods.find(name) == std::end(methods)) {
+      return obj::make<Vid>();
+    }
+    return methods.at(name);
+  }
+};
+
+struct StdMap : NativeInstance {
+  std::map<std::string, ObjectPtr> _map;
+
+  // clang-format off
+  const std::map<std::string, ObjectPtr> methods = {
+    {"at", make_fct(1, [&](auto& args) {
+      auto index_obj = args.at(0);
+      auto index = obj::cast_to<String>(index_obj);
+      return _map.at(index.value);
+    })},
+
+    {"add", make_fct(2, [&](auto& args) {
+      auto index_obj = args.at(0);
+      auto data = args.at(1);
+      auto index = obj::cast_to<String>(index_obj);
+      _map.insert_or_assign(index.value, data);
+      return data;
+    })},
+
+    {"len", make_fct(0, [&](auto& args) {
+      return obj::make((std::int64_t)_map.size());
+    })},
+
+    {"rem", make_fct(1, [&](auto& args) {
+      auto index_obj = args.at(0);
+      auto index = obj::cast_to<String>(index_obj);
+      auto removed = _map.at(index.value);
+      _map.erase(index.value);
+      return removed;
+    })},
+
+    {"each", make_fct(1, [&](auto& args) {
+      auto& applied = obj::cast_to<Callable>(args.at(0));
+      for (auto& [key, val] : _map) {
+        auto arg = std::vector{obj::make(key), val};
         applied.call(arg);
       }
       return obj::make<Vid>();
@@ -103,7 +216,50 @@ struct StdList : NativeInstance {
   };
   // clang-format on
 
-  StdList() : l() {
+  StdMap() : _map() {
+  }
+
+  ObjectPtr get(const std::string& name) override {
+    if (methods.find(name) == std::end(methods)) {
+      return obj::make<Vid>();
+    }
+    return methods.at(name);
+  }
+};
+
+struct StdSBuilder : NativeInstance {
+  std::ostringstream _ss;
+
+  // clang-format off
+  const std::map<std::string, ObjectPtr> methods = {
+    {"add", make_fct(-1, [&](auto& args) {
+      for (auto& arg: args) {
+        _ss << arg->string();
+      }
+
+      return obj::make((std::int64_t)args.size());
+    })},
+
+    {"addln", make_fct(-1, [&](auto& args) {
+      for (auto& arg: args) {
+        _ss << arg->string() << std::endl;
+      }
+
+      return obj::make((std::int64_t)args.size());
+    })},
+
+    {"str", make_fct(0, [&](auto&) {
+      return obj::make(_ss.str());
+    })},
+
+    {"clear", make_fct(0, [&](auto&) {
+      _ss.clear();
+      return obj::make<Vid>();
+    })},
+  };
+  // clang-format on
+
+  StdSBuilder() : _ss() {
   }
 
   ObjectPtr get(const std::string& name) override {
@@ -148,7 +304,7 @@ void StdLib::load_io(Interpreter::Environment& env) {
     auto name_str = obj::cast_to<String>(name);
     using namespace std;
     constexpr auto open_mode = fstream::out | fstream::in | fstream::app;
-    auto file = std::make_shared<SilkFile>(name_str.value, open_mode);
+    auto file = std::make_shared<StdFile>(name_str.value, open_mode);
     return file;
   });
 
@@ -157,7 +313,7 @@ void StdLib::load_io(Interpreter::Environment& env) {
     auto name_str = obj::cast_to<String>(name);
     using namespace std;
     constexpr auto open_mode = fstream::out | fstream::in | fstream::trunc;
-    auto file = std::make_shared<SilkFile>(name_str.value, open_mode);
+    auto file = std::make_shared<StdFile>(name_str.value, open_mode);
     return file;
   });
 }
@@ -206,6 +362,10 @@ void StdLib::load_str(Interpreter::Environment& env) {
 
     return obj::make(std::atof(str.value.data()));
   });
+
+  make_fct(env, "sbuilder", 0, [](auto& args) {
+    return obj::make<StdSBuilder>();
+  });
 }
 
 void StdLib::load_meta(Interpreter::Environment& env) {
@@ -215,8 +375,9 @@ void StdLib::load_maths(Interpreter::Environment& env) {
 }
 
 void StdLib::load_data(Interpreter::Environment& env) {
-  make_fct(env, "list", 0, [](auto&) {
-    //
-    return std::make_shared<StdList>();
+  make_fct(env, "list", variable_args, [](auto& args) {
+    return std::make_shared<StdList>(std::move(args));
   });
+
+  make_fct(env, "map", 0, [](auto&) { return std::make_shared<StdMap>(); });
 }

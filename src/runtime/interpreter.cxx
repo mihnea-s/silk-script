@@ -281,7 +281,7 @@ auto Interpreter::evaluate(const Expr::Call& call) -> ObjectPtr {
   auto  callee_obj = evaluate_expr(call.callee);
   auto& callee     = obj::cast_to<Callable>(callee_obj);
 
-  if (call.args.size() != callee.arity()) {
+  if (callee.arity() != -1 && call.args.size() != callee.arity()) {
     throw RuntimeError {
       "function called with the wrong number of arguments"};
   }
@@ -357,8 +357,23 @@ auto Interpreter::execute(const Stmt::Struct& strc) -> std::nullptr_t {
   auto& fields  = const_cast<std::vector<Stmt::Stmt>&>(strc.fields);
   auto& methods = const_cast<std::vector<Stmt::Stmt>&>(strc.methods);
 
+  auto super = obj::make<Vid>();
+  if (!strc.parent.empty()) {
+    auto super_obj = _env.get(strc.parent);
+    obj::cast_to<Struct>(super_obj);
+    super = super_obj;
+  }
+
   auto obj = obj::make<Struct>(
-    std::string {strc.name}, ctor, dtor, fields, methods, *this, _env);
+    std::string {strc.name},
+    super,   //
+    ctor,    //
+    dtor,    //
+    fields,  //
+    methods, //
+    *this,   //
+    _env     //
+  );
 
   _env.define(strc.name, obj);
   return nullptr;

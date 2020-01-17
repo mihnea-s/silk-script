@@ -745,6 +745,7 @@ auto Parser::stmt() -> Stmt::Stmt {
     case TokenType::kw_for: return stmt_for();
     case TokenType::kw_return: return stmt_return();
     case TokenType::sym_lbrace: return stmt_block();
+    case TokenType::sym_semicolon: return mk_stmt<Stmt::Empty>();
 
     case TokenType::kw_break: {
       backward();

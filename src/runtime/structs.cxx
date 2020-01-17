@@ -1,3 +1,4 @@
+#include <optional>
 #include <variant>
 
 #include <fmt/core.h>
@@ -29,11 +30,21 @@ std::size_t Struct::arity() const {
 }
 
 void Struct::call(std::vector<ObjectPtr>& args) {
-  auto instanceptr = new Instance(*this, _env.save_scope());
+  auto parent = obj::make<Vid>();
+
+  if (super) {
+    try {
+      auto super_ctor = obj::try_cast<Struct>(super);
+      if (super_ctor.has_value()) { super_ctor->get().call(args); }
+    } catch (Interpreter::Interrupt& ret) { parent = ret.value; }
+  }
+
+  auto instanceptr = new Instance(*this, parent, _env.save_scope());
   auto instance    = std::shared_ptr<Object>(instanceptr);
 
   auto scp = _env.new_scope();
   _env.define("own", instance);
+  _env.define("sup", parent);
 
   for (auto& field : this->fields) {
     _interp.execute_stmt(field);
@@ -91,8 +102,13 @@ ObjectPtr Instance::operator==(ObjectPtr& other_obj) {
 }
 
 ObjectPtr Instance::get(const std::string& name) {
-  if (methods.find(name) == std::end(methods)) { return obj::make<Vid>(); }
-  return methods[name];
+  if (methods.find(name) != std::end(methods)) { return methods[name]; }
+
+  auto sup = obj::try_cast<Instance>(super);
+
+  if (sup.has_value()) { return sup->get().get(name); }
+
+  return obj::make<Vid>();
 }
 
 std::string NativeInstance::string() {

@@ -12,6 +12,7 @@
 
 struct Struct : Object, Callable {
   std::string name;
+  ObjectPtr   super;
 
   Expr::Expr ctor;
   Expr::Expr dtor;
@@ -24,7 +25,9 @@ struct Struct : Object, Callable {
   Interpreter::Environment& _env;
 
   Struct(
-    std::string              name,
+    std::string name,
+    ObjectPtr   super,
+
     Expr::Expr&              ctor,
     Expr::Expr&              dtor,
     std::vector<Stmt::Stmt>& fields,
@@ -33,6 +36,7 @@ struct Struct : Object, Callable {
     Interpreter&              interp,
     Interpreter::Environment& env) :
       name(name),
+      super(super),
       ctor(std::move(ctor)),
       dtor(std::move(dtor)),
       fields(std::move(fields)),
@@ -57,11 +61,15 @@ struct Struct : Object, Callable {
 
 struct Instance : Object, Gettable {
   Struct&                              type;
+  ObjectPtr                            super;
   std::map<std::string, ObjectPtr>     methods;
   Interpreter::Environment::SavedScope closure;
 
-  Instance(Struct& type, Interpreter::Environment::SavedScope closure) :
-      type(type), methods(), closure(closure) {
+  Instance(
+    Struct&                              type,
+    ObjectPtr                            super,
+    Interpreter::Environment::SavedScope closure) :
+      type(type), super(super), methods(), closure(closure) {
   }
 
   ObjectPtr get(const std::string&) override;
