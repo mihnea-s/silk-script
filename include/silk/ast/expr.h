@@ -6,93 +6,17 @@
 #include <variant>
 #include <vector>
 
+#include "expr_decl.h"
+#include "stmt_decl.h"
 #include "token.h"
 
-namespace Stmt {
-
-struct Empty;
-
-struct Entrypoint;
-struct Package;
-struct Import;
-struct Forwarding;
-struct Export;
-
-struct Variable;
-struct Function;
-struct Struct;
-struct Constructor;
-struct Destructor;
-
-struct Loop;
-struct LoopInterupt;
-struct Conditional;
-struct Block;
-struct Return;
-struct ExprStmt;
-
-using Stmt = std::variant<
-  std::unique_ptr<Empty>,
-
-  std::unique_ptr<Entrypoint>,
-  std::unique_ptr<Package>,
-  std::unique_ptr<Import>,
-  std::unique_ptr<Forwarding>,
-  std::unique_ptr<Export>,
-
-  std::unique_ptr<Variable>,
-  std::unique_ptr<Function>,
-  std::unique_ptr<Struct>,
-  std::unique_ptr<Constructor>,
-  std::unique_ptr<Destructor>,
-
-  std::unique_ptr<Loop>,
-  std::unique_ptr<LoopInterupt>,
-  std::unique_ptr<Conditional>,
-  std::unique_ptr<Block>,
-  std::unique_ptr<Return>,
-  std::unique_ptr<ExprStmt>>;
-
-} // namespace Stmt
+// the structs in this namespace
+// only hold data, they have no behaviour
 
 namespace Expr {
 
-struct Empty;
-
-struct Unary;
-struct Binary;
-
-struct IntLiteral;
-struct DoubleLiteral;
-struct BoolLiteral;
-struct StringLiteral;
-struct VidLiteral;
-
-struct Identifier;
-struct Assignment;
-struct Grouping;
-struct Call;
-struct Lambda;
-
-using Expr = std::variant<
-  std::unique_ptr<Empty>,
-  std::unique_ptr<Unary>,
-  std::unique_ptr<Binary>,
-
-  std::unique_ptr<IntLiteral>,
-  std::unique_ptr<DoubleLiteral>,
-  std::unique_ptr<BoolLiteral>,
-  std::unique_ptr<StringLiteral>,
-  std::unique_ptr<VidLiteral>,
-
-  std::unique_ptr<Identifier>,
-  std::unique_ptr<Assignment>,
-  std::unique_ptr<Grouping>,
-  std::unique_ptr<Call>,
-  std::unique_ptr<Lambda>>;
-
-struct Empty {};
-
+// used to hold unary expressions
+// (e.g. '!myPredicate')
 struct Unary {
   const Token operation;
   const Expr  operand;
@@ -102,6 +26,8 @@ struct Unary {
   }
 };
 
+// used to hold binary expressions
+// with two operands (e.g. 'x + z')
 struct Binary {
   const Expr  left_operand;
   const Token operation;
@@ -115,6 +41,7 @@ struct Binary {
   }
 };
 
+// used to hold the value of a integer literal
 struct IntLiteral {
   const std::int64_t value;
 
@@ -122,6 +49,7 @@ struct IntLiteral {
   }
 };
 
+// used to hold the value of a double literal
 struct DoubleLiteral {
   const double value;
 
@@ -129,6 +57,7 @@ struct DoubleLiteral {
   }
 };
 
+// used to hold the value of a boolean literal
 struct BoolLiteral {
   const bool value;
 
@@ -136,6 +65,7 @@ struct BoolLiteral {
   }
 };
 
+// used to hold the value of a string literal
 struct StringLiteral {
   const std::string value;
 
@@ -143,8 +73,25 @@ struct StringLiteral {
   }
 };
 
-struct VidLiteral {};
+// the 'null' of the language
+struct Vid {};
 
+// holds nameless function expressions (i.e. lambdas)
+// (e.g. 'fct { return true; }')
+// (note: lambdas cannot be arrow functions)
+struct Lambda {
+  using Parameters = std::vector<std::pair<std::string, std::string>>;
+
+  const Parameters parameters {};
+  const Stmt::Stmt body;
+
+  Lambda(Parameters& params, Stmt::Stmt&& body) :
+      parameters(params), body(std::move(body)) {
+  }
+};
+
+// stores raw words from the script file
+// (e.g. names, types)
 struct Identifier {
   const std::string value;
 
@@ -152,6 +99,9 @@ struct Identifier {
   }
 };
 
+// assignment expressions to the current environment scope
+// name cannot be in Parser::restricted_names
+// (e.g. 'x = 23')
 struct Assignment {
   const std::string name;
   const Expr        expr;
@@ -161,6 +111,8 @@ struct Assignment {
   }
 };
 
+// wrapper around an expression surrounded by parenthesis
+// (e.g. '(2 + 3)')
 struct Grouping {
   const Expr inner;
 
@@ -168,6 +120,8 @@ struct Grouping {
   }
 };
 
+// Calls to callable objects
+// (e.g. 'myFunctions(x, y, z);')
 struct Call {
   const Expr              callee;
   const std::vector<Expr> args;
@@ -177,27 +131,37 @@ struct Call {
   }
 };
 
-struct Lambda {
-  const std::vector<std::string> parameters {};
-  const Stmt::Stmt               body;
+// Get expressions from structs
+// (e.g. 'player.UpdateHealth();')
+struct Get {
+  const Expr        from;
+  const std::string property;
 
-  Lambda(std::vector<std::string>& params, Stmt::Stmt&& body) :
-      parameters(params), body(std::move(body)) {
+  Get(Expr&& from, std::string& property) :
+      from(std::move(from)), property(property) {
   }
 };
 
+// interface for objects used to evaluate expressions
+// also visitor pattern boilerplate
 template <class T>
 struct Visitor {
+
+  // since variant uses unique pointers we
+  // need a wrapper that will automatically
+  // dereference the pointer and call the
+  // appropriate function
   template <class Ptr>
   auto operator()(Ptr&& ptr) noexcept -> T {
     return this->evaluate(*ptr.get());
   }
 
+  // helper function to evaluate statements
   auto evaluate_expr(const Expr& expr) noexcept -> T {
     return std::visit(*this, expr);
   }
 
-  virtual T evaluate(const Empty&)  = 0;
+  // Visitor pattern boilerplate
   virtual T evaluate(const Unary&)  = 0;
   virtual T evaluate(const Binary&) = 0;
 
@@ -205,13 +169,14 @@ struct Visitor {
   virtual T evaluate(const DoubleLiteral&) = 0;
   virtual T evaluate(const BoolLiteral&)   = 0;
   virtual T evaluate(const StringLiteral&) = 0;
-  virtual T evaluate(const VidLiteral&)    = 0;
+  virtual T evaluate(const Vid&)           = 0;
+  virtual T evaluate(const Lambda&)        = 0;
 
   virtual T evaluate(const Identifier&) = 0;
   virtual T evaluate(const Assignment&) = 0;
   virtual T evaluate(const Grouping&)   = 0;
   virtual T evaluate(const Call&)       = 0;
-  virtual T evaluate(const Lambda&)     = 0;
+  virtual T evaluate(const Get&)        = 0;
 };
 
 } // namespace Expr

@@ -1,10 +1,10 @@
 #include <cstdint>
 #include <string>
 
+#include <silk/ast/stmt.h>
 #include <silk/runtime/functions.h>
 #include <silk/runtime/interpreter.h>
-#include <silk/runtime/interupt.h>
-#include <silk/runtime/objects.h>
+#include <silk/runtime/primitives.h>
 
 // Function ---------------------------
 
@@ -12,12 +12,14 @@ std::size_t Function::arity() const {
   return _args.size();
 }
 
-std::string Function::argument(std::size_t index) {
-  return _args.at(index);
-}
+void Function::call(std::vector<ObjectPtr>& args) {
+  auto scp = _env.from_scope(_closure);
 
-void Function::call(Environment<ObjectPtr>& env) {
-  _intr.execute_stmt(_body);
+  for (auto i = 0; i < args.size(); i++) {
+    _env.define(_args[i].first, args[i]);
+  }
+
+  _interp.execute_stmt(_body);
 }
 
 std::string Function::string() {
@@ -35,17 +37,13 @@ ObjectPtr Function::operator==(ObjectPtr&) {
 // NativeFunction ---------------------
 
 std::size_t NativeFunction::arity() const {
-  return _args.size();
+  return _args;
 }
 
-std::string NativeFunction::argument(std::size_t index) {
-  return _args.at(index);
-}
-
-void NativeFunction::call(Environment<ObjectPtr>& env) {
-  throw Interupt {
-    Interupt::Type::fct_return,
-    _native(env),
+void NativeFunction::call(std::vector<ObjectPtr>& args) {
+  throw Interpreter::Interrupt {
+    _native(args),
+    Stmt::Interrupt::Type::ret,
   };
 }
 

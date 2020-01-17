@@ -6,39 +6,37 @@
 #include <silk/error.h>
 #include <silk/lexer.h>
 
+// textual representation of keywords
 const std::map<std::string_view, TokenType> Lexer::_keywords {
-  {"fct", TokenType::kw_function},    {"struct", TokenType::kw_struct},
-  {"ctor", TokenType::kw_ctor},       {"dtor", TokenType::kw_dtor},
-  {"super", TokenType::kw_super},     {"virt", TokenType::kw_virt},
-  {"this", TokenType::kw_this},
+  {"fct", TokenType::kw_function},
+  {"struct", TokenType::kw_struct},
+  {"ctor", TokenType::kw_ctor},
+  {"dtor", TokenType::kw_dtor},
+  {"virt", TokenType::kw_virt},
 
-  {"pkg", TokenType::kw_package},     {"main", TokenType::kw_entrypoint},
-  {"use", TokenType::kw_import},      {"export", TokenType::kw_export},
-  {"with", TokenType::kw_forwarding},
+  {"pkg", TokenType::kw_package},
+  {"main", TokenType::kw_main},
+  {"use", TokenType::kw_import},
 
-  {"true", TokenType::kw_true},       {"false", TokenType::kw_false},
+  {"true", TokenType::kw_true},
+  {"false", TokenType::kw_false},
   {"vid", TokenType::kw_vid},
 
-  {"let", TokenType::kw_let},         {"if", TokenType::kw_if},
-  {"else", TokenType::kw_else},       {"for", TokenType::kw_for},
-  {"break", TokenType::kw_break},     {"continue", TokenType::kw_continue},
+  {"let", TokenType::kw_let},
+  {"if", TokenType::kw_if},
+  {"else", TokenType::kw_else},
+  {"for", TokenType::kw_for},
+  {"break", TokenType::kw_break},
+  {"continue", TokenType::kw_continue},
   {"return", TokenType::kw_return},
 };
 
 const Lexer::TokensVector& Lexer::scan(std::istream& in) noexcept {
+  // ensure previous run does not affect
+  // current output
   _tokens.clear();
 
-  try {
-    scan_tokens(in);
-  } catch (LexingError& e) {
-    _error_callback(e);
-    return _tokens;
-  }
-
-  return _tokens;
-}
-
-void Lexer::scan_tokens(std::istream& in) {
+  // for every line in the input stream
   while (std::getline(in, current_line)) {
     advance_line();
 
@@ -286,12 +284,14 @@ void Lexer::scan_tokens(std::istream& in) {
     }
   }
 
-  add(TokenType::eof);
+  return _tokens;
 }
 
 inline void Lexer::advance_line() {
-  line++;
+  // reset column on a new line
   column = 0;
+
+  line++;
   return;
 }
 
@@ -306,6 +306,7 @@ inline bool Lexer::next(char c) const {
 }
 
 inline char Lexer::peek() const {
+  // return NULL terminator if end of line
   if (eol()) return '\0';
   return current_line[column + 1];
 }
@@ -347,14 +348,19 @@ inline void Lexer::number(bool real) {
 }
 
 inline void Lexer::string() {
+  // start at first quote
   int start = column;
 
+  // advance until we hit either the
+  // end of line or a single quote
   while (!eol() && !next('\'')) {
     advance_column();
   }
 
+  // advance once more to the quote
   advance_column();
 
+  // get the characters in-between the quotes
   auto str = std::string {
     std::begin(current_line) + start + 1,
     std::begin(current_line) + column,
@@ -364,14 +370,17 @@ inline void Lexer::string() {
 }
 
 inline std::string_view Lexer::word() {
+  // start at current character
   int start = column;
 
+  // advance column until we hit either a
+  // alpha-numerical character or the end of line
   while (!eol() && alphanum(peek())) {
     advance_column();
   }
 
-  return std::string_view {
-    current_line.data() + start,
-    static_cast<ulong>(column - start + 1),
-  };
+  // number of characters in-between + the first character
+  std::size_t length = column - start + 1;
+
+  return std::string_view {current_line.data() + start, length};
 };

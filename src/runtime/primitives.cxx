@@ -5,7 +5,7 @@
 #include <string>
 
 #include <silk/runtime/abstract/obj.h>
-#include <silk/runtime/objects.h>
+#include <silk/runtime/primitives.h>
 
 namespace obj {
 
@@ -273,30 +273,4 @@ bool Vid::truthy() {
 ObjectPtr Vid::operator==(ObjectPtr& other) {
   auto other_vid = obj::try_cast<Vid>(other);
   return obj::make(other_vid.has_value());
-}
-
-// Struct -----------------------------
-
-std::string Struct::string() {
-  return "[struct]";
-}
-
-bool Struct::truthy() {
-  return true;
-}
-
-ObjectPtr Struct::operator==(ObjectPtr& other) {
-  auto& other_strct = obj::cast_to<Struct>(other);
-  return obj::make(&other_strct == this);
-}
-
-std::size_t Struct::arity() const {
-  return 0;
-}
-
-std::string Struct::argument(std::size_t) {
-  return "yes";
-}
-
-void Struct::call(Environment<ObjectPtr>&) {
 }

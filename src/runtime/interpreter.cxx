@@ -1,70 +1,83 @@
 #include <cassert>
+#include <memory>
 #include <regex>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <silk/ast/ast.h>
 #include <silk/ast/expr.h>
 #include <silk/ast/stmt.h>
 #include <silk/ast/token.h>
+
 #include <silk/error.h>
-#include <silk/runtime/abstract/env.h>
+
 #include <silk/runtime/abstract/obj.h>
 #include <silk/runtime/functions.h>
 #include <silk/runtime/interpreter.h>
-#include <silk/runtime/interupt.h>
-#include <silk/runtime/objects.h>
+#include <silk/runtime/primitives.h>
 #include <silk/runtime/stdlib.h>
+#include <silk/runtime/structs.h>
 
-auto Interpreter::SimpleEnvironment::push_scope() -> void {
-  _scopes.emplace_front();
-}
-auto Interpreter::SimpleEnvironment::pop_scope() -> void {
-  _scopes.pop_front();
+auto Interpreter::Environment::pop() -> void {
+  _current = _scopes.top();
+  _scopes.pop();
 }
 
-bool Interpreter::SimpleEnvironment::exists(const std::string& name) {
-  for (auto& scope : _scopes) {
-    if (scope.find(name) != std::end(scope)) { return true; }
+auto Interpreter::Environment::new_scope() -> ScopeWrapper {
+  _scopes.push(_current);
+  return ScopeWrapper(*this);
+}
+
+auto Interpreter::Environment::from_scope(std::shared_ptr<Scope> old)
+  -> ScopeWrapper {
+  _scopes.push(_current);
+  _current = old;
+  return ScopeWrapper(*this);
+}
+
+auto Interpreter::Environment::save_scope() -> std::shared_ptr<Scope> {
+  return _current;
+}
+
+auto Interpreter::Environment::define(
+  const std::string& name, ObjectPtr& value) -> void {
+  auto new_scope = std::make_shared<Scope>(value, name, _current);
+  _current       = new_scope;
+}
+
+ObjectPtr Interpreter::Environment::get(const std::string& name) {
+  auto searched = _current;
+
+  while (searched && searched->name != name) {
+    searched = searched->parent;
   }
 
-  return false;
-}
-
-ObjectPtr Interpreter::SimpleEnvironment::get(const std::string& name) {
-  for (auto& scope : _scopes) {
-    if (scope.find(name) != std::end(scope)) { return scope.at(name); }
+  if (!searched) {
+    throw RuntimeError {
+      "use of undefined variable",
+    };
   }
 
-  return obj::make<Vid>();
+  return searched->value;
 }
 
-ObjectPtr Interpreter::SimpleEnvironment::assign(
-  const std::string& name, ObjectPtr&& value) {
+ObjectPtr Interpreter::Environment::assign(
+  const std::string& name, ObjectPtr& value) {
+  auto searched = _current;
 
-  for (auto& scope : _scopes) {
-    if (scope.find(name) != std::end(scope)) {
-      scope.insert_or_assign(name, std::move(value));
-      return scope.at(name);
-    }
+  while (searched->name != name) {
+    searched = searched->parent;
   }
 
-  _scopes.front().insert_or_assign(name, std::move(value));
-  return _scopes.front().at(name);
-}
+  if (!searched) {
+    throw RuntimeError {
+      "assignment of undefined variable",
+    };
+  }
 
-inline auto Interpreter::is_empty(const Expr::Expr& ex) -> bool {
-  try {
-    std::get<std::unique_ptr<Expr::Empty>>(ex);
-    return true;
-  } catch (std::bad_variant_access) { return false; };
-}
-
-inline auto Interpreter::is_empty(const Stmt::Stmt& ex) -> bool {
-  try {
-    std::get<std::unique_ptr<Stmt::Empty>>(ex);
-    return true;
-  } catch (std::bad_variant_access) { return false; };
+  searched->value = value;
+  return searched->value;
 }
 
 inline auto Interpreter::interpolate_str(std::string str) -> std::string {
@@ -88,10 +101,6 @@ inline auto Interpreter::interpolate_str(std::string str) -> std::string {
 
 inline auto Interpreter::shortcircuits(TokenType t) -> bool {
   return t == TokenType::sym_ampamp || t == TokenType::sym_pipepipe;
-}
-
-auto Interpreter::evaluate(const Expr::Empty&) -> ObjectPtr {
-  throw obj::make<Vid>();
 }
 
 auto Interpreter::evaluate(const Expr::Unary& expr) -> ObjectPtr {
@@ -250,24 +259,17 @@ auto Interpreter::evaluate(const Expr::StringLiteral& str) -> ObjectPtr {
   return obj::make(interpolate_str(str.value));
 }
 
-auto Interpreter::evaluate(const Expr::VidLiteral&) -> ObjectPtr {
+auto Interpreter::evaluate(const Expr::Vid&) -> ObjectPtr {
   return obj::make<Vid>();
 }
 
 auto Interpreter::evaluate(const Expr::Assignment& assignment)
   -> ObjectPtr {
-  if (!_env.exists(assignment.name)) {
-    throw RuntimeError {"assignment to undeclared variable"};
-  }
-
-  return _env.assign(assignment.name, evaluate_expr(assignment.expr));
+  auto val = evaluate_expr(assignment.expr);
+  return _env.assign(assignment.name, val);
 }
 
 auto Interpreter::evaluate(const Expr::Identifier& id) -> ObjectPtr {
-  if (!_env.exists(id.value)) {
-    throw RuntimeError {"undeclared variable used"};
-  }
-
   return _env.get(id.value);
 }
 
@@ -284,39 +286,44 @@ auto Interpreter::evaluate(const Expr::Call& call) -> ObjectPtr {
       "function called with the wrong number of arguments"};
   }
 
-  _env.push_scope();
+  auto args = std::vector<ObjectPtr> {};
 
-  for (auto i = 0; i < callee.arity(); i++) {
-    _env.assign(callee.argument(i), evaluate_expr(call.args.at(i)));
+  for (auto& arg : call.args) {
+    args.push_back(evaluate_expr(arg));
   }
 
   auto ret = obj::make<Vid>();
 
   try {
-    callee.call(_env);
-  } catch (Interupt& interupt) {
-    if (interupt.type == Interupt::Type::fct_return) {
-      ret = std::move(interupt.ret);
+    callee.call(args);
+  } catch (Interrupt& interupt) {
+    if (interupt.type == Stmt::Interrupt::Type::ret) {
+      ret = std::move(interupt.value);
     } else {
       throw RuntimeError {"invalid interupt out of function"};
     }
   }
 
-  _env.pop_scope();
   return ret;
+}
+
+auto Interpreter::evaluate(const Expr::Get& get) -> ObjectPtr {
+  auto  instance_obj = evaluate_expr(get.from);
+  auto& instance     = obj::cast_to<Gettable>(instance_obj);
+  return instance.get(get.property);
 }
 
 auto Interpreter::evaluate(const Expr::Lambda& lambda) -> ObjectPtr {
   auto& body = const_cast<Stmt::Stmt&>(lambda.body);
-  return obj::make<Function>(body, lambda.parameters, *this);
+  return obj::make<Function>(
+    body, lambda.parameters, *this, _env, _env.save_scope());
 }
 
 auto Interpreter::execute(const Stmt::Empty&) -> std::nullptr_t {
-  throw RuntimeError {"invalid interpreter state"};
   return nullptr;
 }
 
-auto Interpreter::execute(const Stmt::Entrypoint&) -> std::nullptr_t {
+auto Interpreter::execute(const Stmt::Main&) -> std::nullptr_t {
   return nullptr;
 }
 
@@ -329,38 +336,31 @@ auto Interpreter::execute(const Stmt::Import& imprt) -> std::nullptr_t {
   return nullptr;
 }
 
-auto Interpreter::execute(const Stmt::Forwarding& fwd) -> std::nullptr_t {
-  StdLib::load_library(fwd.name, _env);
-  return nullptr;
-}
-
-auto Interpreter::execute(const Stmt::Export& exprt) -> std::nullptr_t {
-  return nullptr;
-}
-
 auto Interpreter::execute(const Stmt::Variable& var) -> std::nullptr_t {
-  auto init =
-    is_empty(var.init) ? obj::make<Vid>() : evaluate_expr(var.init);
-  _env.assign(var.name, std::move(init));
+  auto init = evaluate_expr(var.init);
+  _env.define(var.name, init);
   return nullptr;
 }
 
 auto Interpreter::execute(const Stmt::Function& fct) -> std::nullptr_t {
   auto& body = const_cast<Stmt::Stmt&>(fct.body);
-  auto  obj  = obj::make<Function>(body, fct.parameters, *this);
-  _env.assign(fct.name, std::move(obj));
+  auto  obj  = obj::make<Function>(
+    body, fct.parameters, *this, _env, _env.save_scope());
+
+  _env.define(fct.name, obj);
   return nullptr;
 }
 
-auto Interpreter::execute(const Stmt::Struct&) -> std::nullptr_t {
-  return nullptr;
-}
+auto Interpreter::execute(const Stmt::Struct& strc) -> std::nullptr_t {
+  auto& ctor    = const_cast<Expr::Expr&>(strc.ctor);
+  auto& dtor    = const_cast<Expr::Expr&>(strc.dtor);
+  auto& fields  = const_cast<std::vector<Stmt::Stmt>&>(strc.fields);
+  auto& methods = const_cast<std::vector<Stmt::Stmt>&>(strc.methods);
 
-auto Interpreter::execute(const Stmt::Constructor&) -> std::nullptr_t {
-  return nullptr;
-}
+  auto obj = obj::make<Struct>(
+    std::string {strc.name}, ctor, dtor, fields, methods, *this, _env);
 
-auto Interpreter::execute(const Stmt::Destructor&) -> std::nullptr_t {
+  _env.define(strc.name, obj);
   return nullptr;
 }
 
@@ -368,25 +368,18 @@ auto Interpreter::execute(const Stmt::Loop& l) -> std::nullptr_t {
   while (evaluate_expr(l.clause)->truthy()) {
     try {
       execute_stmt(l.body);
-    } catch (Interupt& interupt) {
-      if (interupt.type == Interupt::Type::loop_break) { break; }
+    } catch (Interrupt& interupt) {
+      if (interupt.type == Stmt::Interrupt::Type::brk) { break; }
     }
   }
 
   return nullptr;
 }
 
-auto Interpreter::execute(const Stmt::LoopInterupt& i) -> std::nullptr_t {
-  throw Interupt {
-    i.should_continue ? Interupt::Type::loop_continue
-                      : Interupt::Type::loop_break,
-  };
-}
-
 auto Interpreter::execute(const Stmt::Conditional& cond) -> std::nullptr_t {
   if (evaluate_expr(cond.clause)->truthy()) {
     execute_stmt(cond.true_stmt);
-  } else if (!is_empty(cond.false_stmt)) {
+  } else {
     execute_stmt(cond.false_stmt);
   }
 
@@ -394,32 +387,19 @@ auto Interpreter::execute(const Stmt::Conditional& cond) -> std::nullptr_t {
 }
 
 auto Interpreter::execute(const Stmt::Block& blk) -> std::nullptr_t {
-  _env.push_scope();
+  auto scp = _env.new_scope();
 
   for (auto&& stmt : blk.body) {
-    try {
-      execute_stmt(stmt);
-
-    } catch (Interupt& interupt) {
-      if (interupt.type != Interupt::Type::loop_continue) {
-        _env.pop_scope();
-      }
-      throw interupt;
-    }
+    execute_stmt(stmt);
   }
 
-  _env.pop_scope();
   return nullptr;
 }
 
-auto Interpreter::execute(const Stmt::Return& r) -> std::nullptr_t {
-  auto ret = obj::make<Vid>();
-
-  if (!is_empty(r.ret)) { ret = evaluate_expr(r.ret); }
-
-  throw Interupt {
-    Interupt::Type::fct_return,
-    std::move(ret),
+auto Interpreter::execute(const Stmt::Interrupt& r) -> std::nullptr_t {
+  throw Interrupt {
+    evaluate_expr(r.ret),
+    Stmt::Interrupt::Type::ret,
   };
 }
 
@@ -428,11 +408,19 @@ auto Interpreter::execute(const Stmt::ExprStmt& e) -> std::nullptr_t {
   return nullptr;
 }
 
+auto Interpreter::has_error() -> bool {
+  return !_errors.empty();
+}
+
+auto Interpreter::errors() -> std::vector<RuntimeError>& {
+  return _errors;
+}
+
 auto Interpreter::interpret(AST& ast) -> void {
   try {
-    ast.evaluate_with(*this);
+    ast.execute_with(*this);
   } catch (RuntimeError e) {
-    _error_callback(e);
+    _errors.push_back(e);
     return;
   }
 }

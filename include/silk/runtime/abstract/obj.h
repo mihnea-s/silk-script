@@ -3,8 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-
-#include "env.h"
+#include <vector>
 
 struct Object;
 
@@ -47,6 +46,9 @@ struct Concatenable {
 
 struct Callable {
   virtual std::size_t arity() const                 = 0;
-  virtual std::string argument(std::size_t)         = 0;
-  virtual void        call(Environment<ObjectPtr>&) = 0;
+  virtual void        call(std::vector<ObjectPtr>&) = 0;
+};
+
+struct Gettable {
+  virtual ObjectPtr get(const std::string&) = 0;
 };

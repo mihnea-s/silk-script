@@ -6,115 +6,106 @@
 enum class TokenType {
   // symbols ----------------
 
-  // maths operations
-  sym_plus,
-  sym_plusplus,
-  sym_plusequal,
-  sym_minus,
-  sym_minusminus,
-  sym_minusequal,
-  sym_slash,
-  sym_slashslash,
-  sym_star,
-  sym_starstar,
-  sym_percent,
+  sym_plus,       // +
+  sym_plusplus,   // ++
+  sym_plusequal,  // +=
+  sym_minus,      // -
+  sym_minusminus, // --
+  sym_minusequal, // -=
+  sym_slash,      // /
+  sym_slashslash, // //
+  sym_star,       // *
+  sym_starstar,   // **
+  sym_percent,    // %
 
-  // assignment
-  sym_equal,
+  sym_equal,      // =
+  sym_equalequal, // ==
+  sym_bangequal,  // !=
+  sym_gt,         // >
+  sym_gtequal,    // >=
+  sym_lt,         // <
+  sym_ltequal,    // <=
 
-  // comparisons
-  sym_equalequal,
-  sym_bangequal,
-  sym_gt,
-  sym_gtequal,
-  sym_lt,
-  sym_ltequal,
+  sym_amp,      // &
+  sym_ampamp,   // &&
+  sym_pipe,     // |
+  sym_pipepipe, // ||
+  sym_tilde,    // ~
+  sym_bang,     // !
+  sym_caret,    // ^
 
-  // bitwise ops
-  sym_amp,
-  sym_pipe,
-  sym_tilde,
-  sym_caret,
+  sym_colon,     // :
+  sym_semicolon, // ;
+  sym_question,  // ?
+  sym_dot,       // .
+  sym_comma,     // ,
+  sym_at,        // @
 
-  // boolean operations
-  sym_ampamp,
-  sym_pipepipe,
-  sym_bang,
-
-  // other
-  sym_colon,
-  sym_semicolon,
-  sym_question,
-  sym_dot,
-  sym_comma,
-  sym_at,
-
-  // parenthesis
-  sym_lround,
-  sym_rround,
-  sym_lsquare,
-  sym_rsquare,
-  sym_lbrace,
-  sym_rbrace,
+  sym_lround,  // (
+  sym_rround,  // )
+  sym_lsquare, // [
+  sym_rsquare, // ]
+  sym_lbrace,  // {
+  sym_rbrace,  // }
 
   // keywords ---------------
 
-  kw_function,
-  kw_struct,
-  kw_ctor,
-  kw_dtor,
-  kw_virt,
-  kw_super,
-  kw_this,
+  kw_function, // fct
+  kw_struct,   // struct
+  kw_ctor,     // ctor
+  kw_dtor,     // dtor
+  kw_virt,     // virt
 
-  kw_package,
-  kw_entrypoint,
-  kw_import,
-  kw_export,
-  kw_forwarding,
+  kw_package, // pkg
+  kw_main,    // main
+  kw_import,  // use
 
-  kw_true,
-  kw_false,
-  kw_vid,
+  kw_true,  // true
+  kw_false, // false
+  kw_vid,   // vid
 
-  kw_let,
-  kw_if,
-  kw_else,
-  kw_for,
-  kw_break,
-  kw_continue,
-  kw_return,
+  kw_let,      // let
+  kw_if,       // if
+  kw_else,     // else
+  kw_for,      // for
+  kw_break,    // break
+  kw_continue, // continue
+  kw_return,   // return
 
-  // literals
+  // literals and words -----
   literal_int,
   literal_dbl,
   literal_str,
-
-  // other
   identifier,
-  eof,
 };
 
+// Token is a struct used for storing logical groupings
+// in the programs source code (e.g. `>=`), marking
+// keywords to help the parser (e.g. `fct`), and storing
+// literal values (e.g. `2.3`) (note: as raw strings),
+// the lexer turns the programs source file into an array
+// of tokens
+
 struct Token {
-  const TokenType                               _type;
-  const std::string                             _lexeme;
-  const std::pair<std::uint64_t, std::uint64_t> _location;
+  // for brevity
+  using Location = std::pair<std::uint64_t, std::uint64_t>;
+
+  const TokenType   _type;     // type
+  const std::string _lexeme;   // for literals and identifiers
+  const Location    _location; // in file
 
   public:
-  Token(
-    TokenType                                     type,
-    const std::pair<std::uint64_t, std::uint64_t> location) :
+  Token(TokenType type, Location location) :
       _type(type), _lexeme(std::string {}), _location(location) {
   }
 
-  Token(
-    TokenType                                      type,
-    const std::string&                             value,
-    const std::pair<std::uint64_t, std::uint64_t>& location) :
+  // for tokens with string values
+  Token(TokenType type, const std::string& value, Location location) :
       _type(type), _lexeme(value), _location(location) {
   }
 
-  const TokenType&                               type() const noexcept;
-  const std::string&                             lexeme() const noexcept;
-  const std::pair<std::uint64_t, std::uint64_t>& location() const noexcept;
+  // getters
+  const TokenType&   type() const noexcept;
+  const std::string& lexeme() const noexcept;
+  const Location&    location() const noexcept;
 };

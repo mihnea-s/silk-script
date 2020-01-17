@@ -1,28 +1,52 @@
-#include <algorithm>
-#include <cstddef>
 #include <cstdlib>
 #include <fstream>
-#include <functional>
-#include <initializer_list>
 #include <iostream>
-#include <istream>
-#include <iterator>
-#include <numeric>
-#include <ostream>
-#include <string_view>
+#include <string>
+#include <vector>
 
 #include <fmt/core.h>
 #include <fmt/format.h>
 
+#include <silk/analyzers/checker.h>
+#include <silk/analyzers/parser.h>
 #include <silk/error.h>
 #include <silk/lexer.h>
-#include <silk/parser.h>
 #include <silk/repl.h>
 #include <silk/runtime/interpreter.h>
 
-#define DBG_MODE 0
-#include <util/ast_print.h>
-#include <util/err2str.h>
+template <class Analyzer>
+void handleErrors(Analyzer& analyzer) {
+  if (analyzer.has_error()) {
+    for (auto& error : analyzer.errors()) {
+      print_error(error);
+      std::exit(1);
+    }
+  }
+}
+
+void runFile(std::ifstream& file) {
+  auto lexer       = Lexer {};
+  auto parser      = Parser {};
+  auto checker     = Checker {};
+  auto interpreter = Interpreter {};
+
+  auto& tokens = lexer.scan(file);
+
+  auto ast = parser.parse(begin(tokens), end(tokens));
+  handleErrors(parser);
+
+  // checker.check(ast);
+  // handleErrors(checker);
+
+  interpreter.interpret(ast);
+
+  if (interpreter.has_error()) {
+    for (auto& error : interpreter.errors()) {
+      print_error(error);
+      std::exit(1);
+    }
+  }
+}
 
 int main(const int argc, const char** argv) {
   if (argc < 2) {
@@ -32,14 +56,6 @@ int main(const int argc, const char** argv) {
 
   auto files = std::vector<std::string> {argv + 1, argv + argc};
 
-  auto lexer       = Lexer {};
-  auto parser      = Parser {};
-  auto interpreter = Interpreter {};
-
-  lexer.set_error_callback(lexing_error_prtty_prnt);
-  parser.set_error_callback(parsing_error_prtty_prnt);
-  interpreter.set_error_callback(runtime_error_prtty_prnt);
-
   for (auto& file : files) {
     auto file_stream = std::ifstream(file);
 
@@ -48,14 +64,7 @@ int main(const int argc, const char** argv) {
       std::exit(1);
     }
 
-    auto& tokens = lexer.scan(file_stream);
-    auto  ast    = parser.parse(begin(tokens), end(tokens));
-
-#if DBG_MODE
-    ast_print(ast);
-#else
-    interpreter.interpret(ast);
-#endif
+    runFile(file_stream);
   }
 
   return 0;

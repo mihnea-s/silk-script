@@ -5,29 +5,58 @@
 
 #include <silk/error.h>
 
+#define RESET "\u001b[0m"
+#define BOLD  "\u001b[1m"
+#define YELW  "\u001b[33m"
+#define RED   "\u001b[31m"
+
+// extend fmt::format to be able to output
+// silk's error types
+
 template <>
-struct fmt::formatter<Severity> : formatter<string_view> {
+struct fmt::formatter<Severity> {
+  template <typename ParseContext>
+  constexpr auto parse(ParseContext& ctx) {
+    return ctx.begin();
+  }
+
   template <typename FormatContext>
   auto format(Severity sev, FormatContext& ctx) {
-    string_view name = "unknown";
+    string_view msg = "unknown";
+
     switch (sev) {
-      case Severity::compiler: name = "compiler"; break;
-      case Severity::error: name = "error"; break;
-      case Severity::warning: name = "warning"; break;
-      case Severity::info: name = "info"; break;
+      case Severity::error: {
+        msg = BOLD RED "[!] error" RESET;
+        break;
+      }
+      case Severity::warning: {
+        msg = BOLD YELW "(*) warning" RESET;
+        break;
+      }
     }
-    return formatter<string_view>::format(name, ctx);
+
+    return fmt::format_to(ctx.out(), "{}", msg);
   }
 };
 
-// LexingError --------------
-
-Severity LexingError::severity() const noexcept {
-  return Severity::compiler;
+auto print_error(const ParsingError& e) -> void {
+  fmt::print(
+    "{}:\n"                                        //
+    BOLD "   where" RESET ": line {}, column {}\n" //
+    BOLD "   what" RESET ": {}\n",                 //
+    e.severity(),                                  //
+    e.line(),                                      //
+    e.column(),                                    //
+    e.what()                                       //
+  );
 }
 
-const char* LexingError::what() const noexcept {
-  return _message.data();
+auto print_error(const RuntimeError& e) -> void {
+  fmt::print(
+    BOLD RED "[!] runtime error" RESET ":\n" //
+    BOLD "   what" RESET ": {}\n",           //
+    e.what()                                 //
+  );
 }
 
 // ParsingError -------------

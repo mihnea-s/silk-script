@@ -6,44 +6,71 @@
 #include <string_view>
 #include <tuple>
 
+// different severity levels
 enum class Severity {
   error,
   warning,
-  info,
-  compiler,
 };
 
-struct LexingError : std::exception {
-  private:
-  const std::string_view _message;
-
-  public:
-  LexingError(std::string_view message) : _message(message) {
-  }
-
-  Severity    severity() const noexcept;
-  const char* what() const noexcept override;
-};
+// ParsingErrors are used by the parser and type checker
 
 struct ParsingError : std::exception {
   private:
-  const Severity                                _severity;
-  const std::pair<std::uint64_t, std::uint64_t> _location;
-  const std::string_view                        _message;
+  // for brevity
+  using Location = std::pair<std::uint64_t, std::uint64_t>;
+
+  const Severity         _severity;
+  const Location         _location;
+  const std::string_view _message;
 
   public:
   ParsingError(
-    const Severity                                severity,
-    const std::string_view                        message,
-    const std::pair<std::uint64_t, std::uint64_t> location) noexcept :
+    const Severity         severity,
+    const std::string_view message,
+    const Location         location) noexcept :
       _severity(severity), _location(location), _message(message) {
   }
 
+  // getters
   Severity      severity() const noexcept;
   std::uint64_t line() const noexcept;
   std::uint64_t column() const noexcept;
-  const char*   what() const noexcept override;
+
+  // std::exception requirement
+  const char* what() const noexcept override;
 };
+
+// CompileErrors are used for errors (or warnings) that occur during the
+// compilation of a silk script
+
+struct CompileError : std::exception {
+  private:
+  // for brevity
+  using Location = std::pair<std::uint64_t, std::uint64_t>;
+
+  const Severity    _severity;
+  const Location    _location;
+  const std::string _message;
+
+  public:
+  CompileError(
+    const Severity    severity,
+    const std::string message,
+    const Location    location) noexcept :
+      _severity(severity), _location(location), _message(message) {
+  }
+
+  // getters
+  Severity      severity() const noexcept;
+  std::uint64_t line() const noexcept;
+  std::uint64_t column() const noexcept;
+
+  // std::exception requirement
+  const char* what() const noexcept override;
+};
+
+// RuntimeError is used for errors that occur during the interpretation of a
+// silk script
 
 struct RuntimeError : std::exception {
   private:
@@ -53,5 +80,10 @@ struct RuntimeError : std::exception {
   RuntimeError(std::string message) : _message(message) {
   }
 
+  // std::exception requirement
   const char* what() const noexcept override;
 };
+
+// pretty print functions
+auto print_error(const ParsingError& e) -> void;
+auto print_error(const RuntimeError& e) -> void;

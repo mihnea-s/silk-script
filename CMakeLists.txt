@@ -14,14 +14,17 @@ add_executable(${EXECUTABLE_NAME}
   src/error.cxx
   src/repl.cxx
   src/lexer.cxx
-  src/parser.cxx
-  
+
+  src/analyzers/checker.cxx
+  src/analyzers/parser.cxx
+
   src/ast/token.cxx
 
   src/runtime/interpreter.cxx
   src/runtime/stdlib.cxx
   src/runtime/functions.cxx
-  src/runtime/objects.cxx
+  src/runtime/primitives.cxx
+  src/runtime/structs.cxx
 )
 
 set_target_properties(${EXECUTABLE_NAME} PROPERTIES

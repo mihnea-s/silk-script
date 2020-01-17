@@ -8,9 +8,9 @@
 
 #include "../error.h"
 
+#include "../ast/expr.h"
 #include "../ast/stmt.h"
 
-#include "abstract/env.h"
 #include "abstract/obj.h"
 
 namespace obj {
@@ -152,16 +152,4 @@ struct Vid : Object {
   bool        truthy() override;
 
   ObjectPtr operator==(ObjectPtr&) override;
-};
-
-struct Struct : Object, Callable {
-  std::string string() override;
-  bool        truthy() override;
-
-  ObjectPtr operator==(ObjectPtr&) override;
-
-  std::size_t arity() const override;
-  std::string argument(std::size_t) override;
-
-  void call(Environment<ObjectPtr>&) override;
 };

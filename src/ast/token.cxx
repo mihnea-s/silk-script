@@ -2,6 +2,8 @@
 
 #include <silk/ast/token.h>
 
+// Token getters
+
 const TokenType& Token::type() const noexcept {
   return _type;
 };
@@ -10,7 +12,6 @@ const std::string& Token::lexeme() const noexcept {
   return _lexeme;
 }
 
-const std::pair<std::uint64_t, std::uint64_t>& Token::location() const
-  noexcept {
+const Token::Location& Token::location() const noexcept {
   return _location;
 }

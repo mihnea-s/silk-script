@@ -4,139 +4,107 @@
 #include <string>
 #include <vector>
 
-#include "expr.h"
+#include "expr_decl.h"
+#include "stmt_decl.h"
 #include "token.h"
 
 namespace Stmt {
 
-struct Empty;
-
-struct Entrypoint;
-struct Package;
-struct Import;
-struct Forwarding;
-struct Export;
-
-struct Variable;
-struct Function;
-struct Struct;
-struct Constructor;
-struct Destructor;
-
-struct Loop;
-struct LoopInterupt;
-struct Conditional;
-struct Block;
-struct Return;
-struct ExprStmt;
-
-using Stmt = std::variant<
-  std::unique_ptr<Empty>,
-
-  std::unique_ptr<Entrypoint>,
-  std::unique_ptr<Package>,
-  std::unique_ptr<Import>,
-  std::unique_ptr<Forwarding>,
-  std::unique_ptr<Export>,
-
-  std::unique_ptr<Variable>,
-  std::unique_ptr<Function>,
-  std::unique_ptr<Struct>,
-  std::unique_ptr<Constructor>,
-  std::unique_ptr<Destructor>,
-
-  std::unique_ptr<Loop>,
-  std::unique_ptr<LoopInterupt>,
-  std::unique_ptr<Conditional>,
-  std::unique_ptr<Block>,
-  std::unique_ptr<Return>,
-  std::unique_ptr<ExprStmt>>;
-
+// the empty statement
 struct Empty {};
 
-struct Entrypoint {};
+// statement marking the file as main
+struct Main {};
 
+// statement marking the file as part
+// of a package (e.g. 'pkg 'mypkg';')
 struct Package {
   const std::string name;
   Package(const std::string& name) : name(name) {
   }
 };
 
+// an import statement of an external
+// or standard library package
 struct Import {
   const std::string name;
   Import(const std::string& name) : name(name) {
   }
 };
 
-struct Export {
-  const Stmt decl;
-  Export(Stmt&& decl) : decl(std::move(decl)) {
-  }
-};
-
-struct Forwarding {
-  const std::string name;
-  Forwarding(const std::string& name) : name(name) {
-  }
-};
-
+// a variable declaration
 struct Variable {
   const std::string name;
-  const Expr::Expr  init;
   const std::string type;
+  const Expr::Expr  init;
 
-  Variable(const std::string& name, Expr::Expr&& init) :
-      name(name), init(std::move(init)), type("") {
-  }
-
-  Variable(const std::string name, const std::string type) :
-      name(name), init(), type(type) {
+  Variable(const std::string& name, std::string type, Expr::Expr&& init) :
+      name(name), type(type), init(std::move(init)) {
   }
 };
 
+// a function declaration
+// (note: if the function is virtual the
+// body will be an empty statement
+//  otherwise it will be a block statement)
 struct Function {
-  const std::string              name;
-  const std::vector<std::string> parameters {};
-  const Stmt                     body;
-  const bool                     virt;
+  using Parameters = std::vector<std::pair<std::string, std::string>>;
+  enum class Type {
+    fct,
+    virt,
+  };
+
+  const std::string name;
+  const Parameters  parameters {};
+  const Stmt        body;
+  const Type        type;
 
   Function(
-    std::string&              name,
-    std::vector<std::string>& parameters,
-    Stmt&&                    body,
-    bool                      virt) :
+    std::string& name, Parameters& parameters, Stmt&& body, Type type) :
       name(name),
       parameters(parameters),
       body(std::move(body)),
-      virt(virt) {
+      type(type) {
   }
 };
 
+// a struct declaration
+// (note: if they are not explicitly declared
+// the constructor and destructor will be empty
+// statements)
+// (note: parent is an empty string if the struct
+// doesn't inherit from anything)
 struct Struct {
-  const std::string       name;
-  const std::string       parent;
-  const std::vector<Stmt> body;
+  const std::string name;
+  const std::string parent;
 
-  Struct(std::string& name, std::string& parent, std::vector<Stmt>&& body) :
-      name(name), parent(parent), body(std::move(body)) {
+  const Expr::Expr ctor;
+  const Expr::Expr dtor;
+
+  const std::vector<Stmt> fields;
+  const std::vector<Stmt> methods;
+
+  Struct(
+    std::string& name,
+    std::string& parent,
+
+    Expr::Expr&& ctor,
+    Expr::Expr&& dtor,
+
+    std::vector<Stmt>&& fields,
+    std::vector<Stmt>&& methods) :
+      name(name),
+      parent(parent),
+
+      ctor(std::move(ctor)),
+      dtor(std::move(dtor)),
+
+      fields(std::move(fields)),
+      methods(std::move(methods)) {
   }
 };
 
-struct Constructor {
-  const std::vector<std::string> parameters {};
-  const Stmt                     body;
-
-  Constructor(std::vector<std::string> parameters, Stmt&& body) :
-      parameters(parameters), body(std::move(body)) {
-  }
-};
-
-struct Destructor {
-  const Stmt body;
-  Destructor(Stmt&& body) : body(std::move(body)) {
-  }
-};
-
+// a simple while loop
 struct Loop {
   const Expr::Expr clause;
   const Stmt       body;
@@ -146,13 +114,10 @@ struct Loop {
   }
 };
 
-struct LoopInterupt {
-  const bool should_continue;
-  LoopInterupt(const bool& should_continue) :
-      should_continue(should_continue) {
-  }
-};
-
+// an if expression with an optional
+// else statement
+// (note: false_stmt will be an empty
+// statement if else is omitted)
 struct Conditional {
   const Expr::Expr clause;
   const Stmt       true_stmt;
@@ -165,19 +130,33 @@ struct Conditional {
   }
 };
 
+// a wrapper around a new scope surrounded
+// by braces (e.g. '{ let x = 2; }')
 struct Block {
   const std::vector<Stmt> body;
   Block(std::vector<Stmt>&& body) : body(std::move(body)) {
   }
 };
 
-struct Return {
-  const Expr::Expr ret;
+// Interrupt is used for break, continue, or return,
+// it holds the type of interrupt and, in the case of
+// a return, the returned value
+struct Interrupt {
+  enum class Type {
+    ret,
+    brk,
+    cont,
+  };
 
-  Return(Expr::Expr&& ret) : ret(std::move(ret)) {
+  const Expr::Expr ret;
+  const Type       type;
+
+  Interrupt(Expr::Expr&& ret, Type type) : ret(std::move(ret)), type(type) {
   }
 };
 
+// an expression wrapped in a statement
+// (e.g. a function call 'myFunction();')
 struct ExprStmt {
   const Expr::Expr expr;
 
@@ -185,36 +164,42 @@ struct ExprStmt {
   }
 };
 
+// visitor pattern boilerplate
+// classes used to execute statements inherit from this
 template <class T>
 struct Visitor {
+
+  // since variant uses unique pointers we
+  // need a wrapper that will automatically
+  // dereference the pointer and call the
+  // appropriate function
   template <class Ptr>
   auto operator()(Ptr&& ptr) -> T {
     return this->execute(*ptr.get());
   }
 
+  // helper method to execute statements
   auto execute_stmt(const Stmt& stmt) -> T {
     return std::visit(*this, stmt);
   }
 
-  virtual T execute(const Empty&)      = 0;
-  virtual T execute(const Entrypoint&) = 0;
-  virtual T execute(const Package&)    = 0;
-  virtual T execute(const Import&)     = 0;
-  virtual T execute(const Export&)     = 0;
-  virtual T execute(const Forwarding&) = 0;
+  // visitor pattern boilerplate (visit functions)
 
-  virtual T execute(const Variable&)    = 0;
-  virtual T execute(const Function&)    = 0;
-  virtual T execute(const Struct&)      = 0;
-  virtual T execute(const Constructor&) = 0;
-  virtual T execute(const Destructor&)  = 0;
+  virtual T execute(const Empty&)   = 0;
+  virtual T execute(const Main&)    = 0;
+  virtual T execute(const Package&) = 0;
 
-  virtual T execute(const Loop&)         = 0;
-  virtual T execute(const LoopInterupt&) = 0;
-  virtual T execute(const Conditional&)  = 0;
-  virtual T execute(const Block&)        = 0;
-  virtual T execute(const Return&)       = 0;
-  virtual T execute(const ExprStmt&)     = 0;
+  virtual T execute(const Import&) = 0;
+
+  virtual T execute(const Variable&) = 0;
+  virtual T execute(const Function&) = 0;
+  virtual T execute(const Struct&)   = 0;
+
+  virtual T execute(const Loop&)        = 0;
+  virtual T execute(const Conditional&) = 0;
+  virtual T execute(const Block&)       = 0;
+  virtual T execute(const Interrupt&)   = 0;
+  virtual T execute(const ExprStmt&)    = 0;
 };
 
 }; // namespace Stmt
