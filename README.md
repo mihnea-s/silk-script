@@ -1,27 +1,27 @@
-# Silk Script Programming language
+# 🧵🧾 The Silk scripting language
 
 ## Introduction
 
 Silk Script is a small little inefficient language written as an
-exercise for myself. It is written in *mostly* modern C++, it makes liberal use of `std::variant`, `std::shared_ptr`s, and dynamic casts.
+exercise for myself. It is written in *mostly* modern C++, it makes liberal use
+of `std::variant`, `std::shared_ptr`s, and dynamic casts.
 
 ## Table of Contents
 
-- [Silk Script Programming language](#silk-script-programming-language)
-  - [Introduction](#introduction)
-  - [Table of Contents](#table-of-contents)
-  - [Documentation](#documentation)
-    - [Variables](#variables)
-    - [Primitive types](#primitive-types)
-    - [Operation support](#operation-support)
-    - [Functions](#functions)
-    - [Structs](#structs)
-    - [Strings](#strings)
-    - [Standard Library](#standard-library)
-      - [Library `'std/io'`](#library-stdio)
-      - [Library `'std/str'`](#library-stdstr)
-      - [Library `'std/data'`](#library-stddata)
-  - [License](#license)
+- [Introduction](#introduction)
+- [Table of Contents](#table-of-contents)
+- [Documentation](#documentation)
+  - [Variables](#variables)
+  - [Primitive types](#primitive-types)
+  - [Operation support](#operation-support)
+  - [Functions](#functions)
+  - [Structs](#structs)
+  - [Strings](#strings)
+  - [Standard Library](#standard-library)
+    - [Library `'std/io'`](#library-stdio)
+    - [Library `'std/str'`](#library-stdstr)
+    - [Library `'std/data'`](#library-stddata)
+- [License](#license)
 
 ## Documentation
 
