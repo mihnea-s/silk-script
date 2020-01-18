@@ -1,3 +1,5 @@
+#include <cassert>
+#include <initializer_list>
 #include <istream>
 #include <string>
 #include <string_view>
@@ -47,17 +49,17 @@ const Lexer::TokensVector& Lexer::scan(std::istream& in) noexcept {
           switch (peek()) {
             case '+': {
               advance_column();
-              add(TokenType::sym_plusplus);
+              add(TokenType::sym_plusplus, "++");
               break;
             }
             case '=': {
               advance_column();
-              add(TokenType::sym_plusequal);
+              add(TokenType::sym_plusequal, "+=");
               break;
             }
             case '\0':
             default: {
-              add(TokenType::sym_plus);
+              add(TokenType::sym_plus, "+");
               break;
             }
           }
@@ -69,17 +71,17 @@ const Lexer::TokensVector& Lexer::scan(std::istream& in) noexcept {
           switch (peek()) {
             case '-': {
               advance_column();
-              add(TokenType::sym_minusminus);
+              add(TokenType::sym_minusminus, "--");
               break;
             }
             case '=': {
               advance_column();
-              add(TokenType::sym_minusequal);
+              add(TokenType::sym_minusequal, "-=");
               break;
             }
             case '\0':
             default: {
-              add(TokenType::sym_minus);
+              add(TokenType::sym_minus, "-");
               break;
             }
           }
@@ -88,117 +90,72 @@ const Lexer::TokensVector& Lexer::scan(std::istream& in) noexcept {
         }
 
         case '/': {
-          if (next('/')) {
-            advance_column();
-            add(TokenType::sym_slashslash);
-          } else {
-            add(TokenType::sym_slash);
-          }
-
+          compound("//", {TokenType::sym_slash, TokenType::sym_slashslash});
           break;
         }
 
         case '*': {
-          if (next('*')) {
-            advance_column();
-            add(TokenType::sym_starstar);
-          } else {
-            add(TokenType::sym_star);
-          }
-
+          compound("**", {TokenType::sym_star, TokenType::sym_starstar});
           break;
         }
 
         case '%': {
-          add(TokenType::sym_percent);
+          add(TokenType::sym_percent, "%");
           break;
         }
 
         case '=': {
-          if (next('=')) {
-            advance_column();
-            add(TokenType::sym_equalequal);
-          } else {
-            add(TokenType::sym_equal);
-          }
-
+          compound("==", {TokenType::sym_equal, TokenType::sym_equalequal});
           break;
         }
 
         case '!': {
-          if (next('=')) {
-            advance_column();
-            add(TokenType::sym_bangequal);
-          } else {
-            add(TokenType::sym_bang);
-          }
+          compound("==", {TokenType::sym_bang, TokenType::sym_bangequal});
           break;
         }
 
         case '>': {
-          if (next('=')) {
-            advance_column();
-            add(TokenType::sym_gtequal);
-          } else {
-            add(TokenType::sym_gt);
-          }
-
+          compound(">=", {TokenType::sym_gt, TokenType::sym_gtequal});
           break;
         }
 
         case '<': {
-          if (next('=')) {
-            advance_column();
-            add(TokenType::sym_ltequal);
-          } else {
-            add(TokenType::sym_lt);
-          }
-
+          compound("<=", {TokenType::sym_lt, TokenType::sym_ltequal});
           break;
         }
 
         case '&': {
-          if (next('&')) {
-            advance_column();
-            add(TokenType::sym_ampamp);
-          } else {
-            add(TokenType::sym_amp);
-          }
+          compound("&&", {TokenType::sym_amp, TokenType::sym_ampamp});
           break;
         }
 
         case '|': {
-          if (next('|')) {
-            advance_column();
-            add(TokenType::sym_pipepipe);
-          } else {
-            add(TokenType::sym_pipe);
-          }
+          compound("||", {TokenType::sym_pipe, TokenType::sym_pipepipe});
           break;
         }
 
         case '~': {
-          add(TokenType::sym_tilde);
+          add(TokenType::sym_tilde, "~");
           break;
         }
 
         case '^': {
-          add(TokenType::sym_caret);
+          add(TokenType::sym_caret, "^");
           break;
         }
 
         case ':': {
-          add(TokenType::sym_colon);
+          add(TokenType::sym_colon, ":");
           break;
         }
 
         case ';': {
-          add(TokenType::sym_semicolon);
+          add(TokenType::sym_semicolon, ";");
           break;
         }
 
         case '?': {
-          add(TokenType::sym_question);
+          add(TokenType::sym_question, "?");
           break;
         }
 
@@ -206,14 +163,14 @@ const Lexer::TokensVector& Lexer::scan(std::istream& in) noexcept {
           if (std::isdigit(peek())) {
             number(true);
           } else {
-            add(TokenType::sym_dot);
+            add(TokenType::sym_dot, ".");
           }
 
           break;
         }
 
         case ',': {
-          add(TokenType::sym_comma);
+          add(TokenType::sym_comma, ",");
           break;
         }
 
@@ -225,34 +182,34 @@ const Lexer::TokensVector& Lexer::scan(std::istream& in) noexcept {
         }
 
         case '@': {
-          add(TokenType::sym_at);
+          add(TokenType::sym_at, "@");
           break;
         }
 
         case '(': {
-          add(TokenType::sym_lround);
+          add(TokenType::sym_lround, ")");
           break;
         }
         case ')': {
-          add(TokenType::sym_rround);
+          add(TokenType::sym_rround, "(");
           break;
         }
 
         case '[': {
-          add(TokenType::sym_lsquare);
+          add(TokenType::sym_lsquare, "[");
           break;
         }
         case ']': {
-          add(TokenType::sym_rsquare);
+          add(TokenType::sym_rsquare, "]");
           break;
         }
 
         case '{': {
-          add(TokenType::sym_lbrace);
+          add(TokenType::sym_lbrace, "{");
           break;
         }
         case '}': {
-          add(TokenType::sym_rbrace);
+          add(TokenType::sym_rbrace, "}");
           break;
         }
 
@@ -273,7 +230,7 @@ const Lexer::TokensVector& Lexer::scan(std::istream& in) noexcept {
           auto w = word();
 
           if (_keywords.find(w) != std::end(_keywords)) {
-            add(_keywords.at(w));
+            add(_keywords.at(w), std::string {w});
           } else {
             add(TokenType::identifier, std::string {w});
           }
@@ -313,6 +270,21 @@ inline char Lexer::peek() const {
 
 inline bool Lexer::eol() const {
   return column == current_line.size() - 1;
+}
+
+inline void Lexer::compound(
+  std::string_view sv, std::initializer_list<TokenType> types) {
+  assert(sv.size() == types.size());
+
+  for (auto i = 0; i < sv.size(); i++) {
+    if (peek() != sv.at(i)) {
+      add(*(types.begin() + i), std::string {sv.begin(), sv.begin() + i});
+      return;
+    }
+    advance_column();
+  }
+
+  add(*(types.end() - 1), std::string {sv});
 }
 
 inline bool Lexer::alphanum(char c) const {

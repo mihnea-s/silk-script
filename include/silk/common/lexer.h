@@ -1,12 +1,8 @@
 #pragma once
 
-#include <cstdint>
-#include <functional>
-#include <istream>
+#include <initializer_list>
 #include <map>
-#include <memory>
-#include <optional>
-#include <variant>
+#include <string_view>
 #include <vector>
 
 #include "error.h"
@@ -49,6 +45,9 @@ class Lexer {
 
   // wrapper around std::isalnum to allow underscores
   inline bool alphanum(char c) const;
+
+  // checks for compound tokens
+  inline void compound(std::string_view, std::initializer_list<TokenType>);
 
   // helper method to easily add tokens
   template <class... Args>

@@ -95,13 +95,8 @@ struct Token {
   const Location    _location; // in file
 
   public:
-  Token(TokenType type, Location location) :
-      _type(type), _lexeme(std::string {}), _location(location) {
-  }
-
-  // for tokens with string values
-  Token(TokenType type, const std::string& value, Location location) :
-      _type(type), _lexeme(value), _location(location) {
+  Token(TokenType type, const std::string& lexeme, Location location) :
+      _type(type), _lexeme(lexeme), _location(location) {
   }
 
   // getters
