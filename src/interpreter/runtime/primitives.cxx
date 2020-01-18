@@ -4,8 +4,8 @@
 #include <sstream>
 #include <string>
 
-#include <silk/runtime/abstract/obj.h>
-#include <silk/runtime/primitives.h>
+#include <silk/interpreter/interfaces/obj.h>
+#include <silk/interpreter/runtime/primitives.h>
 
 namespace obj {
 

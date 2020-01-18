@@ -7,30 +7,35 @@ set(EXECUTABLE_NAME silk)
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 
+add_subdirectory(vm)
 add_subdirectory(vendor/fmt-6.1.2)
 
-add_executable(${EXECUTABLE_NAME} 
+add_executable(${EXECUTABLE_NAME}
   src/main.cxx
-  src/error.cxx
-  src/repl.cxx
-  src/lexer.cxx
 
-  src/analyzers/checker.cxx
-  src/analyzers/parser.cxx
+  # common files
+  src/common/error.cxx
+  src/common/lexer.cxx
+  src/common/token.cxx
+  
+  # interpreter specific
+  src/interpreter/repl.cxx
+  src/interpreter/analyzers/checker.cxx
+  src/interpreter/analyzers/parser.cxx
+  src/interpreter/runtime/interpreter.cxx
+  src/interpreter/runtime/stdlib.cxx
+  src/interpreter/runtime/functions.cxx
+  src/interpreter/runtime/primitives.cxx
+  src/interpreter/runtime/structs.cxx
 
-  src/ast/token.cxx
-
-  src/runtime/interpreter.cxx
-  src/runtime/stdlib.cxx
-  src/runtime/functions.cxx
-  src/runtime/primitives.cxx
-  src/runtime/structs.cxx
+  # compiler specific
+  src/compiler/compiler.cxx
 )
 
 set_target_properties(${EXECUTABLE_NAME} PROPERTIES
   CXX_STANDARD 17
 )
 
-target_include_directories(${EXECUTABLE_NAME} PUBLIC include)
+target_include_directories(${EXECUTABLE_NAME} PUBLIC include vm/include)
 
-target_link_libraries(${EXECUTABLE_NAME} ${CONAN_LIBS} fmt::fmt)
+target_link_libraries(${EXECUTABLE_NAME} silkvm ${CONAN_LIBS} fmt::fmt)

@@ -5,12 +5,11 @@
 #include <map>
 #include <stack>
 
+#include "../../common/error.h"
 #include "../ast/ast.h"
 #include "../ast/expr.h"
 #include "../ast/stmt.h"
-#include "../error.h"
-
-#include "abstract/obj.h"
+#include "../interfaces/obj.h"
 
 struct Interpreter :
     Expr::Visitor<ObjectPtr>,
@@ -105,7 +104,8 @@ public:
   auto execute(const Stmt::ExprStmt& e) -> std::nullptr_t override;
 
   public:
-  auto has_error() -> bool;
+  auto has_error() const -> bool;
+  auto clear_errors() -> void;
   auto errors() -> std::vector<RuntimeError>&;
 
   auto interpret(AST& ast) -> void;

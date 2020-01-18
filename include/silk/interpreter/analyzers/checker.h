@@ -4,10 +4,10 @@
 #include <string>
 #include <vector>
 
+#include "../../common/error.h"
 #include "../ast/ast.h"
 #include "../ast/expr.h"
 #include "../ast/stmt.h"
-#include "../error.h"
 
 struct Checker : Expr::Visitor<std::string>, Stmt::Visitor<std::nullptr_t> {
   private:
@@ -72,7 +72,8 @@ struct Checker : Expr::Visitor<std::string>, Stmt::Visitor<std::nullptr_t> {
   auto execute(const Stmt::ExprStmt& e) -> std::nullptr_t override;
 
   public:
-  auto has_error() -> bool;
+  auto has_error() const -> bool;
+  auto clear_errors() -> void;
   auto errors() -> std::vector<ParsingError>&;
 
   auto check(AST& ast) -> void;

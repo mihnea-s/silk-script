@@ -2,15 +2,36 @@
 
 #include <cstdint>
 #include <exception>
+#include <sstream>
 #include <string>
 #include <string_view>
-#include <tuple>
+
+#include <fmt/core.h>
+#include <fmt/format.h>
+
+#include <util/message.h>
 
 // different severity levels
 enum class Severity {
   error,
   warning,
 };
+
+// print errors
+
+template <class... Args>
+void print_error(std::string_view frmt, Args... args) {
+  fmt::print(RED BOLD "(!) Error" RESET ": ");
+  fmt::print(frmt, args...);
+  fmt::print("\n");
+}
+
+template <class... Args>
+void print_warning(std::string_view frmt, Args... args) {
+  fmt::print(YELLOW BOLD "(*) Warning" RESET ": ");
+  fmt::print(frmt, args...);
+  fmt::print("\n");
+}
 
 // ParsingErrors are used by the parser and type checker
 
@@ -84,6 +105,54 @@ struct RuntimeError : std::exception {
   const char* what() const noexcept override;
 };
 
-// pretty print functions
-auto print_error(const ParsingError& e) -> void;
-auto print_error(const RuntimeError& e) -> void;
+// extend fmt::format to be able to output
+// silk's error types
+
+template <>
+struct fmt::formatter<ParsingError> {
+  template <typename ParseContext>
+  constexpr auto parse(ParseContext& ctx) {
+    return ctx.begin();
+  }
+
+  template <typename FormatContext>
+  auto format(const ParsingError& err, FormatContext& ctx) {
+    std::ostringstream msg {};
+
+    switch (err.severity()) {
+      case Severity::error: {
+        msg << BOLD RED "(!) Error" RESET ": parsing error\n";
+        break;
+      }
+      case Severity::warning: {
+        msg << BOLD YELLOW "(*) Warning" RESET ": parsing error\n";
+        break;
+      }
+    }
+
+    msg << "\t" << BOLD "where" RESET ": line " BLUE << err.line()
+        << RESET ", column " BLUE << err.column() << RESET "\n";
+
+    msg << "\t" << BOLD "what" RESET ": " << err.what() << RESET "\n";
+
+    return fmt::format_to(ctx.out(), "{}", msg.str());
+  }
+};
+
+template <>
+struct fmt::formatter<RuntimeError> {
+  template <typename ParseContext>
+  constexpr auto parse(ParseContext& ctx) {
+    return ctx.begin();
+  }
+
+  template <typename FormatContext>
+  auto format(const RuntimeError& err, FormatContext& ctx) {
+    std::ostringstream msg {};
+
+    msg << BOLD RED "(!) Error" RESET ": runtime error\n";
+    msg << "\t" << BOLD "what" RESET ": " << err.what() << RESET "\n";
+
+    return fmt::format_to(ctx.out(), "{}", msg.str());
+  }
+};

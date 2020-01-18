@@ -5,19 +5,17 @@
 #include <string>
 #include <vector>
 
-#include <silk/ast/ast.h>
-#include <silk/ast/expr.h>
-#include <silk/ast/stmt.h>
-#include <silk/ast/token.h>
-
-#include <silk/error.h>
-
-#include <silk/runtime/abstract/obj.h>
-#include <silk/runtime/functions.h>
-#include <silk/runtime/interpreter.h>
-#include <silk/runtime/primitives.h>
-#include <silk/runtime/stdlib.h>
-#include <silk/runtime/structs.h>
+#include <silk/common/error.h>
+#include <silk/common/token.h>
+#include <silk/interpreter/ast/ast.h>
+#include <silk/interpreter/ast/expr.h>
+#include <silk/interpreter/ast/stmt.h>
+#include <silk/interpreter/interfaces/obj.h>
+#include <silk/interpreter/runtime/functions.h>
+#include <silk/interpreter/runtime/interpreter.h>
+#include <silk/interpreter/runtime/primitives.h>
+#include <silk/interpreter/runtime/stdlib.h>
+#include <silk/interpreter/runtime/structs.h>
 
 auto Interpreter::Environment::pop() -> void {
   _current = _scopes.top();
@@ -423,8 +421,12 @@ auto Interpreter::execute(const Stmt::ExprStmt& e) -> std::nullptr_t {
   return nullptr;
 }
 
-auto Interpreter::has_error() -> bool {
+auto Interpreter::has_error() const -> bool {
   return !_errors.empty();
+}
+
+auto Interpreter::clear_errors() -> void {
+  _errors.clear();
 }
 
 auto Interpreter::errors() -> std::vector<RuntimeError>& {

@@ -10,12 +10,12 @@
 
 #include <fmt/core.h>
 
-#include <silk/error.h>
-#include <silk/runtime/abstract/obj.h>
-#include <silk/runtime/functions.h>
-#include <silk/runtime/primitives.h>
-#include <silk/runtime/stdlib.h>
-#include <silk/runtime/structs.h>
+#include <silk/common/error.h>
+#include <silk/interpreter/interfaces/obj.h>
+#include <silk/interpreter/runtime/functions.h>
+#include <silk/interpreter/runtime/primitives.h>
+#include <silk/interpreter/runtime/stdlib.h>
+#include <silk/interpreter/runtime/structs.h>
 
 using Fct = std::function<ObjectPtr(std::vector<ObjectPtr>&)>;
 

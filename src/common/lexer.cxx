@@ -2,9 +2,9 @@
 #include <string>
 #include <string_view>
 
-#include <silk/ast/token.h>
-#include <silk/error.h>
-#include <silk/lexer.h>
+#include <silk/common/error.h>
+#include <silk/common/lexer.h>
+#include <silk/common/token.h>
 
 // textual representation of keywords
 const std::map<std::string_view, TokenType> Lexer::_keywords {

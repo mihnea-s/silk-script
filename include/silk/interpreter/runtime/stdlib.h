@@ -1,6 +1,7 @@
 #pragma once
 
-#include "abstract/obj.h"
+#include "../interfaces/obj.h"
+
 #include "interpreter.h"
 
 // the stdlib includes functions written in C++ that

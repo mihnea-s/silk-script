@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
+#include "../../common/token.h"
 #include "expr_decl.h"
 #include "stmt_decl.h"
-#include "token.h"
 
 namespace Stmt {
 

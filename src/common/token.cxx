@@ -1,6 +1,6 @@
 #include <cstdint>
 
-#include <silk/ast/token.h>
+#include <silk/common/token.h>
 
 // Token getters
 

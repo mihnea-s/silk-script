@@ -6,12 +6,12 @@
 #include <fmt/core.h>
 #include <fmt/format.h>
 
-#include <silk/analyzers/checker.h>
-#include <silk/ast/ast.h>
-#include <silk/ast/expr.h>
-#include <silk/ast/stmt.h>
-#include <silk/ast/token.h>
-#include <silk/error.h>
+#include <silk/common/error.h>
+#include <silk/common/token.h>
+#include <silk/interpreter/analyzers/checker.h>
+#include <silk/interpreter/ast/ast.h>
+#include <silk/interpreter/ast/expr.h>
+#include <silk/interpreter/ast/stmt.h>
 
 auto Checker::add_error(const std::string& msg) -> void {
   _errors.push_back(ParsingError {
@@ -193,8 +193,12 @@ auto Checker::execute(const Stmt::ExprStmt& e) -> std::nullptr_t {
   return nullptr;
 }
 
-auto Checker::has_error() -> bool {
+auto Checker::has_error() const -> bool {
   return !_errors.empty();
+}
+
+auto Checker::clear_errors() -> void {
+  _errors.clear();
 }
 
 auto Checker::errors() -> std::vector<ParsingError>& {

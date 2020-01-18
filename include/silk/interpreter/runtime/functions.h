@@ -5,10 +5,9 @@
 #include <vector>
 
 #include "../ast/stmt.h"
+#include "../interfaces/obj.h"
 
 #include "interpreter.h"
-
-#include "abstract/obj.h"
 
 struct Interpreter;
 

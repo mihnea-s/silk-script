@@ -3,11 +3,11 @@
 #include <variant>
 #include <vector>
 
-#include <silk/analyzers/parser.h>
-#include <silk/ast/expr.h>
-#include <silk/ast/stmt.h>
-#include <silk/ast/token.h>
-#include <silk/error.h>
+#include <silk/common/error.h>
+#include <silk/common/token.h>
+#include <silk/interpreter/analyzers/parser.h>
+#include <silk/interpreter/ast/expr.h>
+#include <silk/interpreter/ast/stmt.h>
 
 const std::vector<std::string> Parser::restricted_names {
   "own", // this instance
@@ -800,10 +800,14 @@ auto Parser::program() -> std::vector<Stmt::Stmt> {
   return std::move(stmts);
 }
 
-// error getters
+// error functions
 
 auto Parser::has_error() const -> bool {
   return !_errors.empty();
+}
+
+auto Parser::clear_errors() -> void {
+  _errors.clear();
 }
 
 auto Parser::errors() const -> const std::vector<ParsingError>& {

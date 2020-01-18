@@ -1,22 +1,13 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdlib>
-#include <exception>
-#include <functional>
-#include <initializer_list>
-#include <iterator>
-#include <memory>
 #include <string_view>
-#include <utility>
-#include <variant>
 #include <vector>
 
+#include "../../common/error.h"
+#include "../../common/token.h"
 #include "../ast/ast.h"
 #include "../ast/expr.h"
 #include "../ast/stmt.h"
-#include "../ast/token.h"
-#include "../error.h"
 
 /* silk scripts's grammar
 
@@ -220,6 +211,7 @@ struct Parser {
   public:
   // error public methods
   auto has_error() const -> bool;
+  auto clear_errors() -> void;
   auto errors() const -> const std::vector<ParsingError>&;
 
   // public interface for parsing

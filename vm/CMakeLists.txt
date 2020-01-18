@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.11)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
-set(VM_SRC 
+set(VM_SRC
   source/vm/chunk.c
   source/vm/constants.c
   source/vm/disas.c
@@ -16,7 +16,7 @@ project(SilkVM LANGUAGES C)
 
 add_library(silkvm STATIC ${VM_SRC})
 
-add_executable(silkvm-exe 
+add_executable(silkvm-exe
   source/main.c
 
   source/util/cli.c

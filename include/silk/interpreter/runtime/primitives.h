@@ -6,12 +6,10 @@
 #include <optional>
 #include <vector>
 
-#include "../error.h"
-
+#include "../../common/error.h"
 #include "../ast/expr.h"
 #include "../ast/stmt.h"
-
-#include "abstract/obj.h"
+#include "../interfaces/obj.h"
 
 namespace obj {
 

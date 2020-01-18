@@ -1,10 +1,10 @@
 #include <cstdint>
 #include <string>
 
-#include <silk/ast/stmt.h>
-#include <silk/runtime/functions.h>
-#include <silk/runtime/interpreter.h>
-#include <silk/runtime/primitives.h>
+#include <silk/interpreter/ast/stmt.h>
+#include <silk/interpreter/runtime/functions.h>
+#include <silk/interpreter/runtime/interpreter.h>
+#include <silk/interpreter/runtime/primitives.h>
 
 // Function ---------------------------
 

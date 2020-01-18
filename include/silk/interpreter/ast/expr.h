@@ -3,12 +3,11 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <variant>
 #include <vector>
 
+#include "../../common/token.h"
 #include "expr_decl.h"
 #include "stmt_decl.h"
-#include "token.h"
 
 // the structs in this namespace
 // only hold data, they have no behaviour

@@ -6,8 +6,8 @@
 
 #include "../ast/expr.h"
 #include "../ast/stmt.h"
+#include "../interfaces/obj.h"
 
-#include "abstract/obj.h"
 #include "interpreter.h"
 
 struct Struct : Object, Callable {

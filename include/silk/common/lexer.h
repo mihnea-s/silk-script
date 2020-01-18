@@ -9,8 +9,8 @@
 #include <variant>
 #include <vector>
 
-#include "ast/token.h"
 #include "error.h"
+#include "token.h"
 
 // the lexer is tasked with splitting the program source code into easily
 // digestible logical tokens and settling ambiguity between operators (e.g.
