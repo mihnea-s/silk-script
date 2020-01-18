@@ -1,3 +1,4 @@
+#include "fmt/core.h"
 #include <cassert>
 #include <memory>
 #include <regex>
@@ -38,8 +39,8 @@ auto Interpreter::Environment::save_scope() -> std::shared_ptr<Scope> {
   return _current;
 }
 
-auto Interpreter::Environment::define(
-  const std::string& name, ObjectPtr& value) -> void {
+auto Interpreter::Environment::define(const std::string& name, ObjectPtr& value)
+  -> void {
   auto new_scope = std::make_shared<Scope>(value, name, _current);
   _current       = new_scope;
 }
@@ -51,17 +52,13 @@ ObjectPtr Interpreter::Environment::get(const std::string& name) {
     searched = searched->parent;
   }
 
-  if (!searched) {
-    throw RuntimeError {
-      "use of undefined variable",
-    };
-  }
+  if (!searched) { throw RuntimeError {"use of undefined variable"}; }
 
   return searched->value;
 }
 
-ObjectPtr Interpreter::Environment::assign(
-  const std::string& name, ObjectPtr& value) {
+ObjectPtr
+Interpreter::Environment::assign(const std::string& name, ObjectPtr& value) {
   auto searched = _current;
 
   while (searched->name != name) {
@@ -261,8 +258,7 @@ auto Interpreter::evaluate(const Expr::Vid&) -> ObjectPtr {
   return obj::make<Vid>();
 }
 
-auto Interpreter::evaluate(const Expr::Assignment& assignment)
-  -> ObjectPtr {
+auto Interpreter::evaluate(const Expr::Assignment& assignment) -> ObjectPtr {
   auto val = evaluate_expr(assignment.expr);
   return _env.assign(assignment.name, val);
 }
@@ -280,8 +276,7 @@ auto Interpreter::evaluate(const Expr::Call& call) -> ObjectPtr {
   auto& callee     = obj::cast_to<Callable>(callee_obj);
 
   if (callee.arity() != -1 && call.args.size() != callee.arity()) {
-    throw RuntimeError {
-      "function called with the wrong number of arguments"};
+    throw RuntimeError {"function called with the wrong number of arguments"};
   }
 
   auto args = std::vector<ObjectPtr> {};
@@ -342,8 +337,8 @@ auto Interpreter::execute(const Stmt::Variable& var) -> std::nullptr_t {
 
 auto Interpreter::execute(const Stmt::Function& fct) -> std::nullptr_t {
   auto& body = const_cast<Stmt::Stmt&>(fct.body);
-  auto  obj  = obj::make<Function>(
-    body, fct.parameters, *this, _env, _env.save_scope());
+  auto  obj =
+    obj::make<Function>(body, fct.parameters, *this, _env, _env.save_scope());
 
   _env.define(fct.name, obj);
   return nullptr;
@@ -436,8 +431,8 @@ auto Interpreter::errors() -> std::vector<RuntimeError>& {
 auto Interpreter::interpret(AST& ast) -> void {
   try {
     ast.execute_with(*this);
-  } catch (RuntimeError e) {
+  } catch (RuntimeError& e) {
     _errors.push_back(e);
     return;
-  }
+  } catch (...) { fmt::print("caught something..?? what the fuck"); }
 }

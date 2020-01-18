@@ -19,14 +19,6 @@ constexpr const char* custom_ml_prompt_env = "SILK_REPL_ML";
 
 // helper function
 
-bool continuesOnNextLine(std::string_view sv) {
-  return (*sv.rbegin()) == '{' || (*sv.rbegin()) == '(';
-}
-
-bool endedOnCurrentLine(std::string_view sv) {
-  return (*sv.rbegin()) == '}' || (*sv.rbegin()) == ')';
-}
-
 template <class Analyzer>
 void handleErrors(Analyzer& analyzer) {
   if (analyzer.has_error()) {
@@ -39,26 +31,29 @@ void handleErrors(Analyzer& analyzer) {
 
 // print prompt
 
-void Repl::prompt(std::ostream& out) const noexcept {
-  auto custom_prompt = std::getenv(custom_prompt_env);
-
-  if (custom_prompt) {
-    out << custom_prompt << " ";
-    return;
+bool Repl::isNested(std::string_view str) noexcept {
+  for (auto& c : str) {
+    switch (c) {
+      case '(': _nesting.push(NestingType::parends); break;
+      case '{': _nesting.push(NestingType::braces); break;
+      case ')': _nesting.pop(); break;
+      case '}': _nesting.pop(); break;
+    }
   }
 
-  out << CYAN << "$>" << RESET << " ";
+  return _nesting.size() != 0;
 }
 
-void Repl::multiline_prompt(std::ostream& out) const noexcept {
+const char* Repl::prompt() const noexcept {
+  auto custom_prompt = std::getenv(custom_prompt_env);
+  if (custom_prompt) { return custom_prompt; }
+  return CYAN "$>" RESET " ";
+}
+
+const char* Repl::multiline_prompt() const noexcept {
   auto custom_prompt = std::getenv(custom_ml_prompt_env);
-
-  if (custom_prompt) {
-    out << custom_prompt << " ";
-    return;
-  }
-
-  out << CYAN << "$:" << RESET << "\t";
+  if (custom_prompt) { return custom_prompt; }
+  return CYAN "$:" RESET " ";
 }
 
 int Repl::run(std::istream& in, std::ostream& out) noexcept {
@@ -69,19 +64,15 @@ int Repl::run(std::istream& in, std::ostream& out) noexcept {
 
   auto line = std::string {};
 
-  // first prompt
-  prompt(out);
+  out << prompt();
 
   while (std::getline(in, line)) {
-    // for the lexer
-    auto line_stream = std::stringstream {line};
+    auto line_stream = std::stringstream {};
 
-    if (continuesOnNextLine(line)) {
-      while (!endedOnCurrentLine(line)) {
-        multiline_prompt(out);
-        std::getline(in, line);
-        line_stream << line;
-      }
+    while (isNested(line)) {
+      out << multiline_prompt();
+      std::getline(in, line);
+      line_stream << line << std::endl;
     }
 
     // scan
@@ -92,15 +83,15 @@ int Repl::run(std::istream& in, std::ostream& out) noexcept {
     handleErrors(parser);
 
     // type checking
-    checker.check(ast);
-    handleErrors(checker);
+    // checker.check(ast);
+    // handleErrors(checker);
 
     // finally execute the line
     interpreter.interpret(ast);
     handleErrors(interpreter);
 
-    // reprint prompt
-    prompt(out);
+    // print prompt
+    out << prompt();
   }
 
   return 0;

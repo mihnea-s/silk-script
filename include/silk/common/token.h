@@ -87,6 +87,7 @@ enum class TokenType {
 // of tokens
 
 struct Token {
+  private:
   // for brevity
   using Location = std::pair<std::uint64_t, std::uint64_t>;
 

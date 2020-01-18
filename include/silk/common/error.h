@@ -40,15 +40,15 @@ struct ParsingError : std::exception {
   // for brevity
   using Location = std::pair<std::uint64_t, std::uint64_t>;
 
-  const Severity         _severity;
-  const Location         _location;
-  const std::string_view _message;
+  const Severity    _severity;
+  const Location    _location;
+  const std::string _message;
 
   public:
   ParsingError(
-    const Severity         severity,
-    const std::string_view message,
-    const Location         location) noexcept :
+    const Severity    severity,
+    const std::string message,
+    const Location    location) noexcept :
       _severity(severity), _location(location), _message(message) {
   }
 

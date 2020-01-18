@@ -4,10 +4,6 @@ project(SilkTool)
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 set(EXECUTABLE_NAME           "silk")
 
-# conan stuff
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
-
 # silkvm
 add_subdirectory(vm)
 
@@ -46,4 +42,4 @@ set_target_properties(${EXECUTABLE_NAME} PROPERTIES
 
 target_include_directories(${EXECUTABLE_NAME} PUBLIC include vm/include)
 
-target_link_libraries(${EXECUTABLE_NAME} silkvm ${CONAN_LIBS} fmt::fmt)
+target_link_libraries(${EXECUTABLE_NAME} silkvm fmt::fmt)

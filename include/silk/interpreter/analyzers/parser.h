@@ -107,7 +107,7 @@ struct Parser {
   }
 
   // error helper
-  inline auto throw_error(std::string_view) -> void;
+  inline auto throw_error(std::string) -> void;
 
   // match function return true if the next
   // token is equal to one of their arguments
@@ -124,10 +124,10 @@ struct Parser {
   };
 
   // wrapper around match that adds a warning if match returned false
-  inline auto should_match(TokenType, std::string_view) const -> void;
+  inline auto should_match(TokenType, std::string) const -> void;
 
   // wrapper around match that adds an error if match returned false
-  inline auto must_match(TokenType, std::string_view) const -> void;
+  inline auto must_match(TokenType, std::string) const -> void;
 
   // consume function return true *and move forward* if
   // the current token is equal to one of their arguments
@@ -143,8 +143,8 @@ struct Parser {
   }
 
   // see should_match & must_match
-  inline auto should_consume(TokenType, std::string_view) -> void;
-  inline auto must_consume(TokenType, std::string_view) -> void;
+  inline auto should_consume(TokenType, std::string) -> void;
+  inline auto must_consume(TokenType, std::string) -> void;
 
   // consume the next token if it is a(n) x
   // and return the string it contains, error otherwise

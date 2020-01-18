@@ -16,9 +16,6 @@ class Lexer {
   // for brevity
   using TokensVector = std::vector<Token>;
 
-  // static map of keywords
-  static const std::map<std::string_view, TokenType> _keywords;
-
   TokensVector _tokens;
 
   // location is source file
@@ -48,6 +45,10 @@ class Lexer {
 
   // checks for compound tokens
   inline void compound(std::string_view, std::initializer_list<TokenType>);
+
+  inline TokenType matchesRest(std::string_view, std::string_view, TokenType);
+
+  inline TokenType keyword(std::string_view);
 
   // helper method to easily add tokens
   template <class... Args>

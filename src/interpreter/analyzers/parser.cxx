@@ -36,33 +36,30 @@ inline auto Parser::eof() const -> bool {
   return _tok == _end;
 }
 
-inline auto Parser::throw_error(std::string_view msg) -> void {
+inline auto Parser::throw_error(std::string msg) -> void {
   throw ParsingError {Severity::error, msg, current().location()};
 }
 
-inline auto Parser::should_match(TokenType type, std::string_view msg) const
+inline auto Parser::should_match(TokenType type, std::string msg) const
   -> void {
   if (!match(type)) {
     throw ParsingError {Severity::warning, msg, current().location()};
   }
 }
 
-inline auto Parser::must_match(TokenType type, std::string_view msg) const
-  -> void {
+inline auto Parser::must_match(TokenType type, std::string msg) const -> void {
   if (!match(type)) {
     throw ParsingError {Severity::error, msg, current().location()};
   }
 }
 
-inline auto Parser::should_consume(TokenType type, std::string_view msg)
-  -> void {
+inline auto Parser::should_consume(TokenType type, std::string msg) -> void {
   if (!consume(type)) {
     throw ParsingError {Severity::warning, msg, current().location()};
   }
 }
 
-inline auto Parser::must_consume(TokenType type, std::string_view msg)
-  -> void {
+inline auto Parser::must_consume(TokenType type, std::string msg) -> void {
   if (!consume(type)) {
     throw ParsingError {Severity::error, msg, current().location()};
   }
@@ -115,12 +112,10 @@ auto Parser::arrow() -> Stmt::Stmt {
 
   // consume final semicolon
   must_consume(
-    TokenType::sym_semicolon,
-    "expected semicolon (;) after arrow function");
+    TokenType::sym_semicolon, "expected semicolon (;) after arrow function");
 
   // return statement with ret as the returned expression
-  return mk_stmt<Stmt::Interrupt>(
-    std::move(ret), Stmt::Interrupt::Type::ret);
+  return mk_stmt<Stmt::Interrupt>(std::move(ret), Stmt::Interrupt::Type::ret);
 }
 
 auto Parser::expr_lambda() -> Expr::Expr {
@@ -164,8 +159,7 @@ auto Parser::expr_assignment() -> Expr::Expr {
       }
 
       // return expression assignment
-      return std::make_unique<Expr::Assignment>(
-        id->value, std::move(value));
+      return std::make_unique<Expr::Assignment>(id->value, std::move(value));
     } catch (std::bad_variant_access) { throw_error("invalid assignment"); }
   }
 
@@ -176,8 +170,8 @@ auto Parser::expr_assignment() -> Expr::Expr {
 auto Parser::expr_logic_or() -> Expr::Expr {
   auto left = expr_logic_and();
 
-  while (match(
-    TokenType::sym_pipe, TokenType::sym_pipepipe, TokenType::sym_caret)) {
+  while (
+    match(TokenType::sym_pipe, TokenType::sym_pipepipe, TokenType::sym_caret)) {
     auto operation = advance();
     auto right     = expr_logic_and();
 
@@ -281,8 +275,7 @@ auto Parser::expr_pow() -> Expr::Expr {
 }
 
 auto Parser::expr_unary() -> Expr::Expr {
-  if (match(
-        TokenType::sym_bang, TokenType::sym_tilde, TokenType::sym_minus)) {
+  if (match(TokenType::sym_bang, TokenType::sym_tilde, TokenType::sym_minus)) {
 
     auto tok = advance();
     return std::make_unique<Expr::Unary>(tok, std::move(expr_unary()));
@@ -322,11 +315,10 @@ auto Parser::expr_call() -> Expr::Expr {
         }
       }
 
-      callee =
-        std::make_unique<Expr::Call>(std::move(callee), std::move(args));
+      callee = std::make_unique<Expr::Call>(std::move(callee), std::move(args));
     } else if (consume(TokenType::sym_dot)) {
       auto property = identifier_str();
-      callee = std::make_unique<Expr::Get>(std::move(callee), property);
+      callee        = std::make_unique<Expr::Get>(std::move(callee), property);
     } else {
       throw_error("unexpected symbol");
     }
@@ -401,7 +393,8 @@ auto Parser::expr_identifier() -> Expr::Identifier {
   must_match(TokenType::identifier, "expected identifier");
 
   // return lexeme as the identifier
-  return Expr::Identifier {advance().lexeme()};
+  auto tok = advance();
+  return Expr::Identifier {tok.lexeme()};
 }
 
 auto Parser::stmt_main() -> Stmt::Stmt {
@@ -516,14 +509,12 @@ auto Parser::stmt_interrupt() -> Stmt::Stmt {
 
     // break statement
     case TokenType::kw_break: {
-      return mk_stmt<Stmt::Interrupt>(
-        mk_expr<Expr::Vid>(), InterruptType::brk);
+      return mk_stmt<Stmt::Interrupt>(mk_expr<Expr::Vid>(), InterruptType::brk);
     }
 
     // continue statement
     case TokenType::kw_continue: {
-      return mk_stmt<Stmt::Interrupt>(
-        mk_expr<Expr::Vid>(), InterruptType::brk);
+      return mk_stmt<Stmt::Interrupt>(mk_expr<Expr::Vid>(), InterruptType::brk);
     }
 
     // invalid case
@@ -544,8 +535,7 @@ auto Parser::stmt_return() -> Stmt::Stmt {
   // semicolon after return
   must_consume(TokenType::sym_semicolon, "expected `;` after return");
 
-  return mk_stmt<Stmt::Interrupt>(
-    std::move(ret), Stmt::Interrupt::Type::ret);
+  return mk_stmt<Stmt::Interrupt>(std::move(ret), Stmt::Interrupt::Type::ret);
 }
 
 auto Parser::stmt_block() -> Stmt::Stmt {
