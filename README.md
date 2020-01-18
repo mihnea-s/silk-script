@@ -1,4 +1,5 @@
-# 🧵🧾 The Silk scripting language
+<!-- omit in toc -->
+# The Silk scripting language
 
 ## Introduction
 
@@ -6,10 +7,12 @@ Silk Script is a small little inefficient language written as an
 exercise for myself. It is written in *mostly* modern C++, it makes liberal use
 of `std::variant`, `std::shared_ptr`s, and dynamic casts.
 
+<!-- omit in toc -->
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [Table of Contents](#table-of-contents)
+- [Command line interface](#command-line-interface)
+- [The Virtual Machine](#the-virtual-machine)
 - [Documentation](#documentation)
   - [Variables](#variables)
   - [Primitive types](#primitive-types)
@@ -22,6 +25,20 @@ of `std::variant`, `std::shared_ptr`s, and dynamic casts.
     - [Library `'std/str'`](#library-stdstr)
     - [Library `'std/data'`](#library-stddata)
 - [License](#license)
+
+## Command line interface
+
+The silk tool can compile code to silk VM bytecode or interpret it on the fly
+with it's own interpreter or an embedded instance of the silk CM.
+
+```
+(?) Help: silk usage:
+  -h, --help  ->  shows the help page
+  -c, --compile  ->  compile the files to a silk vm executable
+  -i, --interactive  ->  open a repl session after compilation
+```
+
+## The Virtual Machine
 
 ## Documentation
 
