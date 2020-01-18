@@ -68,6 +68,7 @@ int Repl::run(std::istream& in, std::ostream& out) noexcept {
 
   while (std::getline(in, line)) {
     auto line_stream = std::stringstream {};
+    line_stream << line << std::endl;
 
     while (isNested(line)) {
       out << multiline_prompt();

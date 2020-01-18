@@ -431,8 +431,8 @@ auto Interpreter::errors() -> std::vector<RuntimeError>& {
 auto Interpreter::interpret(AST& ast) -> void {
   try {
     ast.execute_with(*this);
-  } catch (RuntimeError& e) {
+  } catch (RuntimeError e) {
     _errors.push_back(e);
     return;
-  } catch (...) { fmt::print("caught something..?? what the fuck"); }
+  }
 }
