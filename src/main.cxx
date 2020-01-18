@@ -1,3 +1,4 @@
+
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -8,6 +9,8 @@
 
 #include <silk/common/error.h>
 #include <silk/interpreter/repl.h>
+#include <silk/util/cli.h>
+#include <silk/util/parameters.h>
 
 int main(const int argc, const char** argv) {
   if (argc < 2) {
@@ -15,9 +18,11 @@ int main(const int argc, const char** argv) {
     std::exit(repl.run(std::cin, std::cout));
   }
 
-  auto files = std::vector<std::string> {argv + 1, argv + argc};
+  auto params = Parameters {argc, argv};
 
-  for (auto& file : files) {
+  if (params.flag(Flag::HELP)) { print_help(); }
+
+  for (auto& file : params.files()) {
     auto file_stream = std::ifstream(file);
 
     if (!file_stream) {

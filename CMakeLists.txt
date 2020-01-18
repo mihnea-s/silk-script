@@ -1,13 +1,17 @@
 cmake_minimum_required(VERSION 3.1)
-project(SilkInterpreter)
+project(SilkTool)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
-set(EXECUTABLE_NAME silk)
+set(EXECUTABLE_NAME           "silk")
 
+# conan stuff
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 
+# silkvm
 add_subdirectory(vm)
+
+# {fmt}
 add_subdirectory(vendor/fmt-6.1.2)
 
 add_executable(${EXECUTABLE_NAME}
@@ -30,6 +34,10 @@ add_executable(${EXECUTABLE_NAME}
 
   # compiler specific
   src/compiler/compiler.cxx
+
+  # util
+  src/util/parameters.cxx
+  src/util/cli.cxx
 )
 
 set_target_properties(${EXECUTABLE_NAME} PROPERTIES
