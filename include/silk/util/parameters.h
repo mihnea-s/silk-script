@@ -11,14 +11,15 @@ enum class Flag {
   COMPILE,
   INTERACTIVE,
 
-  // used for iteration, do not touch
+  // used for iteration and counting
+  // do not touch !
   LAST,
 };
 
 struct Parameters {
   private:
-  std::bitset<2>           _bits;
-  std::vector<std::string> _files;
+  std::bitset<(size_t)Flag::LAST> _bits;
+  std::vector<std::string>        _files;
 
   auto is_param(const char*) const -> bool;
   auto is_of_param(const char*, Flag) const -> bool;
@@ -35,7 +36,7 @@ struct Parameters {
   static constexpr auto usage(Flag flag)
     -> std::pair<std::string_view, std::string_view> {
     switch (flag) {
-      case Flag::HELP: return {"-h", " --help "};
+      case Flag::HELP: return {"-h", "--help"};
       case Flag::COMPILE: return {"-c", "--compile"};
       case Flag::INTERACTIVE: return {"-i", "--interactive"};
       default: return {"?", "?"};

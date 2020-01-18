@@ -27,8 +27,6 @@ auto Parameters::flag(Flag flag) const -> bool {
 }
 
 auto Parameters::parse(const int argc, const char** argv) -> void {
-  _bits.reset();
-
   const char** arg = argv + 1;
   const char** end = argv + argc;
 
@@ -38,13 +36,16 @@ auto Parameters::parse(const int argc, const char** argv) -> void {
       continue;
     }
 
+    auto param_found = false;
+
     for (size_t fl = (size_t)Flag::HELP; fl != (size_t)Flag::LAST; fl++) {
       if (is_of_param(*arg, (Flag)fl)) {
         _bits.set(fl);
+        param_found = true;
         break;
       }
-
-      print_error("invalid parameter '{}'", *arg);
     }
+
+    if (!param_found) { print_error("invalid parameter '{}'", *arg); }
   }
 }
