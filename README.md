@@ -40,6 +40,8 @@ with it's own interpreter or an embedded instance of the silk CM.
 
 ## The Virtual Machine
 
+SilkVM is still a work in progress.
+
 ## Documentation
 
 ### Variables
