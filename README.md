@@ -78,8 +78,8 @@ which is used by logical statements (e.g. `if`, `for`).
 
 * #### Real numbers `(real)`
 
-  Real numbers can contain 64 bit floating point values of
-  arbitrary precision, reals are always truthy.
+  Real numbers can contain 64 bit floating point values, reals
+  are always truthy.
 
 * #### Strings `(str)`
 
