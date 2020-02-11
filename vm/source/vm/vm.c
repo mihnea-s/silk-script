@@ -67,5 +67,4 @@ void run(VM* vm, Chunk* cnk) {
 
 void free_vm(VM* vm) {
   free_stk(&vm->stk);
-  ;
 }
