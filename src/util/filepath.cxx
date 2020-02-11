@@ -9,7 +9,7 @@ constexpr char separator =
 #endif
   ;
 
-constexpr const char* silk_vm_extension = ".sce";
+constexpr const char* silk_vm_extension = ".sse";
 
 std::string get_file_name(std::string_view path) {
   auto start = path.find_last_of(separator);
