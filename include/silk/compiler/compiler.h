@@ -49,18 +49,18 @@ class Compiler {
   inline auto forward() -> void;
   inline auto backward() -> void;
 
-  inline auto previous() -> Token;
-
   // move forward and return previous token
   inline auto advance() -> Token;
 
-  // return current token
+  // token access
+  inline auto previous() const -> Token;
   inline auto current() const -> Token;
 
   // check end of token stream
   inline auto eof() const -> bool;
 
-  // error helper
+  // error helpers
+  inline auto error_location() const -> std::pair<std::uint64_t, std::uint64_t>;
   inline auto throw_error(std::string) -> void;
 
   // match functions return true if the next

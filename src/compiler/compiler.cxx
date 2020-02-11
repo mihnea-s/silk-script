@@ -5,6 +5,7 @@
 #include <vm/constants.h>
 #include <vm/opcode.h>
 
+#include <silk/common/error.h>
 #include <silk/common/token.h>
 #include <silk/compiler/compiler.h>
 
@@ -134,13 +135,13 @@ inline auto Compiler::backward() -> void {
   _tok--;
 }
 
-inline auto Compiler::previous() -> Token {
-  return *(_tok - 1);
-}
-
 inline auto Compiler::advance() -> Token {
   _tok++;
   return previous();
+}
+
+inline auto Compiler::previous() const -> Token {
+  return *(_tok - 1);
 }
 
 inline auto Compiler::current() const -> Token {
@@ -151,33 +152,39 @@ inline auto Compiler::eof() const -> bool {
   return _tok == _end;
 }
 
+inline auto Compiler::error_location() const
+  -> std::pair<std::uint64_t, std::uint64_t> {
+  if (eof()) return previous().location();
+  return current().location();
+}
+
 inline auto Compiler::throw_error(std::string msg) -> void {
-  throw ParsingError {Severity::error, msg, current().location()};
+  throw ParsingError {Severity::error, msg, error_location()};
 }
 
 inline auto Compiler::should_match(TokenType type, std::string msg) const
   -> void {
   if (!match(type)) {
-    throw ParsingError {Severity::warning, msg, current().location()};
+    throw ParsingError {Severity::warning, msg, error_location()};
   }
 }
 
 inline auto Compiler::must_match(TokenType type, std::string msg) const
   -> void {
   if (!match(type)) {
-    throw ParsingError {Severity::error, msg, current().location()};
+    throw ParsingError {Severity::error, msg, error_location()};
   }
 }
 
 inline auto Compiler::should_consume(TokenType type, std::string msg) -> void {
   if (!consume(type)) {
-    throw ParsingError {Severity::warning, msg, current().location()};
+    throw ParsingError {Severity::warning, msg, error_location()};
   }
 }
 
 inline auto Compiler::must_consume(TokenType type, std::string msg) -> void {
   if (!consume(type)) {
-    throw ParsingError {Severity::error, msg, current().location()};
+    throw ParsingError {Severity::error, msg, error_location()};
   }
 }
 
@@ -227,6 +234,7 @@ auto Compiler::precendece(Precedence prec) -> void {
 }
 
 auto Compiler::expression() -> void {
+  if (eof()) throw_error("expected expression");
   precendece(Precedence::ASSIGNMENT);
 }
 
@@ -339,7 +347,17 @@ auto Compiler::compile(Iter begin, Iter end) noexcept -> std::vector<Chunk> {
   this->_tok = begin;
   this->_end = end;
 
-  expression();
+  while (!eof()) {
+    try {
+      expression();
+    } catch (ParsingError& err) {
+      _errors.push_back(err);
+
+      while (!eof() && !match(TokenType::sym_semicolon)) {
+        forward();
+      }
+    }
+  }
 
   return std::move(_chunks);
 }

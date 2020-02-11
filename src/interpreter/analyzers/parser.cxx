@@ -40,32 +40,38 @@ inline auto Parser::eof() const -> bool {
   return _tok == _end;
 }
 
+inline auto Parser::error_location() const
+  -> std::pair<std::uint64_t, std::uint64_t> {
+  if (eof()) return previous().location();
+  return current().location();
+}
+
 inline auto Parser::throw_error(std::string msg) -> void {
-  throw ParsingError {Severity::error, msg, previous().location()};
+  throw ParsingError {Severity::error, msg, error_location()};
 }
 
 inline auto Parser::should_match(TokenType type, std::string msg) const
   -> void {
   if (!match(type)) {
-    throw ParsingError {Severity::warning, msg, previous().location()};
+    throw ParsingError {Severity::warning, msg, error_location()};
   }
 }
 
 inline auto Parser::must_match(TokenType type, std::string msg) const -> void {
   if (!match(type)) {
-    throw ParsingError {Severity::error, msg, previous().location()};
+    throw ParsingError {Severity::error, msg, error_location()};
   }
 }
 
 inline auto Parser::should_consume(TokenType type, std::string msg) -> void {
   if (!consume(type)) {
-    throw ParsingError {Severity::warning, msg, previous().location()};
+    throw ParsingError {Severity::warning, msg, error_location()};
   }
 }
 
 inline auto Parser::must_consume(TokenType type, std::string msg) -> void {
   if (!consume(type)) {
-    throw ParsingError {Severity::error, msg, previous().location()};
+    throw ParsingError {Severity::error, msg, error_location()};
   }
 }
 
@@ -786,7 +792,7 @@ auto Parser::program() -> std::vector<Stmt::Stmt> {
       // ..and advance past the next semicolon or end of file,
       // not perfect but it does the job
       while (!eof() && !consume(TokenType::sym_semicolon)) {
-        advance();
+        forward();
       }
     }
   }

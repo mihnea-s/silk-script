@@ -86,7 +86,7 @@ struct Parser {
   // move forward and return previous token
   inline auto advance() -> Token;
 
-  // return current token
+  // token access
   inline auto previous() const -> Token;
   inline auto current() const -> Token;
 
@@ -107,7 +107,8 @@ struct Parser {
     return std::make_unique<T>(std::forward<Args>(args)...);
   }
 
-  // error helper
+  // error helpers
+  inline auto error_location() const -> std::pair<std::uint64_t, std::uint64_t>;
   inline auto throw_error(std::string) -> void;
 
   // match function return true if the next
