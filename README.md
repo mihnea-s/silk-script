@@ -78,13 +78,13 @@ which is used by logical statements (e.g. `if`, `for`).
 
 * #### Real numbers `(real)`
 
-  Real numbers can contain 64 bit floating point values, reals
+  Real numbers contain 64 bit floating point values, reals
   are always truthy.
 
 * #### Strings `(str)`
 
   Strings contain an immutable buffer of `UTF-8` encoded
-  stream of characters. A string is truthy if it is not empty.
+  characters. A string is truthy if it is not empty.
   ([Go to Strings section](###strings))
 
 * #### Booleans `(bool)`
@@ -100,7 +100,7 @@ which is used by logical statements (e.g. `if`, `for`).
 
   Variables of callable type can be invoked with a call
   expression `myCallable()`. Callables include constructors,
-  named functions and variable bound lambda expressions.
+  named functions and variables that contain lambdas.
   They are always truthy.
 
 * #### Gettable `(gettable)`
