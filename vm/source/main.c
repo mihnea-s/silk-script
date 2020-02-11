@@ -6,20 +6,18 @@
 
 #include <util/cli.h>
 #include <util/message.h>
-#include <util/read_file.h>
+#include <vm/file_exec.h>
 #include <vm/chunk.h>
 #include <vm/disas.h>
 #include <vm/opcode.h>
 #include <vm/vm.h>
 
-int main(int argc, const char *argv[]) {
-  const char **end = argv + argc;
-  const char **arg = argv + 1;
+int main(int argc, const char* argv[]) {
+  const char** end = argv + argc;
+  const char** arg = argv + 1;
 
   while (arg != end) {
-    if (!param(*arg)) {
-      break;
-    }
+    if (!param(*arg)) { break; }
 
     if (param_str(*arg, "--help", "-h")) {
       print_hlp();
@@ -47,11 +45,12 @@ int main(int argc, const char *argv[]) {
     exit(1);
   }
 
-  int cnk_count;
-  Chunk *cnks = read_file(*arg, &cnk_count);
+  int    cnk_count;
+  const char* err = NULL;
+  Chunk* cnks = read_file(*arg, &cnk_count, &err);
 
-  if (!cnks) {
-    print_err("failed to read file");
+  if (err) {
+    print_err(err);
     exit(1);
   }
 

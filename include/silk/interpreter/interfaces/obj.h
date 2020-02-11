@@ -13,6 +13,8 @@ struct Object {
   virtual std::string string() = 0;
   virtual bool        truthy() = 0;
 
+  virtual ~Object() {}
+
   virtual ObjectPtr operator==(ObjectPtr&) = 0;
 };
 

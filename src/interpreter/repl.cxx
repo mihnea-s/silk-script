@@ -67,6 +67,8 @@ int Repl::run(std::istream& in, std::ostream& out) noexcept {
   out << prompt();
 
   while (std::getline(in, line)) {
+    if (line.compare("q") == 0) break;
+
     auto line_stream = std::stringstream {};
     line_stream << line << std::endl;
 

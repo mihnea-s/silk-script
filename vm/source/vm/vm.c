@@ -12,9 +12,9 @@
 #define CNST vm->cnk->constants.vals[NEXT]
 
 #define PUSH(val) push_stk(&vm->stk, val)
-#define POP() pop_stk(&vm->stk)
+#define POP()     pop_stk(&vm->stk)
 
-#define UNARY(op) PUSH(-POP())
+#define UNARY(op) PUSH(op POP())
 #define BINRY(op)                                                              \
   do {                                                                         \
     Value b = POP();                                                           \
@@ -27,29 +27,30 @@
   break;
 
 #define CASE(C, A)                                                             \
-  case C:                                                                      \
-    BR_AFTER(A)
+  case C: BR_AFTER(A)
 
-void init_vm(VM *vm) {
+void init_vm(VM* vm) {
   vm->cnk = NULL;
-  vm->ip = NULL;
-  vm->st = VM_OK;
+  vm->ip  = NULL;
+  vm->st  = VM_OK;
 
-  vm->stk = (Stack){};
+  vm->stk = (Stack) {};
   init_stk(&vm->stk);
 }
 
-void run(VM *vm, Chunk *cnk) {
+void run(VM* vm, Chunk* cnk) {
   vm->cnk = cnk;
-  vm->ip = cnk->codes;
+  vm->ip  = cnk->codes;
 
   for (;;) {
-    // printf("[");
-    // for (Value *slt = vm->stk.ptr; slt < vm->stk.sp; slt++) {
-    //   print_value(*slt);
-    //   if (!(slt == vm->stk.sp - 1)) printf(", ");
-    // }
-    // printf("]\n");
+#ifdef SILKVM_STRACE
+    printf("[");
+    for (Value* slt = vm->stk.ptr; slt < vm->stk.sp; slt++) {
+      print_value(*slt);
+      if (!(slt == vm->stk.sp - 1)) printf(", ");
+    }
+    printf("]\n");
+#endif
 
     uint8_t ins = NEXT;
     switch (ins) {
@@ -64,7 +65,7 @@ void run(VM *vm, Chunk *cnk) {
   }
 }
 
-void free_vm(VM *vm) {
+void free_vm(VM* vm) {
   free_stk(&vm->stk);
   ;
 }

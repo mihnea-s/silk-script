@@ -28,6 +28,10 @@ inline auto Parser::advance() -> Token {
   return tkn;
 }
 
+inline auto Parser::previous() const -> Token {
+  return *(_tok - 1);
+}
+
 inline auto Parser::current() const -> Token {
   return *_tok;
 }
@@ -37,31 +41,31 @@ inline auto Parser::eof() const -> bool {
 }
 
 inline auto Parser::throw_error(std::string msg) -> void {
-  throw ParsingError {Severity::error, msg, current().location()};
+  throw ParsingError {Severity::error, msg, previous().location()};
 }
 
 inline auto Parser::should_match(TokenType type, std::string msg) const
   -> void {
   if (!match(type)) {
-    throw ParsingError {Severity::warning, msg, current().location()};
+    throw ParsingError {Severity::warning, msg, previous().location()};
   }
 }
 
 inline auto Parser::must_match(TokenType type, std::string msg) const -> void {
   if (!match(type)) {
-    throw ParsingError {Severity::error, msg, current().location()};
+    throw ParsingError {Severity::error, msg, previous().location()};
   }
 }
 
 inline auto Parser::should_consume(TokenType type, std::string msg) -> void {
   if (!consume(type)) {
-    throw ParsingError {Severity::warning, msg, current().location()};
+    throw ParsingError {Severity::warning, msg, previous().location()};
   }
 }
 
 inline auto Parser::must_consume(TokenType type, std::string msg) -> void {
   if (!consume(type)) {
-    throw ParsingError {Severity::error, msg, current().location()};
+    throw ParsingError {Severity::error, msg, previous().location()};
   }
 }
 

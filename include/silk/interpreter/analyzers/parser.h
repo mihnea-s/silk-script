@@ -87,6 +87,7 @@ struct Parser {
   inline auto advance() -> Token;
 
   // return current token
+  inline auto previous() const -> Token;
   inline auto current() const -> Token;
 
   // check end of token stream

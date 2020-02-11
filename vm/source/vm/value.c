@@ -2,4 +2,6 @@
 
 #include <value.h>
 
-void print_value(Value v) { printf("%f", v); }
+void print_value(Value v) {
+  printf("%d", v);
+}
