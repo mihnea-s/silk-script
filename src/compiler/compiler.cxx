@@ -17,10 +17,7 @@ std::map<TokenType, Compiler::Rule> Compiler::rules = {
   {
     TokenType::sym_lround,
     {
-      .prefix  = &Compiler::expr_grouping,
-      .infix   = nullptr,
-      .postfix = nullptr,
-      .prec    = Precedence::ANY,
+      .prefix = &Compiler::expr_grouping,
     },
   },
 
@@ -31,10 +28,53 @@ std::map<TokenType, Compiler::Rule> Compiler::rules = {
   {
     TokenType::sym_bang,
     {
-      .prefix  = &Compiler::expr_unary,
-      .infix   = nullptr,
-      .postfix = nullptr,
-      .prec    = Precedence::ANY,
+      .prefix = &Compiler::expr_unary,
+    },
+  },
+
+  {
+    TokenType::sym_equalequal,
+    {
+      .infix = &Compiler::expr_binary,
+      .prec  = Precedence::EQUALITY,
+    },
+  },
+
+  {
+    TokenType::sym_bangequal,
+    {
+      .infix = &Compiler::expr_binary,
+      .prec  = Precedence::EQUALITY,
+    },
+  },
+
+  {
+    TokenType::sym_gt,
+    {
+      .infix = &Compiler::expr_binary,
+      .prec  = Precedence::COMPARISON,
+    },
+  },
+  {
+    TokenType::sym_gtequal,
+    {
+      .infix = &Compiler::expr_binary,
+      .prec  = Precedence::COMPARISON,
+    },
+  },
+
+  {
+    TokenType::sym_lt,
+    {
+      .infix = &Compiler::expr_binary,
+      .prec  = Precedence::COMPARISON,
+    },
+  },
+  {
+    TokenType::sym_ltequal,
+    {
+      .infix = &Compiler::expr_binary,
+      .prec  = Precedence::COMPARISON,
     },
   },
 
@@ -45,64 +85,51 @@ std::map<TokenType, Compiler::Rule> Compiler::rules = {
   {
     TokenType::sym_minus,
     {
-      .prefix  = &Compiler::expr_unary,
-      .infix   = &Compiler::expr_binary,
-      .postfix = nullptr,
-      .prec    = Precedence::TERM,
+      .prefix = &Compiler::expr_unary,
+      .infix  = &Compiler::expr_binary,
+      .prec   = Precedence::TERM,
     },
   },
   {
     TokenType::sym_plus,
     {
-      .prefix  = nullptr,
-      .infix   = &Compiler::expr_binary,
-      .postfix = nullptr,
-      .prec    = Precedence::TERM,
+      .infix = &Compiler::expr_binary,
+      .prec  = Precedence::TERM,
     },
   },
   {
     TokenType::sym_star,
     {
-      .prefix  = nullptr,
-      .infix   = &Compiler::expr_binary,
-      .postfix = nullptr,
-      .prec    = Precedence::FACTOR,
+      .infix = &Compiler::expr_binary,
+      .prec  = Precedence::FACTOR,
     },
   },
   {
     TokenType::sym_slash,
     {
-      .prefix  = nullptr,
-      .infix   = &Compiler::expr_binary,
-      .postfix = nullptr,
-      .prec    = Precedence::FACTOR,
+      .infix = &Compiler::expr_binary,
+      .prec  = Precedence::FACTOR,
     },
   },
   {
     TokenType::sym_starstar,
     {
-      .prefix  = nullptr,
-      .infix   = &Compiler::expr_binary,
-      .postfix = nullptr,
-      .prec    = Precedence::POWER,
+      .infix = &Compiler::expr_binary,
+      .prec  = Precedence::POWER,
     },
   },
   {
     TokenType::sym_slashslash,
     {
-      .prefix  = nullptr,
-      .infix   = &Compiler::expr_binary,
-      .postfix = nullptr,
-      .prec    = Precedence::FACTOR,
+      .infix = &Compiler::expr_binary,
+      .prec  = Precedence::FACTOR,
     },
   },
   {
     TokenType::sym_percent,
     {
-      .prefix  = nullptr,
-      .infix   = &Compiler::expr_binary,
-      .postfix = nullptr,
-      .prec    = Precedence::FACTOR,
+      .infix = &Compiler::expr_binary,
+      .prec  = Precedence::FACTOR,
     },
   },
 
@@ -113,60 +140,42 @@ std::map<TokenType, Compiler::Rule> Compiler::rules = {
   {
     TokenType::literal_int,
     {
-      .prefix  = &Compiler::literal_integer,
-      .infix   = nullptr,
-      .postfix = nullptr,
-      .prec    = Precedence::ANY,
+      .prefix = &Compiler::literal_integer,
     },
   },
 
   {
     TokenType::literal_dbl,
     {
-      .prefix  = &Compiler::literal_double,
-      .infix   = nullptr,
-      .postfix = nullptr,
-      .prec    = Precedence::ANY,
+      .prefix = &Compiler::literal_double,
     },
   },
 
   {
     TokenType::kw_true,
     {
-      .prefix  = &Compiler::literal_bool,
-      .infix   = nullptr,
-      .postfix = nullptr,
-      .prec    = Precedence::ANY,
+      .prefix = &Compiler::literal_bool,
     },
   },
 
   {
     TokenType::kw_false,
     {
-      .prefix  = &Compiler::literal_bool,
-      .infix   = nullptr,
-      .postfix = nullptr,
-      .prec    = Precedence::ANY,
+      .prefix = &Compiler::literal_bool,
     },
   },
 
   {
     TokenType::literal_str,
     {
-      .prefix  = &Compiler::literal_string,
-      .infix   = nullptr,
-      .postfix = nullptr,
-      .prec    = Precedence::ANY,
+      .prefix = &Compiler::literal_string,
     },
   },
 
   {
     TokenType::kw_vid,
     {
-      .prefix  = &Compiler::literal_vid,
-      .infix   = nullptr,
-      .postfix = nullptr,
-      .prec    = Precedence::ANY,
+      .prefix = &Compiler::literal_vid,
     },
   }
 
@@ -313,40 +322,22 @@ auto Compiler::expr_binary() -> void {
   precendece(higher(rule.prec));
 
   switch (type) {
-    case TokenType::sym_plus: {
-      emit(VM_ADD);
-      break;
-    }
+    // arithmetic
+    case TokenType::sym_plus: return emit(VM_ADD);
+    case TokenType::sym_minus: return emit(VM_SUB);
+    case TokenType::sym_star: return emit(VM_MUL);
+    case TokenType::sym_slash: return emit(VM_DIV);
+    case TokenType::sym_starstar: return emit(VM_POW);
+    case TokenType::sym_slashslash: return emit(VM_RIV);
+    case TokenType::sym_percent: return emit(VM_MOD);
 
-    case TokenType::sym_minus: {
-      emit(VM_SUB);
-      break;
-    }
-
-    case TokenType::sym_star: {
-      emit(VM_MUL);
-      break;
-    }
-
-    case TokenType::sym_slash: {
-      emit(VM_DIV);
-      break;
-    }
-
-    case TokenType::sym_starstar: {
-      emit(VM_POW);
-      break;
-    }
-
-    case TokenType::sym_slashslash: {
-      emit(VM_RIV);
-      break;
-    }
-
-    case TokenType::sym_percent: {
-      emit(VM_MOD);
-      break;
-    }
+    // logic
+    case TokenType::sym_equalequal: return emit(VM_EQ);
+    case TokenType::sym_bangequal: return emit(VM_NEQ);
+    case TokenType::sym_gt: return emit(VM_GT);
+    case TokenType::sym_gtequal: return emit(VM_GTE);
+    case TokenType::sym_lt: return emit(VM_LT);
+    case TokenType::sym_ltequal: return emit(VM_LTE);
 
     default: {
       throw_error("invalid binary expression");

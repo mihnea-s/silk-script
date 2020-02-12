@@ -85,6 +85,13 @@ void run(VM* vm, Program* prog) {
       CASE(VM_VID, PUSH(VID_VAL));
       CASE(VM_TRU, PUSH(BOOL_VAL(true)));
       CASE(VM_FAL, PUSH(BOOL_VAL(false)));
+
+      CASE(VM_EQ, BINRY(==));
+      CASE(VM_NEQ, BINRY(!=));
+      CASE(VM_GT, BINRY(>));
+      CASE(VM_LT, BINRY(<));
+      CASE(VM_GTE, BINRY(>=));
+      CASE(VM_LTE, BINRY(<=));
     }
   }
 }

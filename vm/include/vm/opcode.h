@@ -27,6 +27,13 @@ typedef enum {
   VM_TRU, // true
   VM_FAL, // false
 
+  VM_EQ,  // equal
+  VM_NEQ, // not equal
+  VM_GT,  // greater than
+  VM_LT,  // less than
+  VM_GTE, // greater than equal
+  VM_LTE, // less than equal
+
 } OpCode;
 
 #ifdef __cplusplus

@@ -44,6 +44,14 @@ size_t instruction(Chunk* cnk, size_t ofst) {
     case VM_TRU: return single(ofst, "TRU");
     case VM_FAL: return single(ofst, "FAL");
 
+    case VM_EQ: return single(ofst, "EQ");
+    case VM_NEQ: return single(ofst, "NEQ");
+    case VM_GT: return single(ofst, "GT");
+    case VM_LT: return single(ofst, "LT");
+
+    case VM_GTE: return single(ofst, "GTE");
+    case VM_LTE: return single(ofst, "LTE");
+
     default: return single(ofst, "???");
   }
 };
