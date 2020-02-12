@@ -35,11 +35,11 @@ class Compiler {
   };
 
   struct Rule {
-    using CompileFN = void (Compiler::*)(void);
-    CompileFN  prefix;
-    CompileFN  infix;
-    CompileFN  postfix;
-    Precedence prec;
+    using CompileFN    = void (Compiler::*)(void);
+    CompileFN  prefix  = nullptr;
+    CompileFN  infix   = nullptr;
+    CompileFN  postfix = nullptr;
+    Precedence prec    = Precedence::ANY;
   };
 
   static std::map<TokenType, Rule> rules;

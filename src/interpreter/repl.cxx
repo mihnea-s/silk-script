@@ -67,7 +67,14 @@ int Repl::run(std::istream& in, std::ostream& out) noexcept {
   out << prompt();
 
   while (std::getline(in, line)) {
-    if (line.compare("q") == 0) break;
+    if (line.size() > 1 && line.at(0) == '/') {
+      switch (line.at(1)) {
+        case 'q': return 0;
+        case 'p': out << line.substr(3); break;
+      }
+
+      continue;
+    }
 
     auto line_stream = std::stringstream {};
     line_stream << line << std::endl;
