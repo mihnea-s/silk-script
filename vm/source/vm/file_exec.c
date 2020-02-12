@@ -68,7 +68,7 @@ static const char* footer = "SVMEND";
         }                                                                      \
                                                                                \
         long str_len = ftell(f) - start;                                       \
-        fseek(f, SEEK_SET, start);                                             \
+        fseek(f, start, SEEK_SET);                                             \
         char* str = memory(NULL, 0, str_len);                                  \
         fread(str, sizeof(char), str_len, f);                                  \
                                                                                \
