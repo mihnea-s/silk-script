@@ -9,6 +9,7 @@ extern "C" {
 #include <stdint.h>
 
 typedef enum {
+  T_VID,
   T_INT,
   T_REAL,
   T_BOOL,
@@ -25,6 +26,7 @@ typedef struct {
   } as;
 } Value;
 
+#define IS_VID(val)  val.type == T_VID
 #define IS_INT(val)  val.type == T_INT
 #define IS_REAL(val) val.type == T_REAL
 #define IS_BOOL(val) val.type == T_BOOL

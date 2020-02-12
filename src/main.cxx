@@ -7,8 +7,6 @@
 #include <fmt/core.h>
 #include <fmt/format.h>
 
-#include <vm/file_exec.h>
-
 #include <silk/common/error.h>
 #include <silk/common/lexer.h>
 #include <silk/compiler/compiler.h>
@@ -78,7 +76,7 @@ int main(const int argc, const char** argv) {
     } else {
       // compile to vm bytecode
       auto compiler = Compiler {};
-      auto chunks   = compiler.compile(begin(tokens), end(tokens));
+      compiler.compile(begin(tokens), end(tokens));
 
       if (compiler.has_error()) {
         for (const auto& error : compiler.errors()) {
@@ -89,13 +87,13 @@ int main(const int argc, const char** argv) {
       }
 
       const auto file_name = get_file_name(file);
+      compiler.write_to_file(file_name);
 
-      const char* error = nullptr;
+      if (compiler.has_error()) {
+        for (const auto& error : compiler.errors()) {
+          std::cout << fmt::format("{}", error);
+        }
 
-      write_file(file_name.c_str(), chunks.data(), chunks.size(), &error);
-
-      if (error) {
-        print_error(error);
         return 1;
       }
     }

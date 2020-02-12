@@ -67,13 +67,13 @@ void run(VM* vm, Chunk* cnk) {
 
     uint8_t ins = NEXT;
     switch (ins) {
-      CASE(RET, return );
-      CASE(VAL, PUSH(CNST));
-      CASE(NEG, UNARY(-));
-      CASE(ADD, BINRY(+));
-      CASE(SUB, BINRY(-));
-      CASE(MUL, BINRY(*));
-      CASE(DIV, BINRY(/));
+      CASE(VM_RET, return );
+      CASE(VM_VAL, PUSH(CNST));
+      CASE(VM_NEG, UNARY(-));
+      CASE(VM_ADD, BINRY(+));
+      CASE(VM_SUB, BINRY(-));
+      CASE(VM_MUL, BINRY(*));
+      CASE(VM_DIV, BINRY(/));
     }
   }
 }

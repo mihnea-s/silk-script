@@ -112,10 +112,6 @@ class Compiler {
   // constants functions
 
   inline auto cnst(Value) -> void;
-  inline auto cnst(std::int32_t) -> void;
-  inline auto cnst(double) -> void;
-  inline auto cnst(bool) -> void;
-  inline auto cnst(const std::string&) -> void;
 
   // Pratt Parser functions
   auto get_rule(TokenType) -> Rule&;
@@ -136,6 +132,7 @@ class Compiler {
   auto literal_double() -> void;
   auto literal_bool() -> void;
   auto literal_string() -> void;
+  auto literal_vid() -> void;
 
   public:
   // error public methods
@@ -144,7 +141,8 @@ class Compiler {
   auto errors() const -> const std::vector<ParsingError>&;
 
   // compile entrypoint
-  auto compile(Iter begin, Iter end) noexcept -> std::vector<Chunk>&;
+  auto compile(Iter begin, Iter end) noexcept -> void;
+  auto write_to_file(std::string_view) noexcept -> void;
 
   ~Compiler() {
     free_chunks();

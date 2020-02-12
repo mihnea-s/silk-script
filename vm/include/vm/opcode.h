@@ -8,21 +8,23 @@ extern "C" {
 #include <stddef.h>
 
 typedef enum {
-  RET, // return
-  VAL, // load value
+  VM_RET, // return
+  VM_VAL, // load value
 
-  NEG, // negation
+  VM_NEG, // negation
 
-  ADD, // addition
-  SUB, // subtraction
-  DIV, // float division
-  MUL, // multiplication
-  RIV, // round division
-  POW, // power
-  MOD, // modulo
+  VM_ADD, // addition
+  VM_SUB, // subtraction
+  VM_DIV, // float division
+  VM_MUL, // multiplication
+  VM_RIV, // round division
+  VM_POW, // power
+  VM_MOD, // modulo
 
-  NOP, // no operation
-  VID, // vid
+  VM_NOP, // no operation
+  VM_VID, // vid
+  VM_TRU, // true
+  VM_FAL, // false
 
 } OpCode;
 

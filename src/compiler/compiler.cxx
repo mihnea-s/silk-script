@@ -3,6 +3,7 @@
 
 #include <vm/chunk.h>
 #include <vm/constants.h>
+#include <vm/file_exec.h>
 #include <vm/mem.h>
 #include <vm/opcode.h>
 
@@ -145,6 +146,16 @@ std::map<TokenType, Compiler::Rule> Compiler::rules = {
     },
   },
 
+  {
+    TokenType::kw_vid,
+    {
+      .prefix  = &Compiler::literal_vid,
+      .infix   = nullptr,
+      .postfix = nullptr,
+      .prec    = Precedence::ANY,
+    },
+  }
+
   // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-
 };
 
@@ -219,47 +230,9 @@ inline auto Compiler::current_chunk() -> Chunk* {
 
 auto Compiler::cnst(Value value) -> void {
   auto cnk = current_chunk();
-  write_ins(cnk, VAL);
+  write_ins(cnk, VM_VAL);
   write_ins(cnk, cnk->constants.len);
   write_constant(&cnk->constants, value);
-}
-
-inline auto Compiler::cnst(std::int32_t value) -> void {
-  auto val = Value {
-    .type       = T_INT,
-    .as.integer = value,
-  };
-
-  cnst(val);
-}
-
-inline auto Compiler::cnst(double value) -> void {
-  auto val = Value {
-    .type    = T_REAL,
-    .as.real = value,
-  };
-
-  cnst(val);
-}
-
-inline auto Compiler::cnst(bool value) -> void {
-  auto val = Value {
-    .type       = T_BOOL,
-    .as.boolean = value,
-  };
-
-  cnst(val);
-}
-
-inline auto Compiler::cnst(const std::string& value) -> void {
-  auto str = (char*)memory(NULL, 0, value.size());
-  memcpy(str, value.c_str(), value.size());
-  auto val = Value {
-    .type      = T_STR,
-    .as.string = str,
-  };
-
-  cnst(val);
 }
 
 auto Compiler::emit(std::uint8_t byte) -> void {
@@ -304,7 +277,7 @@ auto Compiler::expr_unary() -> void {
 
   switch (type) {
     case TokenType::sym_minus: {
-      emit(NEG);
+      emit(VM_NEG);
       break;
     }
 
@@ -322,37 +295,37 @@ auto Compiler::expr_binary() -> void {
 
   switch (type) {
     case TokenType::sym_plus: {
-      emit(ADD);
+      emit(VM_ADD);
       break;
     }
 
     case TokenType::sym_minus: {
-      emit(SUB);
+      emit(VM_SUB);
       break;
     }
 
     case TokenType::sym_star: {
-      emit(MUL);
+      emit(VM_MUL);
       break;
     }
 
     case TokenType::sym_slash: {
-      emit(DIV);
+      emit(VM_DIV);
       break;
     }
 
     case TokenType::sym_starstar: {
-      emit(POW);
+      emit(VM_POW);
       break;
     }
 
     case TokenType::sym_slashslash: {
-      emit(RIV);
+      emit(VM_RIV);
       break;
     }
 
     case TokenType::sym_percent: {
-      emit(MOD);
+      emit(VM_MOD);
       break;
     }
 
@@ -369,24 +342,44 @@ auto Compiler::expr_grouping() -> void {
 
 auto Compiler::literal_integer() -> void {
   auto tok = advance();
-  auto val = std::atoi(tok.lexeme().c_str());
+  auto val = Value {
+    .type       = T_INT,
+    .as.integer = std::atoi(tok.lexeme().c_str()),
+  };
+
   cnst(val);
 }
 
 auto Compiler::literal_double() -> void {
   auto tok = advance();
-  auto val = std::atof(tok.lexeme().c_str());
+  auto val = Value {
+    .type    = T_REAL,
+    .as.real = std::atof(tok.lexeme().c_str()),
+  };
+
   cnst(val);
 }
 
 auto Compiler::literal_bool() -> void {
-  auto tok = advance();
-  cnst(tok.type() == TokenType::kw_true);
+  auto booleanValue = advance().type() == TokenType::kw_true;
+  emit(booleanValue ? VM_TRU : VM_FAL);
 }
 
 auto Compiler::literal_string() -> void {
   auto tok = advance();
-  cnst(tok.lexeme());
+  auto str = (char*)memory(NULL, 0, tok.lexeme().size());
+  memcpy(str, tok.lexeme().c_str(), tok.lexeme().size());
+  auto val = Value {
+    .type      = T_STR,
+    .as.string = str,
+  };
+
+  cnst(val);
+}
+
+auto Compiler::literal_vid() -> void {
+  advance();
+  emit(VM_VID);
 }
 
 // error functions
@@ -405,7 +398,7 @@ auto Compiler::errors() const -> const std::vector<ParsingError>& {
 
 // public compile function
 
-auto Compiler::compile(Iter begin, Iter end) noexcept -> std::vector<Chunk>& {
+auto Compiler::compile(Iter begin, Iter end) noexcept -> void {
   free_chunks();
   _chunks.clear();
 
@@ -423,6 +416,10 @@ auto Compiler::compile(Iter begin, Iter end) noexcept -> std::vector<Chunk>& {
       }
     }
   }
+}
 
-  return _chunks;
+auto Compiler::write_to_file(std::string_view file) noexcept -> void {
+  const char* err = nullptr;
+  write_file(file.data(), _chunks.data(), _chunks.size(), &err);
+  if (err) { _errors.push_back(ParsingError {Severity::error, err, {0, 0}}); }
 }

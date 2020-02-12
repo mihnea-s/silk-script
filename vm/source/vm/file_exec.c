@@ -25,16 +25,16 @@ static const char* footer = "SVMEND";
 #define SET_ERR(to_what)                                                       \
   if (err) { *err = to_what; }
 
-#define NULL_ON_EOF                                                            \
+#define ERR_ON_EOF                                                             \
   if (feof(f)) {                                                               \
     SET_ERR("malformed silk executable");                                      \
     return NULL;                                                               \
   }
 
-#define READ_BYTE_IN(x) NULL_ON_EOF uint8_t x = getc(f);
+#define READ_BYTE_IN(x) ERR_ON_EOF uint8_t x = getc(f);
 
 #define READ_WORD_IN(x)                                                        \
-  NULL_ON_EOF uint16_t x;                                                      \
+  ERR_ON_EOF uint16_t x;                                                       \
   fread(&x, sizeof(uint16_t), 1, f);
 
 #define READ_VALUE_IN(v)                                                       \
@@ -73,6 +73,10 @@ static const char* footer = "SVMEND";
         fread(str, sizeof(char), str_len, f);                                  \
                                                                                \
         v.as.string = str;                                                     \
+        break;                                                                 \
+      }                                                                        \
+                                                                               \
+      case T_VID: {                                                            \
         break;                                                                 \
       }                                                                        \
     }                                                                          \
@@ -152,6 +156,10 @@ Chunk* read_file(const char* file, int* count, const char** err) {
         fwrite(c.as.string, sizeof(char), strlen(c.as.string), f);             \
         int null_byte = 0x0;                                                   \
         WRITE_BYTE(null_byte);                                                 \
+        break;                                                                 \
+      }                                                                        \
+                                                                               \
+      case T_VID: {                                                            \
         break;                                                                 \
       }                                                                        \
     }                                                                          \
