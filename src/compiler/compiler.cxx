@@ -386,8 +386,10 @@ auto Compiler::literal_bool() -> void {
 
 auto Compiler::literal_string() -> void {
   auto tok = advance();
-  auto str = (char*)memory(NULL, 0, tok.lexeme().size());
+  auto str = (char*)memory(NULL, 0, tok.lexeme().size() + 1);
   memcpy(str, tok.lexeme().c_str(), tok.lexeme().size());
+  str[tok.lexeme().size()] = '\0';
+
   auto val = Value {
     .type      = T_STR,
     .as.string = str,
