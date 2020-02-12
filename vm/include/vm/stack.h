@@ -18,11 +18,12 @@ typedef struct {
   Value* sp;
 } Stack;
 
-void  init_stk(Stack* stk);
-void  push_stk(Stack* stk, Value);
-Value pop_stk(Stack* stk);
-void  reset_stk(Stack* stk);
-void  free_stk(Stack* stk);
+void   init_stk(Stack* stk);
+void   push_stk(Stack* stk, Value);
+Value* pop_stk(Stack* stk);
+Value* peek_stk(Stack* stk, size_t dist);
+void   reset_stk(Stack* stk);
+void   free_stk(Stack* stk);
 
 #ifdef __cplusplus
 }

@@ -20,19 +20,19 @@
   do {                                                                         \
     Value res = {                                                              \
       .type       = T_REAL,                                                    \
-      .as.integer = op POP().as.integer,                                       \
+      .as.integer = op POP()->as.integer,                                      \
     };                                                                         \
     PUSH(res);                                                                 \
   } while (false)
 
 #define BINRY(op)                                                              \
   do {                                                                         \
-    Value b   = POP();                                                         \
-    Value a   = POP();                                                         \
-    Value res = {                                                              \
-      .type       = T_INT,                                                     \
-      .as.integer = a.as.integer op b.as.integer,                              \
-    };                                                                         \
+    Value* b   = POP();                                                        \
+    Value* a   = POP();                                                        \
+    Value  res = {                                                             \
+      .type       = T_INT,                                                    \
+      .as.integer = a->as.integer op b->as.integer,                           \
+    };                                                                        \
     PUSH(res);                                                                 \
   } while (false)
 
@@ -46,10 +46,6 @@ void init_vm(VM* vm) {
 
   vm->stk = (Stack) {};
   init_stk(&vm->stk);
-}
-
-Value* peek(VM* vm, unsigned int distance) {
-  return vm->stk.sp - distance;
 }
 
 void run(VM* vm, Program* prog) {
@@ -75,7 +71,7 @@ void run(VM* vm, Program* prog) {
       CASE(VM_VAL, PUSH(CNST));
 
       CASE(VM_NEG, UNARY(-));
-      CASE(VM_NOT, UNARY(!));
+      CASE(VM_NOT, PUSH(BOOL_VAL(falsy(POP()))));
 
       CASE(VM_ADD, BINRY(+));
       CASE(VM_SUB, BINRY(-));
