@@ -9,6 +9,7 @@
 enum class Flag {
   HELP,
   COMPILE,
+  DEBUG,
   INTERACTIVE,
 
   // used for iteration and counting
@@ -38,6 +39,7 @@ struct Parameters {
     switch (flag) {
       case Flag::HELP: return {"-h", "--help"};
       case Flag::COMPILE: return {"-c", "--compile"};
+      case Flag::DEBUG: return {"-d", "--debug"};
       case Flag::INTERACTIVE: return {"-i", "--interactive"};
       default: return {"?", "?"};
     }

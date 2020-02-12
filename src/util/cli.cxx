@@ -11,7 +11,8 @@ constexpr auto param_help(Flag flag) -> std::string_view {
   switch (flag) {
     case Flag::HELP: return "shows the help page";
     case Flag::COMPILE: return "compile the files to a silk vm executable";
-    case Flag::INTERACTIVE: return "open a repl session after compilation";
+    case Flag::DEBUG: return "interpret the files with the debug tool";
+    case Flag::INTERACTIVE: return "open a repl session";
     default: return "no clue bro";
   }
 }

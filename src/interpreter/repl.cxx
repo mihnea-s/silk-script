@@ -20,10 +20,10 @@ constexpr const char* custom_ml_prompt_env = "SILK_REPL_ML";
 // helper function
 
 template <class Analyzer>
-void handleErrors(Analyzer& analyzer) {
+void handleErrors(Analyzer& analyzer, std::ostream& out) {
   if (analyzer.has_error()) {
     for (auto& error : analyzer.errors()) {
-      fmt::print("{}", error);
+      out << fmt::format("{}", error);
     }
     analyzer.clear_errors();
   }
@@ -83,15 +83,15 @@ int Repl::run(std::istream& in, std::ostream& out) noexcept {
 
     // parse
     auto ast = parser.parse(begin(tokens), end(tokens));
-    handleErrors(parser);
+    handleErrors(parser, out);
 
     // type checking
-    // checker.check(ast);
-    // handleErrors(checker);
+    checker.check(ast);
+    handleErrors(checker, out);
 
     // finally execute the line
-    interpreter.interpret(ast);
-    handleErrors(interpreter);
+    interpreter.interpret(ast, in, out);
+    handleErrors(interpreter, out);
 
     // print prompt
     out << prompt();

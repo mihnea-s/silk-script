@@ -6,9 +6,9 @@
 
 #include <util/cli.h>
 #include <util/message.h>
-#include <vm/file_exec.h>
 #include <vm/chunk.h>
 #include <vm/disas.h>
+#include <vm/file_exec.h>
 #include <vm/opcode.h>
 #include <vm/vm.h>
 
@@ -30,12 +30,6 @@ int main(int argc, const char* argv[]) {
       continue;
     }
 
-    if (param_str(*arg, "--print-stack", "-s")) {
-      param_opt_set(PARAM_PSTACK);
-      arg++;
-      continue;
-    }
-
     print_err("invalid parameter '%s'", *arg);
     exit(1);
   }
@@ -45,9 +39,14 @@ int main(int argc, const char* argv[]) {
     exit(1);
   }
 
-  int    cnk_count;
-  const char* err = NULL;
-  Chunk* cnks = read_file(*arg, &cnk_count, &err);
+  if (arg + 1 != end) {
+    print_err("invalid argument count");
+    exit(1);
+  }
+
+  int         cnk_count;
+  const char* err  = NULL;
+  Chunk*      cnks = read_file(*arg, &cnk_count, &err);
 
   if (err) {
     print_err(err);

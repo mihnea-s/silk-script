@@ -1,3 +1,4 @@
+
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -6,28 +7,35 @@
 #include <fmt/core.h>
 #include <fmt/format.h>
 
-#include <vm/chunk.h>
 #include <vm/file_exec.h>
 
 #include <silk/common/error.h>
 #include <silk/common/lexer.h>
 #include <silk/compiler/compiler.h>
+#include <silk/interpreter/analyzers/checker.h>
+#include <silk/interpreter/analyzers/parser.h>
 #include <silk/interpreter/repl.h>
+#include <silk/interpreter/runtime/interpreter.h>
 #include <silk/util/cli.h>
 #include <silk/util/filepath.h>
 #include <silk/util/parameters.h>
 
 int main(const int argc, const char** argv) {
-  if (argc < 2) {
-    auto repl = Repl {};
-    return repl.run(std::cin, std::cout);
-  }
-
   auto params = Parameters {argc, argv};
 
   if (params.flag(Flag::HELP)) {
     print_help();
     return 0;
+  }
+
+  if (params.flag(Flag::INTERACTIVE)) {
+    auto repl = Repl {};
+    return repl.run(std::cin, std::cout);
+  }
+
+  if (!params.files().size()) {
+    print_error("no files");
+    return 1;
   }
 
   for (auto& file : params.files()) {
@@ -38,21 +46,58 @@ int main(const int argc, const char** argv) {
       return 1;
     }
 
-    auto tokens = Lexer {}.scan(file_stream);
-    auto chunks = Compiler {}.compile(begin(tokens), end(tokens));
+    const auto tokens = Lexer {}.scan(file_stream);
 
-    auto file_name = get_file_name(file);
+    if (params.flag(Flag::DEBUG)) {
+      // debug using interpreter
+      auto parser = Parser {};
+      auto ast    = parser.parse(begin(tokens), end(tokens));
 
-    const char* error = nullptr;
-    write_file(file_name.c_str(), chunks.data(), chunks.size(), &error);
+      if (parser.has_error()) {
+        for (const auto& error : parser.errors()) {
+          std::cout << fmt::format("{}", error);
+        }
 
-    if (error) {
-      print_error(error);
-      return 1;
-    }
+        return 1;
+      }
 
-    for (auto& cnk : chunks) {
-      free_chunk(&cnk);
+      auto checker = Checker {};
+      checker.check(ast);
+
+      if (checker.has_error()) {
+        for (const auto& error : checker.errors()) {
+          std::cout << fmt::format("{}", error);
+        }
+
+        return 1;
+      }
+
+      auto interpreter = Interpreter {};
+      interpreter.interpret(ast, std::cin, std::cout);
+
+    } else {
+      // compile to vm bytecode
+      auto compiler = Compiler {};
+      auto chunks   = compiler.compile(begin(tokens), end(tokens));
+
+      if (compiler.has_error()) {
+        for (const auto& error : compiler.errors()) {
+          std::cout << fmt::format("{}", error);
+        }
+
+        return 1;
+      }
+
+      const auto file_name = get_file_name(file);
+
+      const char* error = nullptr;
+
+      write_file(file_name.c_str(), chunks.data(), chunks.size(), &error);
+
+      if (error) {
+        print_error(error);
+        return 1;
+      }
     }
   }
 

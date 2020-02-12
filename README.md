@@ -5,7 +5,7 @@
 
 Silk Script is a small little inefficient language written as an
 exercise for myself. It is written in *mostly* modern C++, it makes liberal use
-of `std::variant`, `std::shared_ptr`s, and dynamic casts.
+of `std::variant`, `std::shared_ptr`s and dynamic casts.
 
 <!-- omit in toc -->
 ## Table of Contents
@@ -29,13 +29,14 @@ of `std::variant`, `std::shared_ptr`s, and dynamic casts.
 ## Command line interface
 
 The silk tool can compile code to silk VM bytecode or interpret it on the fly
-with it's own interpreter or an embedded instance of the silk CM.
+with it's own interpreter.
 
 ```
 (?) Help: silk usage:
   -h, --help  ->  shows the help page
-  -c, --compile  ->  compile the files to a silk vm executable
-  -i, --interactive  ->  open a repl session after compilation
+  -c, --compile ->  compile the files to a silk vm executable
+  -d, --debug ->  interpret the files with the debug tool
+  -i, --interactive ->  open a repl session
 ```
 
 ## The Virtual Machine

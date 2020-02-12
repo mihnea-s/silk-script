@@ -13,114 +13,116 @@
 #include <silk/interpreter/ast/expr.h>
 #include <silk/interpreter/ast/stmt.h>
 
-auto Checker::add_error(const std::string& msg) -> void {
-  _errors.push_back(ParsingError {
-    Severity::error,
-    msg,
-    {},
-  });
+auto Checker::declare_var(const std::string& name, SilkType type) -> void {
+  _variables.insert_or_assign(name, type);
 }
 
-auto Checker::push_scope() -> void {
-  _scopes.emplace_back();
-}
-
-auto Checker::pop_scope() -> void {
-  _scopes.pop_back();
-}
-
-auto Checker::var_type(const std::string& name) -> std::string {
-  for (auto it = _scopes.rbegin(); it != _scopes.rend(); it++) {
-    if ((*it).find(name) != (*it).end()) return (*it).at(name);
+auto Checker::variable_type(const std::string& name) -> SilkType {
+  while (_variables.find(name) == _variables.end()) {
+    throw_error("reference to undefined variable `{}`", name);
   }
 
-  return "vid";
+  return _variables[name];
 }
 
-auto Checker::evaluate(const Expr::Unary& expr) -> std::string {
+auto Checker::evaluate(const Expr::Unary& expr) -> SilkType {
   auto operand = evaluate_expr(expr.operand);
 
   switch (expr.operation.type()) {
 
-    case TokenType::sym_bang: return "bool";
+    case TokenType::sym_bang: return SilkType::BOOLEAN;
 
     case TokenType::sym_tilde: {
-      if (not_dyn(operand) && operand != "int") {
-        add_error(fmt::format("bitwise not applied on {}", operand));
-        return "vid";
+      if (!of_type_or_dyn(operand, SilkType::INTEGER)) {
+        throw_error("invalid operator to operator tilde");
       }
-      return "int";
+
+      return SilkType::INTEGER;
     }
 
     case TokenType::sym_minus: {
-      if (not_dyn(operand) && not_in(operand, "real", "int")) {
-        add_error(fmt::format("negation applied on {}", operand));
-        return "vid";
-      };
-      return "real";
+      if (!of_type_or_dyn(operand, SilkType::REAL, SilkType::INTEGER)) {
+        throw_error("invalid operator to operator minus");
+      }
+
+      return operand;
     };
 
-    default: return "vid";
+    default: return SilkType::DYNAMIC;
   }
 }
 
-auto Checker::evaluate(const Expr::Binary& expr) -> std::string {
+auto Checker::evaluate(const Expr::Binary& expr) -> SilkType {
   evaluate_expr(expr.left_operand);
   evaluate_expr(expr.right_operand);
-  return "real";
+  return SilkType::REAL;
 }
 
-auto Checker::evaluate(const Expr::IntLiteral& integer) -> std::string {
-  return "int";
+auto Checker::evaluate(const Expr::IntLiteral& integer) -> SilkType {
+  return SilkType::INTEGER;
 }
 
-auto Checker::evaluate(const Expr::DoubleLiteral& dbl) -> std::string {
-  return "real";
+auto Checker::evaluate(const Expr::DoubleLiteral& dbl) -> SilkType {
+  return SilkType::REAL;
 }
 
-auto Checker::evaluate(const Expr::BoolLiteral& boolean) -> std::string {
-  return "bool";
+auto Checker::evaluate(const Expr::BoolLiteral& boolean) -> SilkType {
+  return SilkType::BOOLEAN;
 }
 
-auto Checker::evaluate(const Expr::StringLiteral& str) -> std::string {
-  return "str";
+auto Checker::evaluate(const Expr::StringLiteral& str) -> SilkType {
+  return SilkType::STRING;
 }
 
-auto Checker::evaluate(const Expr::Vid&) -> std::string {
-  return "vid";
+auto Checker::evaluate(const Expr::Vid&) -> SilkType {
+  return SilkType::DYNAMIC;
 }
 
-auto Checker::evaluate(const Expr::Assignment& assignment) -> std::string {
-  auto assign   = evaluate_expr(assignment.expr);
-  auto assignee = _scopes.back()[assignment.name];
-  if (not_dyn(assign, assignee) && assign != assignee) {
-    add_error(fmt::format(
+auto Checker::evaluate(const Expr::Assignment& assignment) -> SilkType {
+  auto assign_type = evaluate_expr(assignment.expr);
+  auto var_type    = variable_type(assignment.name);
+
+  if (!of_type_or_dyn(var_type, assign_type)) {
+    throw_error(
       "type mismatch: `{}` of type `{}` was assigned `{}`",
       assignment.name,
-      assignee,
-      assign));
+      str_from_type(var_type),
+      str_from_type(assign_type));
   }
-  return nullptr;
+
+  return assign_type;
 }
 
-auto Checker::evaluate(const Expr::Identifier& id) -> std::string {
-  return var_type(id.value);
+auto Checker::evaluate(const Expr::Identifier& id) -> SilkType {
+  return variable_type(id.value);
 }
 
-auto Checker::evaluate(const Expr::Grouping& group) -> std::string {
+auto Checker::evaluate(const Expr::Grouping& group) -> SilkType {
   return evaluate_expr(group.inner);
 }
 
-auto Checker::evaluate(const Expr::Call& call) -> std::string {
-  return "";
+auto Checker::evaluate(const Expr::Call& call) -> SilkType {
+  auto function = evaluate_expr(call.callee);
+
+  if (!of_type_or_dyn(function, SilkType::CALLABLE)) {
+    throw_error("type `{}` is not callable", str_from_type(function));
+  }
+
+  return SilkType::DYNAMIC;
 }
 
-auto Checker::evaluate(const Expr::Get& get) -> std::string {
-  return "";
+auto Checker::evaluate(const Expr::Get& get) -> SilkType {
+  auto instance = evaluate_expr(get.from);
+
+  if (!of_type_or_dyn(instance, SilkType::INSTANCE)) {
+    throw_error("type `{}` is not an instance", str_from_type(instance));
+  }
+
+  return SilkType::DYNAMIC;
 }
 
-auto Checker::evaluate(const Expr::Lambda& lambda) -> std::string {
-  return "callable";
+auto Checker::evaluate(const Expr::Lambda& lambda) -> SilkType {
+  return SilkType::CALLABLE;
 }
 
 auto Checker::execute(const Stmt::Empty&) -> std::nullptr_t {
@@ -128,7 +130,6 @@ auto Checker::execute(const Stmt::Empty&) -> std::nullptr_t {
 }
 
 auto Checker::execute(const Stmt::Main&) -> std::nullptr_t {
-  _scopes.emplace_back();
   return nullptr;
 }
 
@@ -141,23 +142,30 @@ auto Checker::execute(const Stmt::Import& imprt) -> std::nullptr_t {
 }
 
 auto Checker::execute(const Stmt::Variable& var) -> std::nullptr_t {
-  _scopes.back()[var.name] = var.type;
-  auto init_type           = evaluate_expr(var.init);
-  if (init_type != var.type) {
-    add_error(fmt::format(
-      "type mismatch: {} of type {} was assigned {}",
+  declare_var(var.name, type_from_str(var.type));
+
+  auto init_type = evaluate_expr(var.init);
+  if (!of_type_or_dyn(init_type, variable_type(var.name))) {
+    throw_error(
+      "type mismatch: `{}` of type `{}` was initialized with `{}`",
       var.name,
-      var.type,
-      init_type));
+      str_from_type(variable_type(var.name)),
+      str_from_type(init_type));
   }
+
   return nullptr;
 }
 
 auto Checker::execute(const Stmt::Function& fct) -> std::nullptr_t {
+  declare_var(fct.name, SilkType::CALLABLE);
+
+  execute_stmt(fct.body);
+
   return nullptr;
 }
 
-auto Checker::execute(const Stmt::Struct&) -> std::nullptr_t {
+auto Checker::execute(const Stmt::Struct& strct) -> std::nullptr_t {
+  // TODO
   return nullptr;
 }
 
@@ -175,11 +183,9 @@ auto Checker::execute(const Stmt::Conditional& cond) -> std::nullptr_t {
 }
 
 auto Checker::execute(const Stmt::Block& blk) -> std::nullptr_t {
-  push_scope();
   for (auto& stmt : blk.body) {
     execute_stmt(stmt);
   }
-  pop_scope();
   return nullptr;
 }
 

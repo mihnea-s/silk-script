@@ -26,8 +26,7 @@ auto make_fct(
   std::string               name,
   std::size_t               arg_count,
   Fct                       fct) {
-  auto nativefct =
-    ObjectPtr {new NativeFunction {std::move(fct), arg_count}};
+  auto nativefct = ObjectPtr {new NativeFunction {std::move(fct), arg_count}};
   env.define(name, nativefct);
 }
 
@@ -65,9 +64,7 @@ struct StdFile : NativeInstance {
   }
 
   ObjectPtr get(const std::string& name) override {
-    if (methods.find(name) == std::end(methods)) {
-      return obj::make<Vid>();
-    }
+    if (methods.find(name) == std::end(methods)) { return obj::make<Vid>(); }
     return methods.at(name);
   }
 };
@@ -167,9 +164,7 @@ struct StdList : NativeInstance {
   }
 
   ObjectPtr get(const std::string& name) override {
-    if (methods.find(name) == std::end(methods)) {
-      return obj::make<Vid>();
-    }
+    if (methods.find(name) == std::end(methods)) { return obj::make<Vid>(); }
     return methods.at(name);
   }
 };
@@ -220,15 +215,13 @@ struct StdMap : NativeInstance {
   }
 
   ObjectPtr get(const std::string& name) override {
-    if (methods.find(name) == std::end(methods)) {
-      return obj::make<Vid>();
-    }
+    if (methods.find(name) == std::end(methods)) { return obj::make<Vid>(); }
     return methods.at(name);
   }
 };
 
 struct StdSBuilder : NativeInstance {
-  std::ostringstream _ss;
+  std::stringstream _ss;
 
   // clang-format off
   const std::map<std::string, ObjectPtr> methods = {
@@ -263,9 +256,7 @@ struct StdSBuilder : NativeInstance {
   }
 
   ObjectPtr get(const std::string& name) override {
-    if (methods.find(name) == std::end(methods)) {
-      return obj::make<Vid>();
-    }
+    if (methods.find(name) == std::end(methods)) { return obj::make<Vid>(); }
     return methods.at(name);
   }
 };
@@ -304,7 +295,7 @@ void StdLib::load_io(Interpreter::Environment& env) {
     auto name_str = obj::cast_to<String>(name);
     using namespace std;
     constexpr auto open_mode = fstream::out | fstream::in | fstream::app;
-    auto file = std::make_shared<StdFile>(name_str.value, open_mode);
+    auto           file = std::make_shared<StdFile>(name_str.value, open_mode);
     return file;
   });
 
@@ -313,7 +304,7 @@ void StdLib::load_io(Interpreter::Environment& env) {
     auto name_str = obj::cast_to<String>(name);
     using namespace std;
     constexpr auto open_mode = fstream::out | fstream::in | fstream::trunc;
-    auto file = std::make_shared<StdFile>(name_str.value, open_mode);
+    auto           file = std::make_shared<StdFile>(name_str.value, open_mode);
     return file;
   });
 }
@@ -363,9 +354,8 @@ void StdLib::load_str(Interpreter::Environment& env) {
     return obj::make(std::atof(str.value.data()));
   });
 
-  make_fct(env, "sbuilder", 0, [](auto& args) {
-    return obj::make<StdSBuilder>();
-  });
+  make_fct(
+    env, "sbuilder", 0, [](auto& args) { return obj::make<StdSBuilder>(); });
 }
 
 void StdLib::load_meta(Interpreter::Environment& env) {

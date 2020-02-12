@@ -2,6 +2,7 @@
 
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "../../common/error.h"
@@ -9,51 +10,85 @@
 #include "../ast/expr.h"
 #include "../ast/stmt.h"
 
-struct Checker : Expr::Visitor<std::string>, Stmt::Visitor<std::nullptr_t> {
+enum class SilkType {
+  DYNAMIC,
+  INTEGER,
+  REAL,
+  STRING,
+  BOOLEAN,
+  CALLABLE,
+  INSTANCE,
+};
+
+struct Checker : Expr::Visitor<SilkType>, Stmt::Visitor<std::nullptr_t> {
   private:
-  std::vector<ParsingError> _errors;
+  std::vector<ParsingError>       _errors;
+  std::map<std::string, SilkType> _variables;
 
-  std::vector<std::map<std::string, std::string>> _scopes;
-
-  auto add_error(const std::string&) -> void;
+  auto declare_var(const std::string& name, SilkType type) -> void;
+  auto variable_type(const std::string& name) -> SilkType;
 
   template <class... Args>
-  auto not_dyn(Args... args) -> bool {
-    for (auto& type : std::vector {args...}) {
-      if (type.empty()) return true;
-    }
-    return false;
+  constexpr auto of_type_or_dyn(SilkType type, Args... others) -> bool {
+    if (type == SilkType::DYNAMIC) return true;
+    return of_type(type, others...);
   }
 
-  template <class T, class... Args>
-  auto not_in(T t, Args... args) -> bool {
-    for (auto& type : std::vector {args...}) {
-      if (t == type) return false;
-    }
-    return true;
+  template <class... Args>
+  constexpr auto of_type(SilkType type, Args... others) -> bool {
+    return ((type == others) || ...);
   }
 
-  auto push_scope() -> void;
-  auto pop_scope() -> void;
+  constexpr auto type_from_str(const std::string& type_str) -> SilkType {
+    if (type_str.empty() || type_str.compare("?") == 0)
+      return SilkType::DYNAMIC;
 
-  auto var_type(const std::string&) -> std::string;
+    if (type_str.compare("int") == 0) return SilkType::INTEGER;
+    if (type_str.compare("real") == 0) return SilkType::REAL;
+    if (type_str.compare("bool") == 0) return SilkType::BOOLEAN;
+    if (type_str.compare("str") == 0) return SilkType::STRING;
+    if (type_str.compare("callable") == 0) return SilkType::DYNAMIC;
 
-  auto evaluate(const Expr::Unary& expr) -> std::string override;
-  auto evaluate(const Expr::Binary& expr) -> std::string override;
+    return SilkType::INSTANCE;
+  }
 
-  auto evaluate(const Expr::IntLiteral& integer) -> std::string override;
-  auto evaluate(const Expr::DoubleLiteral& dbl) -> std::string override;
-  auto evaluate(const Expr::BoolLiteral& boolean) -> std::string override;
-  auto evaluate(const Expr::StringLiteral& str) -> std::string override;
-  auto evaluate(const Expr::Vid&) -> std::string override;
-  auto evaluate(const Expr::Lambda& group) -> std::string override;
+  constexpr auto str_from_type(const SilkType& type) -> const std::string_view {
+    switch (type) {
+      case SilkType::INTEGER: return "int";
+      case SilkType::REAL: return "real";
+      case SilkType::STRING: return "str";
+      case SilkType::BOOLEAN: return "bool";
+      case SilkType::CALLABLE: return "callable";
+      default: return "dyn";
+    }
+  }
 
-  auto evaluate(const Expr::Assignment& assignment) -> std::string override;
-  auto evaluate(const Expr::Identifier& id) -> std::string override;
-  auto evaluate(const Expr::Grouping& group) -> std::string override;
+  // error helper
+  template <class... Args>
+  inline auto throw_error(std::string_view frmt, Args... args) -> void {
+    throw ParsingError {
+      Severity::error,
+      fmt::format(frmt, std::forward<Args>(args)...),
+      {0, 0}, // TODO
+    };
+  }
 
-  auto evaluate(const Expr::Call& call) -> std::string override;
-  auto evaluate(const Expr::Get& get) -> std::string override;
+  auto evaluate(const Expr::Unary& expr) -> SilkType override;
+  auto evaluate(const Expr::Binary& expr) -> SilkType override;
+
+  auto evaluate(const Expr::IntLiteral& integer) -> SilkType override;
+  auto evaluate(const Expr::DoubleLiteral& dbl) -> SilkType override;
+  auto evaluate(const Expr::BoolLiteral& boolean) -> SilkType override;
+  auto evaluate(const Expr::StringLiteral& str) -> SilkType override;
+  auto evaluate(const Expr::Vid&) -> SilkType override;
+  auto evaluate(const Expr::Lambda& group) -> SilkType override;
+
+  auto evaluate(const Expr::Assignment& assignment) -> SilkType override;
+  auto evaluate(const Expr::Identifier& id) -> SilkType override;
+  auto evaluate(const Expr::Grouping& group) -> SilkType override;
+
+  auto evaluate(const Expr::Call& call) -> SilkType override;
+  auto evaluate(const Expr::Get& get) -> SilkType override;
 
   auto execute(const Stmt::Empty&) -> std::nullptr_t override;
 

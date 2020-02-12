@@ -24,12 +24,10 @@ bool param_str(const char* arg, const char* v1, const char* v2) {
 }
 
 void print_param(const char* v1, const char* v2, const char* what) {
-  printf(
-    "\t" BOLD "%s" RESET ", " BOLD "%s" RESET "  ->  %s\n", v1, v2, what);
+  printf("\t" BOLD "%s" RESET ", " BOLD "%s" RESET "  ->  %s\n", v1, v2, what);
 }
 
 void print_hlp() {
   printf(BLUE BOLD "(?) Help" RESET ": silkvm usage:\n");
   print_param("--disassemble", "-d", "dissasemble file bytecode");
-  print_param("--print-stack", "-s", "print stack after every instruction");
 }

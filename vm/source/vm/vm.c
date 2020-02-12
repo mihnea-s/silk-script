@@ -14,20 +14,28 @@
 #define PUSH(val) push_stk(&vm->stk, val)
 #define POP()     pop_stk(&vm->stk)
 
-#define UNARY(op) PUSH(op POP())
-#define BINRY(op)                                                              \
+#define UNARY(op)                                                              \
   do {                                                                         \
-    Value b = POP();                                                           \
-    Value a = POP();                                                           \
-    PUSH(a op b);                                                              \
+    Value res = {                                                              \
+      .type       = T_REAL,                                                    \
+      .as.integer = op POP().as.integer,                                       \
+    };                                                                         \
+    PUSH(res);                                                                 \
   } while (false)
 
-#define BR_AFTER(operation)                                                    \
-  operation;                                                                   \
-  break;
+#define BINRY(op)                                                              \
+  do {                                                                         \
+    Value b   = POP();                                                         \
+    Value a   = POP();                                                         \
+    Value res = {                                                              \
+      .type    = T_REAL,                                                       \
+      .as.real = a.as.real op b.as.real,                                       \
+    };                                                                         \
+    PUSH(res);                                                                 \
+  } while (false)
 
 #define CASE(C, A)                                                             \
-  case C: BR_AFTER(A)
+  case C: A; break;
 
 void init_vm(VM* vm) {
   vm->cnk = NULL;
@@ -38,11 +46,16 @@ void init_vm(VM* vm) {
   init_stk(&vm->stk);
 }
 
+Value* peek(VM* vm, unsigned int distance) {
+  return vm->stk.sp - distance;
+}
+
 void run(VM* vm, Chunk* cnk) {
   vm->cnk = cnk;
   vm->ip  = cnk->codes;
 
   for (;;) {
+#define SILKVM_STRACE
 #ifdef SILKVM_STRACE
     printf("[");
     for (Value* slt = vm->stk.ptr; slt < vm->stk.sp; slt++) {

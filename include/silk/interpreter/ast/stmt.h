@@ -59,12 +59,8 @@ struct Function {
   const Stmt        body;
   const Type        type;
 
-  Function(
-    std::string& name, Parameters& parameters, Stmt&& body, Type type) :
-      name(name),
-      parameters(parameters),
-      body(std::move(body)),
-      type(type) {
+  Function(std::string& name, Parameters& parameters, Stmt&& body, Type type) :
+      name(name), parameters(parameters), body(std::move(body)), type(type) {
   }
 };
 
@@ -138,7 +134,7 @@ struct Block {
   }
 };
 
-// Interrupt is used for break, continue, or return,
+// Interrupt is used for break, continue or return,
 // it holds the type of interrupt and, in the case of
 // a return, the returned value
 struct Interrupt {

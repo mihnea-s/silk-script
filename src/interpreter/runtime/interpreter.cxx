@@ -1,6 +1,7 @@
-#include "fmt/core.h"
 #include <cassert>
+#include <istream>
 #include <memory>
+#include <ostream>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -428,7 +429,7 @@ auto Interpreter::errors() -> std::vector<RuntimeError>& {
   return _errors;
 }
 
-auto Interpreter::interpret(AST& ast) -> void {
+auto Interpreter::interpret(AST& ast, std::istream&, std::ostream&) -> void {
   try {
     ast.execute_with(*this);
   } catch (RuntimeError e) {

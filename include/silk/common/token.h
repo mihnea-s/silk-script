@@ -81,7 +81,7 @@ enum class TokenType {
 
 // Token is a struct used for storing logical groupings
 // in the programs source code (e.g. `>=`), marking
-// keywords to help the parser (e.g. `fct`), and storing
+// keywords to help the parser (e.g. `fct`) and storing
 // literal values (e.g. `2.3`) (note: as raw strings),
 // the lexer turns the programs source file into an array
 // of tokens

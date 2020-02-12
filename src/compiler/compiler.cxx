@@ -3,6 +3,7 @@
 
 #include <vm/chunk.h>
 #include <vm/constants.h>
+#include <vm/mem.h>
 #include <vm/opcode.h>
 
 #include <silk/common/error.h>
@@ -115,6 +116,26 @@ std::map<TokenType, Compiler::Rule> Compiler::rules = {
   },
 
   {
+    TokenType::kw_true,
+    {
+      .prefix  = &Compiler::literal_bool,
+      .infix   = nullptr,
+      .postfix = nullptr,
+      .prec    = Precedence::ANY,
+    },
+  },
+
+  {
+    TokenType::kw_false,
+    {
+      .prefix  = &Compiler::literal_bool,
+      .infix   = nullptr,
+      .postfix = nullptr,
+      .prec    = Precedence::ANY,
+    },
+  },
+
+  {
     TokenType::literal_str,
     {
       .prefix  = &Compiler::literal_string,
@@ -201,6 +222,44 @@ auto Compiler::cnst(Value value) -> void {
   write_ins(cnk, VAL);
   write_ins(cnk, cnk->constants.len);
   write_constant(&cnk->constants, value);
+}
+
+inline auto Compiler::cnst(std::int32_t value) -> void {
+  auto val = Value {
+    .type       = T_INT,
+    .as.integer = value,
+  };
+
+  cnst(val);
+}
+
+inline auto Compiler::cnst(double value) -> void {
+  auto val = Value {
+    .type    = T_REAL,
+    .as.real = value,
+  };
+
+  cnst(val);
+}
+
+inline auto Compiler::cnst(bool value) -> void {
+  auto val = Value {
+    .type       = T_BOOL,
+    .as.boolean = value,
+  };
+
+  cnst(val);
+}
+
+inline auto Compiler::cnst(const std::string& value) -> void {
+  auto str = (char*)memory(NULL, 0, value.size());
+  memcpy(str, value.c_str(), value.size());
+  auto val = Value {
+    .type      = T_STR,
+    .as.string = str,
+  };
+
+  cnst(val);
 }
 
 auto Compiler::emit(std::uint8_t byte) -> void {
@@ -320,9 +379,14 @@ auto Compiler::literal_double() -> void {
   cnst(val);
 }
 
+auto Compiler::literal_bool() -> void {
+  auto tok = advance();
+  cnst(tok.type() == TokenType::kw_true);
+}
+
 auto Compiler::literal_string() -> void {
   auto tok = advance();
-  cnst(-1);
+  cnst(tok.lexeme());
 }
 
 // error functions
@@ -341,7 +405,8 @@ auto Compiler::errors() const -> const std::vector<ParsingError>& {
 
 // public compile function
 
-auto Compiler::compile(Iter begin, Iter end) noexcept -> std::vector<Chunk> {
+auto Compiler::compile(Iter begin, Iter end) noexcept -> std::vector<Chunk>& {
+  free_chunks();
   _chunks.clear();
 
   this->_tok = begin;
@@ -359,5 +424,5 @@ auto Compiler::compile(Iter begin, Iter end) noexcept -> std::vector<Chunk> {
     }
   }
 
-  return std::move(_chunks);
+  return _chunks;
 }

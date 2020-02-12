@@ -1,8 +1,10 @@
 #pragma once
 
 #include <functional>
+#include <istream>
 #include <list>
 #include <map>
+#include <ostream>
 #include <stack>
 
 #include "../../common/error.h"
@@ -11,9 +13,7 @@
 #include "../ast/stmt.h"
 #include "../interfaces/obj.h"
 
-struct Interpreter :
-    Expr::Visitor<ObjectPtr>,
-    Stmt::Visitor<std::nullptr_t> {
+struct Interpreter : Expr::Visitor<ObjectPtr>, Stmt::Visitor<std::nullptr_t> {
   struct Environment {
 private:
     struct Scope {
@@ -108,5 +108,5 @@ public:
   auto clear_errors() -> void;
   auto errors() -> std::vector<RuntimeError>&;
 
-  auto interpret(AST& ast) -> void;
+  auto interpret(AST& ast, std::istream&, std::ostream&) -> void;
 };

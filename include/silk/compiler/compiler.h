@@ -5,7 +5,6 @@
 #include <vector>
 
 #include <vm/chunk.h>
-#include <vm/value.h>
 
 #include "../common/error.h"
 #include "../common/token.h"
@@ -102,8 +101,21 @@ class Compiler {
 
   // chunk functions
   inline auto current_chunk() -> Chunk*;
-  inline auto cnst(Value) -> void;
   inline auto emit(std::uint8_t) -> void;
+
+  inline auto free_chunks() -> void {
+    for (auto& chunk : _chunks) {
+      free_chunk(&chunk);
+    }
+  }
+
+  // constants functions
+
+  inline auto cnst(Value) -> void;
+  inline auto cnst(std::int32_t) -> void;
+  inline auto cnst(double) -> void;
+  inline auto cnst(bool) -> void;
+  inline auto cnst(const std::string&) -> void;
 
   // Pratt Parser functions
   auto get_rule(TokenType) -> Rule&;
@@ -122,6 +134,7 @@ class Compiler {
   // literals
   auto literal_integer() -> void;
   auto literal_double() -> void;
+  auto literal_bool() -> void;
   auto literal_string() -> void;
 
   public:
@@ -131,5 +144,9 @@ class Compiler {
   auto errors() const -> const std::vector<ParsingError>&;
 
   // compile entrypoint
-  auto compile(Iter begin, Iter end) noexcept -> std::vector<Chunk>;
+  auto compile(Iter begin, Iter end) noexcept -> std::vector<Chunk>&;
+
+  ~Compiler() {
+    free_chunks();
+  }
 };
