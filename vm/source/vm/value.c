@@ -2,16 +2,16 @@
 
 #include <value.h>
 
+#define PRINT_BR(...)                                                          \
+  printf(__VA_ARGS__);                                                         \
+  break;
+
 void print_value(Value v) {
-  if (IS_VID(v)) {
-    printf("[vid]");
-  } else if (IS_INT(v)) {
-    printf("%d", v.as.integer);
-  } else if (IS_REAL(v)) {
-    printf("%lf", v.as.real);
-  } else if (IS_BOOL(v)) {
-    printf("%s", v.as.boolean ? "true" : "false");
-  } else if (IS_STR(v)) {
-    printf("'%s'", v.as.string);
+  switch (v.type) {
+    case T_INT: PRINT_BR("%d", v.as.integer);
+    case T_REAL: PRINT_BR("%lf", v.as.real);
+    case T_BOOL: PRINT_BR("%s", v.as.boolean ? "true" : "false");
+    case T_STR: PRINT_BR("'%s'", v.as.string);
+    case T_VID: PRINT_BR("[vid]");
   }
 }
