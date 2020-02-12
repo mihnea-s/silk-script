@@ -47,10 +47,11 @@ size_t instruction(Chunk* cnk, size_t ofst) {
   }
 };
 
-void disassemble(Chunk* cnks, int cnk_count, const char* name) {
+void disassemble(const char* name, Program* prog) {
   printf("~~~~ %-10s ~~~~\n", name);
-  for (Chunk* cnk = cnks; cnk < cnks + cnk_count; cnk++) {
+  for (size_t i = 0; i < prog->len; i++) {
     printf("============begin==\n");
+    Chunk* cnk = &prog->cnks[i];
     for (size_t ofst = 0; ofst < cnk->len;) {
       ofst = instruction(cnk, ofst);
     }

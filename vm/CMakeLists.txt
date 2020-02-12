@@ -10,6 +10,7 @@ set(VM_SRC
   "source/vm/constants.c"
   "source/vm/disas.c"
   "source/vm/mem.c"
+  "source/vm/program.c"
   "source/vm/value.c"
   "source/vm/vm.c"
   "source/vm/stack.c"

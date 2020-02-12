@@ -10,6 +10,7 @@
 #include <vm/disas.h>
 #include <vm/file_exec.h>
 #include <vm/opcode.h>
+#include <vm/program.h>
 #include <vm/vm.h>
 
 int main(int argc, const char* argv[]) {
@@ -44,9 +45,13 @@ int main(int argc, const char* argv[]) {
     exit(1);
   }
 
-  int         cnk_count;
+  const char* file = *arg;
   const char* err  = NULL;
-  Chunk*      cnks = read_file(*arg, &cnk_count, &err);
+
+  Program prog;
+  init_program(&prog);
+
+  read_file(file, &prog, &err);
 
   if (err) {
     print_err(err);
@@ -54,17 +59,16 @@ int main(int argc, const char* argv[]) {
   }
 
   if (param_opt_get(PARAM_DISSAS)) {
-    disassemble(cnks, cnk_count, *arg);
+    disassemble(file, &prog);
     exit(0);
   }
 
   VM vm;
   init_vm(&vm);
-
-  run(&vm, cnks);
-
-  free_chunk(cnks);
+  run(&vm, &prog);
   free_vm(&vm);
+
+  free_program(&prog);
 
   return 0;
 }

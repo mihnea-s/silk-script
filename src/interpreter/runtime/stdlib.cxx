@@ -362,6 +362,11 @@ void StdLib::load_meta(Interpreter::Environment& env) {
 }
 
 void StdLib::load_maths(Interpreter::Environment& env) {
+  auto pi = obj::make(M_PI);
+  env.define("pi", pi);
+
+  auto tau = obj::make(M_PI * 2.0);
+  env.define("tau", tau);
 }
 
 void StdLib::load_data(Interpreter::Environment& env) {

@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "chunk.h"
+#include "program.h"
 #include "stack.h"
 
 typedef enum {
@@ -21,7 +21,7 @@ typedef struct {
 } VM;
 
 void init_vm(VM*);
-void run(VM*, Chunk*);
+void run(VM*, Program*);
 void free_vm(VM*);
 
 #ifdef __cplusplus

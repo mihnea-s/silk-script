@@ -5,6 +5,7 @@
 #include <chunk.h>
 #include <file_exec.h>
 #include <mem.h>
+#include <program.h>
 #include <value.h>
 
 /*
@@ -28,7 +29,7 @@ static const char* footer = "SVMEND";
 #define ERR_ON_EOF                                                             \
   if (feof(f)) {                                                               \
     SET_ERR("malformed silk executable");                                      \
-    return NULL;                                                               \
+    return;                                                                    \
   }
 
 #define READ_BYTE_IN(x) ERR_ON_EOF uint8_t x = getc(f);
@@ -82,17 +83,17 @@ static const char* footer = "SVMEND";
     }                                                                          \
   } while (false);
 
-Chunk* read_file(const char* file, int* count, const char** err) {
+void read_file(const char* file, Program* prog, const char** err) {
   FILE* f = fopen(file, "r");
   if (!f) {
     SET_ERR("could not find file");
-    return NULL;
+    return;
   }
 
   for (int i = 0; i < strlen(header); i++) {
     if (feof(f) || getc(f) != header[i]) {
       SET_ERR("file is not a silk executable");
-      return NULL;
+      return;
     }
   }
 
@@ -121,14 +122,14 @@ Chunk* read_file(const char* file, int* count, const char** err) {
   for (int i = 0; i < strlen(footer); i++) {
     if (feof(f) || getc(f) != footer[i]) {
       SET_ERR("malformed silk file");
-      return NULL;
+      return;
     }
   }
 
   fclose(f);
 
-  (*count) = chunk_count;
-  return prg;
+  prog->cnks = prg;
+  prog->len  = chunk_count;
 }
 
 #define WRITE_BYTE(c) fwrite(&c, sizeof(uint8_t), 1, f)
@@ -165,19 +166,21 @@ Chunk* read_file(const char* file, int* count, const char** err) {
     }                                                                          \
   } while (false) // TODO
 
-int write_file(
-  const char* file, Chunk* cnks, int chunk_count, const char** err) {
+void write_file(const char* file, Program* prog, const char** err) {
   FILE* f = fopen(file, "w");
   if (!f) {
     SET_ERR("could not find file");
-    return -1;
+    return;
   }
 
   fwrite(header, strlen(header), 1, f);
 
-  WRITE_WORD(chunk_count);
+  // chunk count
+  WRITE_WORD(prog->len);
 
-  for (Chunk* cnk = cnks; cnk < cnks + chunk_count; cnk++) {
+  for (size_t i = 0; i < prog->len; i++) {
+    Chunk* cnk = &prog->cnks[i];
+
     uint8_t constant_count = cnk->constants.len;
 
     WRITE_BYTE(constant_count);
@@ -196,8 +199,5 @@ int write_file(
   }
 
   fwrite(footer, strlen(footer), 1, f);
-
   fclose(f);
-
-  return 0;
 }

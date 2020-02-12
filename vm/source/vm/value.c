@@ -3,7 +3,9 @@
 #include <value.h>
 
 void print_value(Value v) {
-  if (IS_INT(v)) {
+  if (IS_VID(v)) {
+    printf("[vid]");
+  } else if (IS_INT(v)) {
     printf("%d", v.as.integer);
   } else if (IS_REAL(v)) {
     printf("%lf", v.as.real);

@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
-#include "chunk.h"
+#include "program.h"
 
-void disassemble(Chunk*, int, const char*);
+void disassemble(const char*, Program*);
 
 #ifdef __cplusplus
 }

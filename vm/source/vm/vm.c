@@ -1,8 +1,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include <chunk.h>
 #include <mem.h>
 #include <opcode.h>
+#include <program.h>
 #include <stack.h>
 #include <value.h>
 #include <vm.h>
@@ -28,8 +30,8 @@
     Value b   = POP();                                                         \
     Value a   = POP();                                                         \
     Value res = {                                                              \
-      .type    = T_REAL,                                                       \
-      .as.real = a.as.real op b.as.real,                                       \
+      .type       = T_INT,                                                     \
+      .as.integer = a.as.integer op b.as.integer,                              \
     };                                                                         \
     PUSH(res);                                                                 \
   } while (false)
@@ -50,7 +52,9 @@ Value* peek(VM* vm, unsigned int distance) {
   return vm->stk.sp - distance;
 }
 
-void run(VM* vm, Chunk* cnk) {
+void run(VM* vm, Program* prog) {
+  Chunk* cnk = prog->cnks;
+
   vm->cnk = cnk;
   vm->ip  = cnk->codes;
 
@@ -69,11 +73,21 @@ void run(VM* vm, Chunk* cnk) {
     switch (ins) {
       CASE(VM_RET, return );
       CASE(VM_VAL, PUSH(CNST));
+
       CASE(VM_NEG, UNARY(-));
+
       CASE(VM_ADD, BINRY(+));
       CASE(VM_SUB, BINRY(-));
       CASE(VM_MUL, BINRY(*));
       CASE(VM_DIV, BINRY(/));
+      CASE(VM_RIV, );
+      CASE(VM_POW, );
+      CASE(VM_MOD, BINRY(%));
+
+      CASE(VM_NOP, );
+      CASE(VM_VID, PUSH(VID_VAL));
+      CASE(VM_TRU, PUSH(BOOL_VAL(true)));
+      CASE(VM_FAL, PUSH(BOOL_VAL(false)));
     }
   }
 }

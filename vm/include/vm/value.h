@@ -32,6 +32,23 @@ typedef struct {
 #define IS_BOOL(val) val.type == T_BOOL
 #define IS_STR(val)  val.type == T_STR
 
+#define VID_VAL                                                                \
+  (Value) {                                                                    \
+    .type = T_VID, .as.integer = 0x0                                           \
+  }
+#define INT_VAL(x)                                                             \
+  (Value) {                                                                    \
+    .type = T_INT, .as.integer = x                                             \
+  }
+#define REAL_VAL(x)                                                            \
+  (Value) {                                                                    \
+    .type = T_REAL, .as.real = x                                               \
+  }
+#define BOOL_VAL(x)                                                            \
+  (Value) {                                                                    \
+    .type = T_BOOL, .as.boolean = x                                            \
+  }
+
 void print_value(Value);
 
 #ifdef __cplusplus

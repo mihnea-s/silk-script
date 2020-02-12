@@ -5,10 +5,10 @@
 extern "C" {
 #endif
 
-#include "chunk.h"
+#include "program.h"
 
-Chunk* read_file(const char*, int*, const char**);
-int    write_file(const char*, Chunk*, int, const char**);
+void read_file(const char*, Program*, const char**);
+void write_file(const char*, Program*, const char**);
 
 #ifdef __cplusplus
 }

@@ -420,6 +420,12 @@ auto Compiler::compile(Iter begin, Iter end) noexcept -> void {
 
 auto Compiler::write_to_file(std::string_view file) noexcept -> void {
   const char* err = nullptr;
-  write_file(file.data(), _chunks.data(), _chunks.size(), &err);
+
+  Program prog = {
+    .len  = _chunks.size(),
+    .cnks = _chunks.data(),
+  };
+
+  write_file(file.data(), &prog, &err);
   if (err) { _errors.push_back(ParsingError {Severity::error, err, {0, 0}}); }
 }

@@ -18,8 +18,9 @@ auto Checker::declare_var(const std::string& name, SilkType type) -> void {
 }
 
 auto Checker::variable_type(const std::string& name) -> SilkType {
-  while (_variables.find(name) == _variables.end()) {
-    throw_error("reference to undefined variable `{}`", name);
+  if (_variables.find(name) == _variables.end()) {
+    return SilkType::DYNAMIC;
+    // throw_error("reference to undefined variable `{}`", name);
   }
 
   return _variables[name];
