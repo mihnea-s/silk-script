@@ -16,7 +16,7 @@ size_t single(size_t ofst, const char* name) {
 size_t load_val(Chunk* cnk, size_t ofst) {
   uint8_t val_ofst = cnk->codes[ofst + 1];
   printf("0x%03zx VAL 0x%02d (", ofst, val_ofst);
-  print_value(cnk->constants.vals[val_ofst]);
+  print_value(&cnk->constants.vals[val_ofst]);
   printf(")\n");
   return ofst + 2;
 }
@@ -29,6 +29,7 @@ size_t instruction(Chunk* cnk, size_t ofst) {
     case VM_VAL: return load_val(cnk, ofst);
 
     case VM_NEG: return single(ofst, "NEG");
+    case VM_NOT: return single(ofst, "NOT");
 
     case VM_ADD: return single(ofst, "ADD");
     case VM_SUB: return single(ofst, "SUB");

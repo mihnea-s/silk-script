@@ -63,7 +63,7 @@ void run(VM* vm, Program* prog) {
 #ifdef SILKVM_STRACE
     printf("[");
     for (Value* slt = vm->stk.ptr; slt < vm->stk.sp; slt++) {
-      print_value(*slt);
+      print_value(slt);
       if (!(slt == vm->stk.sp - 1)) printf(", ");
     }
     printf("]\n");
@@ -75,6 +75,7 @@ void run(VM* vm, Program* prog) {
       CASE(VM_VAL, PUSH(CNST));
 
       CASE(VM_NEG, UNARY(-));
+      CASE(VM_NOT, UNARY(!));
 
       CASE(VM_ADD, BINRY(+));
       CASE(VM_SUB, BINRY(-));

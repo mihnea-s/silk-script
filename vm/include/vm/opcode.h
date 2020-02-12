@@ -12,6 +12,7 @@ typedef enum {
   VM_VAL, // load value
 
   VM_NEG, // negation
+  VM_NOT, // logical not
 
   VM_ADD, // addition
   VM_SUB, // subtraction

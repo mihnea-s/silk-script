@@ -26,6 +26,20 @@ std::map<TokenType, Compiler::Rule> Compiler::rules = {
 
   // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-
 
+  // LOGICAL OPERATIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+  {
+    TokenType::sym_bang,
+    {
+      .prefix  = &Compiler::expr_unary,
+      .infix   = nullptr,
+      .postfix = nullptr,
+      .prec    = Precedence::ANY,
+    },
+  },
+
+  // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-
+
   // ARITHMETIC OPERATIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
   {
@@ -278,6 +292,11 @@ auto Compiler::expr_unary() -> void {
   switch (type) {
     case TokenType::sym_minus: {
       emit(VM_NEG);
+      break;
+    }
+
+    case TokenType::sym_bang: {
+      emit(VM_NOT);
       break;
     }
 

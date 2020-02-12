@@ -49,7 +49,10 @@ typedef struct {
     .type = T_BOOL, .as.boolean = x                                            \
   }
 
-void print_value(Value);
+bool truthy(Value*);
+bool falsy(Value*);
+
+void print_value(Value*);
 
 #ifdef __cplusplus
 }
