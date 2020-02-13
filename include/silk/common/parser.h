@@ -32,10 +32,11 @@ class Parser : public ErrorReporter {
   };
 
   struct Rule {
-    using ParseFN      = ASTNodePtr (Parser::*)(void);
-    ParseFN    prefix  = nullptr;
-    ParseFN    infix   = nullptr;
-    ParseFN    postfix = nullptr;
+    using UnParseFN    = ASTNodePtr (Parser::*)();
+    using BinParseFN   = ASTNodePtr (Parser::*)(ASTNodePtr);
+    UnParseFN  prefix  = nullptr;
+    BinParseFN infix   = nullptr;
+    UnParseFN  postfix = nullptr;
     Precedence prec    = Precedence::ANY;
   };
 
@@ -115,7 +116,7 @@ class Parser : public ErrorReporter {
   auto expression() -> ASTNodePtr;
 
   auto expr_unary() -> ASTNodePtr;
-  auto expr_binary() -> ASTNodePtr;
+  auto expr_binary(ASTNodePtr) -> ASTNodePtr;
   auto expr_grouping() -> ASTNodePtr;
 
   // literals

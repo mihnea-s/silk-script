@@ -270,8 +270,10 @@ auto Parser::precendece(Precedence prec) -> ASTNodePtr {
 
   while (!eof() && prec <= get_rule(current().type()).prec) {
     auto rule = get_rule(current().type());
-    (this->*rule.infix)();
+    prefix    = (this->*rule.infix)(std::move(prefix));
   }
+
+  return prefix;
 }
 
 auto Parser::expression() -> ASTNodePtr {
@@ -285,12 +287,12 @@ auto Parser::expr_unary() -> ASTNodePtr {
   return make_node<Unary>(tok.type(), std::move(operand));
 }
 
-auto Parser::expr_binary() -> ASTNodePtr {
-  auto tok  = advance();
-  auto rule = get_rule(tok.type());
-  auto left = precendece(higher(rule.prec));
+auto Parser::expr_binary(ASTNodePtr left) -> ASTNodePtr {
+  auto tok   = advance();
+  auto rule  = get_rule(tok.type());
+  auto right = precendece(higher(rule.prec));
 
-  return make_node<Binary>(tok.type(), std::move(left), nullptr);
+  return make_node<Binary>(tok.type(), std::move(left), std::move(right));
 }
 
 auto Parser::expr_grouping() -> ASTNodePtr {

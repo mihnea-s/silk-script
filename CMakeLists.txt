@@ -3,7 +3,10 @@ project(SilkTool C CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 set(EXECUTABLE_NAME           "silk")
+
+set(SILKVM_PROJECT          "silkvm")
 set(SILKVM_FOLDER           "silkvm")
+set(SILKVM_INCLUDE "silkvm/include/")
 
 # silkvm
 add_subdirectory(${SILKVM_FOLDER})
@@ -40,6 +43,6 @@ set_target_properties(${EXECUTABLE_NAME} PROPERTIES
   CXX_STANDARD 17
 )
 
-target_include_directories(${EXECUTABLE_NAME} PUBLIC include ${SILKVM_FOLDER}/include)
+target_include_directories(${EXECUTABLE_NAME} PUBLIC "include/" ${SILKVM_INCLUDE})
 
-target_link_libraries(${EXECUTABLE_NAME} fmt::fmt silkvm)
+target_link_libraries(${EXECUTABLE_NAME} fmt::fmt ${SILKVM_PROJECT})
