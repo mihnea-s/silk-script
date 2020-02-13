@@ -34,7 +34,7 @@ class Checker : ASTVisitor<SilkType>, public ErrorReporter {
     return ((type == others) || ...);
   }
 
-  constexpr auto type_from_str(const std::string& type_str) -> SilkType {
+  auto type_from_str(const std::string& type_str) -> SilkType {
     if (type_str.empty() || type_str.compare("?") == 0)
       return SilkType::DYNAMIC;
 

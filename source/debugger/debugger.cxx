@@ -239,36 +239,55 @@ auto Debugger::evaluate(const Binary& expr) -> ValuePtr {
 }
 
 auto Debugger::evaluate(const IntLiteral& node) -> ValuePtr {
-  return std::make_shared<Value>(INT_VAL(node.value));
+  auto value        = new Value;
+  value->type       = T_INT;
+  value->as.integer = node.value;
+
+  return std::shared_ptr<Value>(value);
 }
 
 auto Debugger::evaluate(const RealLiteral& node) -> ValuePtr {
-  return std::make_shared<Value>(REAL_VAL(node.value));
+  auto value     = new Value;
+  value->type    = T_REAL;
+  value->as.real = node.value;
+
+  return std::shared_ptr<Value>(value);
 }
 
 auto Debugger::evaluate(const BoolLiteral& node) -> ValuePtr {
-  return std::make_shared<Value>(BOOL_VAL(node.value));
+  auto value        = new Value;
+  value->type       = T_BOOL;
+  value->as.boolean = node.value;
+
+  return std::shared_ptr<Value>(value);
 }
 
 auto Debugger::evaluate(const StringLiteral& node) -> ValuePtr {
-  Value value = {
-    .type      = T_STR,
-    .as.string = const_cast<char*>(node.value.data()),
-  };
+  auto value       = new Value;
+  value->type      = T_STR;
+  value->as.string = const_cast<char*>(node.value.data());
 
-  return std::make_shared<Value>(value);
+  return std::shared_ptr<Value>(value);
 }
 
 auto Debugger::evaluate(const Vid&) -> ValuePtr {
-  return std::make_shared<Value>(VID_VAL);
+  auto value  = new Value;
+  value->type = T_VID;
+
+  return std::shared_ptr<Value>(value);
 }
 
 auto Debugger::evaluate(const Constant& node) -> ValuePtr {
+  auto value  = new Value;
+  value->type = T_REAL;
+
   switch (node.which) {
-    case Constant::PI: return std::make_shared<Value>(REAL_VAL(M_PI));
-    case Constant::TAU: return std::make_shared<Value>(REAL_VAL(2.0 * M_PI));
-    case Constant::EULER: return std::make_shared<Value>(REAL_VAL(M_E));
+    case Constant::PI: value->as.real = M_PI;
+    case Constant::TAU: value->as.real = 2.0 * M_PI;
+    case Constant::EULER: value->as.real = M_E;
   }
+
+  return std::shared_ptr<Value>(value);
 }
 
 auto Debugger::evaluate(const Assignment& node) -> ValuePtr {

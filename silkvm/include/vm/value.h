@@ -11,13 +11,13 @@ extern "C" {
 #include "object.h"
 
 typedef enum {
-  T_VID,
-  T_INT,
-  T_REAL,
-  T_BOOL,
-  T_STR,
-  T_OBJ,
-  T_REF,
+  T_VID,  // 0
+  T_INT,  // 1
+  T_REAL, // 2
+  T_BOOL, // 3
+  T_STR,  // 4
+  T_OBJ,  // 5
+  T_REF,  // 6
 } ValueType;
 
 typedef struct {

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <string>
 #include <utility>
@@ -286,6 +287,8 @@ class ASTVisitor {
         return execute(static_cast<const Block&>(node_ref));
       case ASTNode::Interrupt: //
         return execute(static_cast<const Interrupt&>(node_ref));
+
+      default: throw std::logic_error {"invalid program state"};
     }
   }
 };

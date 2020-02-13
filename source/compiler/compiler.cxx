@@ -54,6 +54,19 @@ auto Compiler::evaluate(const Binary& node) -> void {
 
   switch (node.operation) {
     case TokenType::sym_plus: return emit(VM_ADD);
+    case TokenType::sym_minus: return emit(VM_SUB);
+    case TokenType::sym_slash: return emit(VM_DIV);
+    case TokenType::sym_star: return emit(VM_MUL);
+    case TokenType::sym_slashslash: return emit(VM_RIV);
+    case TokenType::sym_starstar: return emit(VM_POW);
+    case TokenType::sym_percent: return emit(VM_MOD);
+
+    case TokenType::sym_equalequal: return emit(VM_EQ);
+    case TokenType::sym_bangequal: return emit(VM_NEQ);
+    case TokenType::sym_gt: return emit(VM_GT);
+    case TokenType::sym_lt: return emit(VM_LT);
+    case TokenType::sym_gtequal: return emit(VM_GTE);
+    case TokenType::sym_ltequal: return emit(VM_LTE);
 
     default:
       throw report_error(node.location, "invalid operand to binary operation");
@@ -62,14 +75,14 @@ auto Compiler::evaluate(const Binary& node) -> void {
 
 auto Compiler::evaluate(const IntLiteral& node) -> void {
   if (_integers.find(node.value) != _integers.end()) {
+    emit(VM_VAL);
     emit(_integers[node.value]);
     return;
   }
 
-  Value value = {
-    .type       = T_INT,
-    .as.integer = node.value,
-  };
+  Value value;
+  value.type       = T_INT;
+  value.as.integer = node.value;
 
   auto constant_id      = cnst(value);
   _integers[node.value] = constant_id;
@@ -77,25 +90,22 @@ auto Compiler::evaluate(const IntLiteral& node) -> void {
 
 auto Compiler::evaluate(const RealLiteral& node) -> void {
   if (_reals.find(node.value) != _reals.end()) {
+    emit(VM_VAL);
     emit(_reals[node.value]);
     return;
   }
 
-  Value value = {
-    .type    = T_REAL,
-    .as.real = node.value,
-  };
+  Value value;
+  value.type    = T_REAL;
+  value.as.real = node.value;
 
   auto constant_id   = cnst(value);
   _reals[node.value] = constant_id;
 }
 
-auto Compiler::evaluate(const BoolLiteral& node) -> void {
-  emit(node.value ? VM_TRU : VM_FAL);
-}
-
 auto Compiler::evaluate(const StringLiteral& node) -> void {
   if (_strings.find(node.value) != _strings.end()) {
+    emit(VM_VAL);
     emit(_strings[node.value]);
     return;
   }
@@ -104,13 +114,16 @@ auto Compiler::evaluate(const StringLiteral& node) -> void {
   memcpy(c_str, node.value.data(), node.value.size());
   c_str[node.value.size()] = '\0';
 
-  Value value = {
-    .type      = T_STR,
-    .as.string = c_str,
-  };
+  Value value;
+  value.type      = T_STR;
+  value.as.string = c_str;
 
   auto constant_id     = cnst(value);
   _strings[node.value] = constant_id;
+}
+
+auto Compiler::evaluate(const BoolLiteral& node) -> void {
+  emit(node.value ? VM_TRU : VM_FAL);
 }
 
 auto Compiler::evaluate(const Vid&) -> void {

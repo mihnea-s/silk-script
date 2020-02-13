@@ -20,7 +20,7 @@
  *
  */
 
-static const char* header = "SILKVM";
+static const char* header = "SVMEXE";
 static const char* footer = "SVMEND";
 
 #define SET_ERR(to_what)                                                       \
@@ -45,7 +45,7 @@ static const char* footer = "SVMEND";
     v.type = type;                                                             \
     switch (type) {                                                            \
       case T_INT: {                                                            \
-        fread(&v.as.integer, sizeof(int32_t), 1, f);                           \
+        fread(&v.as.integer, sizeof(int64_t), 1, f);                           \
         break;                                                                 \
       }                                                                        \
                                                                                \
@@ -145,7 +145,7 @@ void read_file(const char* file, Program* prog, const char** err) {
     WRITE_BYTE(c.type);                                                        \
     switch (c.type) {                                                          \
       case T_INT: {                                                            \
-        fwrite(&c.as.integer, sizeof(int32_t), 1, f);                          \
+        fwrite(&c.as.integer, sizeof(int64_t), 1, f);                          \
         break;                                                                 \
       }                                                                        \
                                                                                \
