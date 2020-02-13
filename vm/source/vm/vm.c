@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -92,6 +93,10 @@ void run(VM* vm, Program* prog) {
       CASE(VM_LT, BINRY(<));
       CASE(VM_GTE, BINRY(>=));
       CASE(VM_LTE, BINRY(<=));
+
+      CASE(VM_PI, PUSH(REAL_VAL(M_PI)));
+      CASE(VM_TAU, PUSH(REAL_VAL(2.0 * M_PI)));
+      CASE(VM_EUL, PUSH(REAL_VAL(M_E)));
     }
   }
 }

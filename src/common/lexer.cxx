@@ -276,7 +276,8 @@ inline TokenType Lexer::keyword(std::string_view sv) {
       if (sv.size() < 2) return TokenType::identifier;
       switch (sv[1]) {
         case 'c': return matchesRest("t", sv.substr(2), TokenType::kw_function);
-        case 'a': return matchesRest("lse", sv.substr(2), TokenType::kw_false);
+        case 'a':
+          return matchesRest("lse", sv.substr(2), TokenType::cnst_false);
         case 'o': return matchesRest("r", sv.substr(2), TokenType::kw_for);
         default: return TokenType::identifier;
       }
@@ -296,22 +297,39 @@ inline TokenType Lexer::keyword(std::string_view sv) {
       if (sv.size() < 3) return TokenType::identifier;
       if (sv[1] != 'i') return TokenType::identifier;
       switch (sv[2]) {
-        case 'd': return TokenType::kw_vid;
+        case 'd': return TokenType::cnst_vid;
         case 'r': return matchesRest("t", sv.substr(3), TokenType::kw_virt);
         default: return TokenType::identifier;
       }
     }
 
+    case 'p': {
+      if (sv.size() < 2) return TokenType::identifier;
+      if (sv.size() == 2)
+        return sv[1] == 'i' ? TokenType::cnst_pi : TokenType::identifier;
+      return matchesRest("kg", sv.substr(1), TokenType::kw_package);
+    }
+
+    case 't': {
+      if (sv.size() < 3) return TokenType::identifier;
+      switch (sv[2]) {
+        case 'a': return matchesRest("u", sv.substr(2), TokenType::cnst_tau);
+        case 'r': return matchesRest("ue", sv.substr(2), TokenType::cnst_true);
+      }
+    }
+
+    case 'e': {
+      if (sv.size() < 2) return TokenType::cnst_eul;
+      return matchesRest("lse", sv.substr(1), TokenType::kw_else);
+    }
+
     case 's': return matchesRest("truct", sv.substr(1), TokenType::kw_struct);
     case 'r': return matchesRest("eturn", sv.substr(1), TokenType::kw_break);
     case 'd': return matchesRest("tor", sv.substr(1), TokenType::kw_dtor);
-    case 'p': return matchesRest("kg", sv.substr(1), TokenType::kw_package);
     case 'm': return matchesRest("ain", sv.substr(1), TokenType::kw_main);
     case 'u': return matchesRest("se", sv.substr(1), TokenType::kw_import);
-    case 't': return matchesRest("rue", sv.substr(1), TokenType::kw_true);
     case 'l': return matchesRest("et", sv.substr(1), TokenType::kw_let);
     case 'i': return matchesRest("f", sv.substr(1), TokenType::kw_if);
-    case 'e': return matchesRest("lse", sv.substr(1), TokenType::kw_else);
     case 'b': return matchesRest("reak", sv.substr(1), TokenType::kw_break);
 
     default: return TokenType::identifier;

@@ -5,19 +5,12 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include <fmt/core.h>
 #include <fmt/format.h>
 
 #include <util/message.h>
-
-// different severity levels
-enum class Severity {
-  error,
-  warning,
-};
-
-// print errors
 
 template <class... Args>
 void print_error(std::string_view frmt, Args... args) {
@@ -33,11 +26,14 @@ void print_warning(std::string_view frmt, Args... args) {
   fmt::print("\n");
 }
 
-// ParsingErrors are used by the parser and type checker
+struct SilkError : std::exception {
+  public:
+  enum Severity {
+    ERROR,
+    WARNING,
+  };
 
-struct ParsingError : std::exception {
   private:
-  // for brevity
   using Location = std::pair<std::uint64_t, std::uint64_t>;
 
   const Severity    _severity;
@@ -45,7 +41,7 @@ struct ParsingError : std::exception {
   const std::string _message;
 
   public:
-  ParsingError(
+  SilkError(
     const Severity    severity,
     const std::string message,
     const Location    location) noexcept :
@@ -56,75 +52,31 @@ struct ParsingError : std::exception {
   Severity      severity() const noexcept;
   std::uint64_t line() const noexcept;
   std::uint64_t column() const noexcept;
-
-  // std::exception requirement
-  const char* what() const noexcept override;
-};
-
-// CompileErrors are used for errors (or warnings) that occur during the
-// compilation of a silk script
-
-struct CompileError : std::exception {
-  private:
-  // for brevity
-  using Location = std::pair<std::uint64_t, std::uint64_t>;
-
-  const Severity    _severity;
-  const Location    _location;
-  const std::string _message;
-
-  public:
-  CompileError(
-    const Severity    severity,
-    const std::string message,
-    const Location    location) noexcept :
-      _severity(severity), _location(location), _message(message) {
-  }
-
-  // getters
-  Severity      severity() const noexcept;
-  std::uint64_t line() const noexcept;
-  std::uint64_t column() const noexcept;
-
-  // std::exception requirement
-  const char* what() const noexcept override;
-};
-
-// RuntimeError is used for errors that occur during the interpretation of a
-// silk script
-
-struct RuntimeError : std::exception {
-  private:
-  std::string _message;
-
-  public:
-  RuntimeError(std::string message) : _message(message) {
-  }
 
   // std::exception requirement
   const char* what() const noexcept override;
 };
 
 // extend fmt::format to be able to output
-// silk's error types
+// silk's error type
 
 template <>
-struct fmt::formatter<ParsingError> {
+struct fmt::formatter<SilkError> {
   template <typename ParseContext>
   constexpr auto parse(ParseContext& ctx) {
     return ctx.begin();
   }
 
   template <typename FormatContext>
-  auto format(const ParsingError& err, FormatContext& ctx) {
+  auto format(const SilkError& err, FormatContext& ctx) {
     std::ostringstream msg {};
 
     switch (err.severity()) {
-      case Severity::error: {
+      case SilkError::ERROR: {
         msg << BOLD RED "(!) Error" RESET ": parsing error\n";
         break;
       }
-      case Severity::warning: {
+      case SilkError::WARNING: {
         msg << BOLD YELLOW "(*) Warning" RESET ": parsing error\n";
         break;
       }
@@ -139,20 +91,38 @@ struct fmt::formatter<ParsingError> {
   }
 };
 
-template <>
-struct fmt::formatter<RuntimeError> {
-  template <typename ParseContext>
-  constexpr auto parse(ParseContext& ctx) {
-    return ctx.begin();
+class ErrorReporter {
+  protected:
+  using Location = std::pair<std::uint64_t, std::uint64_t>;
+  std::vector<SilkError> mutable _errors;
+
+  template <class... Args>
+  auto report(
+    SilkError::Severity sev,
+    Location            loc,
+    std::string_view    frmt,
+    Args... args) const {
+    _errors.emplace_back(
+      sev, fmt::format(frmt, std::forward<Args>(args)...), loc);
+    return _errors.back();
   }
 
-  template <typename FormatContext>
-  auto format(const RuntimeError& err, FormatContext& ctx) {
-    std::ostringstream msg {};
-
-    msg << BOLD RED "(!) Error" RESET ": runtime error\n";
-    msg << "\t" << BOLD "what" RESET ": " << err.what() << RESET "\n";
-
-    return fmt::format_to(ctx.out(), "{}", msg.str());
+  template <class... Args>
+  constexpr auto
+  report_warning(Location loc, std::string_view frmt, Args... args) const {
+    return report(SilkError::WARNING, loc, frmt, std::forward<Args>(args)...);
   }
+
+  template <class... Args>
+  constexpr auto
+  report_error(Location loc, std::string_view frmt, Args... args) const {
+    return report(SilkError::ERROR, loc, frmt, std::forward<Args>(args)...);
+  }
+
+  public:
+  // error public methods
+  auto has_warning() const -> bool;
+  auto has_error() const -> bool;
+  auto clear_errors() -> void;
+  auto errors() const -> const std::vector<SilkError>&;
 };

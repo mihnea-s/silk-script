@@ -15,25 +15,23 @@ add_executable(${EXECUTABLE_NAME}
 
   # common files
   "src/common/error.cxx"
-  "src/common/lexer.cxx"
   "src/common/token.cxx"
+  "src/common/lexer.cxx"
+  "src/common/parser.cxx"
+  "src/common/checker.cxx"
   
-  # interpreter specific
-  "src/interpreter/repl.cxx"
-  "src/interpreter/analyzers/checker.cxx"
-  "src/interpreter/analyzers/parser.cxx"
-  "src/interpreter/runtime/interpreter.cxx"
-  "src/interpreter/runtime/stdlib.cxx"
-  "src/interpreter/runtime/functions.cxx"
-  "src/interpreter/runtime/primitives.cxx"
-  "src/interpreter/runtime/structs.cxx"
+  # debugger specific
+  "src/debugger/debugger.cxx"
 
   # compiler specific
   "src/compiler/compiler.cxx"
 
+  # repl
+  "src/repl/repl.cxx"
+
   # util
-  "src/util/parameters.cxx"
   "src/util/cli.cxx"
+  "src/util/parameters.cxx"
   "src/util/filepath.cxx"
 )
 

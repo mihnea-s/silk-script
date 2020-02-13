@@ -1,443 +1,193 @@
+#include "silk/common/ast.h"
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 
 #include <vm/chunk.h>
 #include <vm/constants.h>
 #include <vm/file_exec.h>
 #include <vm/mem.h>
+#include <vm/object.h>
 #include <vm/opcode.h>
+#include <vm/value.h>
 
 #include <silk/common/error.h>
 #include <silk/common/token.h>
 #include <silk/compiler/compiler.h>
 
-std::map<TokenType, Compiler::Rule> Compiler::rules = {
-  // GROUPING -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=
-
-  {
-    TokenType::sym_lround,
-    {
-      .prefix = &Compiler::expr_grouping,
-    },
-  },
-
-  // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-
-
-  // LOGICAL OPERATIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-  {
-    TokenType::sym_bang,
-    {
-      .prefix = &Compiler::expr_unary,
-    },
-  },
-
-  {
-    TokenType::sym_equalequal,
-    {
-      .infix = &Compiler::expr_binary,
-      .prec  = Precedence::EQUALITY,
-    },
-  },
-
-  {
-    TokenType::sym_bangequal,
-    {
-      .infix = &Compiler::expr_binary,
-      .prec  = Precedence::EQUALITY,
-    },
-  },
-
-  {
-    TokenType::sym_gt,
-    {
-      .infix = &Compiler::expr_binary,
-      .prec  = Precedence::COMPARISON,
-    },
-  },
-  {
-    TokenType::sym_gtequal,
-    {
-      .infix = &Compiler::expr_binary,
-      .prec  = Precedence::COMPARISON,
-    },
-  },
-
-  {
-    TokenType::sym_lt,
-    {
-      .infix = &Compiler::expr_binary,
-      .prec  = Precedence::COMPARISON,
-    },
-  },
-  {
-    TokenType::sym_ltequal,
-    {
-      .infix = &Compiler::expr_binary,
-      .prec  = Precedence::COMPARISON,
-    },
-  },
-
-  // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-
-
-  // ARITHMETIC OPERATIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=
-
-  {
-    TokenType::sym_minus,
-    {
-      .prefix = &Compiler::expr_unary,
-      .infix  = &Compiler::expr_binary,
-      .prec   = Precedence::TERM,
-    },
-  },
-  {
-    TokenType::sym_plus,
-    {
-      .infix = &Compiler::expr_binary,
-      .prec  = Precedence::TERM,
-    },
-  },
-  {
-    TokenType::sym_star,
-    {
-      .infix = &Compiler::expr_binary,
-      .prec  = Precedence::FACTOR,
-    },
-  },
-  {
-    TokenType::sym_slash,
-    {
-      .infix = &Compiler::expr_binary,
-      .prec  = Precedence::FACTOR,
-    },
-  },
-  {
-    TokenType::sym_starstar,
-    {
-      .infix = &Compiler::expr_binary,
-      .prec  = Precedence::POWER,
-    },
-  },
-  {
-    TokenType::sym_slashslash,
-    {
-      .infix = &Compiler::expr_binary,
-      .prec  = Precedence::FACTOR,
-    },
-  },
-  {
-    TokenType::sym_percent,
-    {
-      .infix = &Compiler::expr_binary,
-      .prec  = Precedence::FACTOR,
-    },
-  },
-
-  // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-
-
-  // LITERALS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-  {
-    TokenType::literal_int,
-    {
-      .prefix = &Compiler::literal_integer,
-    },
-  },
-
-  {
-    TokenType::literal_dbl,
-    {
-      .prefix = &Compiler::literal_double,
-    },
-  },
-
-  {
-    TokenType::kw_true,
-    {
-      .prefix = &Compiler::literal_bool,
-    },
-  },
-
-  {
-    TokenType::kw_false,
-    {
-      .prefix = &Compiler::literal_bool,
-    },
-  },
-
-  {
-    TokenType::literal_str,
-    {
-      .prefix = &Compiler::literal_string,
-    },
-  },
-
-  {
-    TokenType::kw_vid,
-    {
-      .prefix = &Compiler::literal_vid,
-    },
+auto Compiler::current_chunk() -> Chunk* {
+  if (_program.len == 0) {
+    _program.len  = 1;
+    _program.cnks = (Chunk*)memory(NULL, 0x0, sizeof(Chunk));
+    init_chunk(_program.cnks);
   }
 
-  // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-
-};
-
-inline auto Compiler::forward() -> void {
-  _tok++;
+  return _program.cnks + (_program.len - 1);
 }
 
-inline auto Compiler::backward() -> void {
-  _tok--;
-}
-
-inline auto Compiler::advance() -> Token {
-  _tok++;
-  return previous();
-}
-
-inline auto Compiler::previous() const -> Token {
-  return *(_tok - 1);
-}
-
-inline auto Compiler::current() const -> Token {
-  return *_tok;
-}
-
-inline auto Compiler::eof() const -> bool {
-  return _tok == _end;
-}
-
-inline auto Compiler::error_location() const
-  -> std::pair<std::uint64_t, std::uint64_t> {
-  if (eof()) return previous().location();
-  return current().location();
-}
-
-inline auto Compiler::throw_error(std::string msg) -> void {
-  throw ParsingError {Severity::error, msg, error_location()};
-}
-
-inline auto Compiler::should_match(TokenType type, std::string msg) const
-  -> void {
-  if (!match(type)) {
-    throw ParsingError {Severity::warning, msg, error_location()};
-  }
-}
-
-inline auto Compiler::must_match(TokenType type, std::string msg) const
-  -> void {
-  if (!match(type)) {
-    throw ParsingError {Severity::error, msg, error_location()};
-  }
-}
-
-inline auto Compiler::should_consume(TokenType type, std::string msg) -> void {
-  if (!consume(type)) {
-    throw ParsingError {Severity::warning, msg, error_location()};
-  }
-}
-
-inline auto Compiler::must_consume(TokenType type, std::string msg) -> void {
-  if (!consume(type)) {
-    throw ParsingError {Severity::error, msg, error_location()};
-  }
-}
-
-inline auto Compiler::current_chunk() -> Chunk* {
-  if (_chunks.empty()) {
-    _chunks.emplace_back();
-    init_chunk(&_chunks.back());
-  }
-  return &_chunks.back();
-}
-
-auto Compiler::cnst(Value value) -> void {
+auto Compiler::cnst(Value value) -> std::uint8_t {
   auto cnk = current_chunk();
+  auto id  = cnk->constants.len;
   write_ins(cnk, VM_VAL);
-  write_ins(cnk, cnk->constants.len);
+  write_ins(cnk, id);
   write_constant(&cnk->constants, value);
+  return id;
 }
 
 auto Compiler::emit(std::uint8_t byte) -> void {
   write_ins(current_chunk(), byte);
 }
 
-auto Compiler::get_rule(TokenType type) -> Rule& {
-  if (rules.find(type) == rules.end()) throw_error("fatal compiler error");
-  return rules[type];
-}
-
-auto Compiler::higher(Precedence prec) -> Precedence {
-  if (prec == Precedence::NONE) return prec;
-  return static_cast<Precedence>(static_cast<int>(prec) + 1);
-}
-
-auto Compiler::lower(Precedence prec) -> Precedence {
-  if (prec == Precedence::ANY) return prec;
-  return static_cast<Precedence>(static_cast<int>(prec) - 1);
-}
-
-auto Compiler::precendece(Precedence prec) -> void {
-  auto rule = get_rule(current().type());
-
-  (this->*rule.prefix)();
-
-  while (!eof() && prec <= get_rule(current().type()).prec) {
-    auto rule = get_rule(current().type());
-    (this->*rule.infix)();
+auto Compiler::evaluate(const Unary& node) -> void {
+  visit_node(node.operand);
+  switch (node.operation) {
+    case TokenType::sym_bang: return emit(VM_NOT);
+    case TokenType::sym_minus: return emit(VM_NEG);
+    default:
+      throw report_error(node.location, "invalid operand to unary operation");
   }
 }
 
-auto Compiler::expression() -> void {
-  if (eof()) throw_error("expected expression");
-  precendece(Precedence::ASSIGNMENT);
-}
+auto Compiler::evaluate(const Binary& node) -> void {
+  visit_node(node.right);
+  visit_node(node.left);
 
-auto Compiler::expr_unary() -> void {
-  auto type = advance().type();
-
-  precendece(Precedence::UNARY);
-
-  switch (type) {
-    case TokenType::sym_minus: {
-      emit(VM_NEG);
-      break;
-    }
-
-    case TokenType::sym_bang: {
-      emit(VM_NOT);
-      break;
-    }
-
-    default: {
-      throw_error("invalid unary operation");
-    }
-  }
-}
-
-auto Compiler::expr_binary() -> void {
-  auto type = advance().type();
-
-  auto rule = get_rule(type);
-  precendece(higher(rule.prec));
-
-  switch (type) {
-    // arithmetic
+  switch (node.operation) {
     case TokenType::sym_plus: return emit(VM_ADD);
-    case TokenType::sym_minus: return emit(VM_SUB);
-    case TokenType::sym_star: return emit(VM_MUL);
-    case TokenType::sym_slash: return emit(VM_DIV);
-    case TokenType::sym_starstar: return emit(VM_POW);
-    case TokenType::sym_slashslash: return emit(VM_RIV);
-    case TokenType::sym_percent: return emit(VM_MOD);
 
-    // logic
-    case TokenType::sym_equalequal: return emit(VM_EQ);
-    case TokenType::sym_bangequal: return emit(VM_NEQ);
-    case TokenType::sym_gt: return emit(VM_GT);
-    case TokenType::sym_gtequal: return emit(VM_GTE);
-    case TokenType::sym_lt: return emit(VM_LT);
-    case TokenType::sym_ltequal: return emit(VM_LTE);
-
-    default: {
-      throw_error("invalid binary expression");
-    }
+    default:
+      throw report_error(node.location, "invalid operand to binary operation");
   }
 }
 
-auto Compiler::expr_grouping() -> void {
-  expression();
-  must_consume(TokenType::sym_rround, "expected closing parenthesis `)`");
-}
+auto Compiler::evaluate(const IntLiteral& node) -> void {
+  if (_integers.find(node.value) != _integers.end()) {
+    emit(_integers[node.value]);
+    return;
+  }
 
-auto Compiler::literal_integer() -> void {
-  auto tok = advance();
-  auto val = Value {
+  Value value = {
     .type       = T_INT,
-    .as.integer = std::atoi(tok.lexeme().c_str()),
+    .as.integer = node.value,
   };
 
-  cnst(val);
+  auto constant_id      = cnst(value);
+  _integers[node.value] = constant_id;
 }
 
-auto Compiler::literal_double() -> void {
-  auto tok = advance();
-  auto val = Value {
+auto Compiler::evaluate(const RealLiteral& node) -> void {
+  if (_reals.find(node.value) != _reals.end()) {
+    emit(_reals[node.value]);
+    return;
+  }
+
+  Value value = {
     .type    = T_REAL,
-    .as.real = std::atof(tok.lexeme().c_str()),
+    .as.real = node.value,
   };
 
-  cnst(val);
+  auto constant_id   = cnst(value);
+  _reals[node.value] = constant_id;
 }
 
-auto Compiler::literal_bool() -> void {
-  auto booleanValue = advance().type() == TokenType::kw_true;
-  emit(booleanValue ? VM_TRU : VM_FAL);
+auto Compiler::evaluate(const BoolLiteral& node) -> void {
+  emit(node.value ? VM_TRU : VM_FAL);
 }
 
-auto Compiler::literal_string() -> void {
-  auto tok = advance();
-  auto str = (char*)memory(NULL, 0, tok.lexeme().size() + 1);
-  memcpy(str, tok.lexeme().c_str(), tok.lexeme().size());
-  str[tok.lexeme().size()] = '\0';
+auto Compiler::evaluate(const StringLiteral& node) -> void {
+  if (_strings.find(node.value) != _strings.end()) {
+    emit(_strings[node.value]);
+    return;
+  }
 
-  auto val = Value {
+  auto c_str = (char*)memory(NULL, 0x0, sizeof(char) * node.value.size() + 1);
+  memcpy(c_str, node.value.data(), node.value.size());
+  c_str[node.value.size()] = '\0';
+
+  Value value = {
     .type      = T_STR,
-    .as.string = str,
+    .as.string = c_str,
   };
 
-  cnst(val);
+  auto constant_id     = cnst(value);
+  _strings[node.value] = constant_id;
 }
 
-auto Compiler::literal_vid() -> void {
-  advance();
+auto Compiler::evaluate(const Vid&) -> void {
   emit(VM_VID);
 }
 
-// error functions
-
-auto Compiler::has_error() const -> bool {
-  return !_errors.empty();
+auto Compiler::evaluate(const Constant& node) -> void {
+  switch (node.which) {
+    case Constant::PI: return emit(VM_PI);
+    case Constant::TAU: return emit(VM_TAU);
+    case Constant::EULER: return emit(VM_EUL);
+  }
 }
 
-auto Compiler::clear_errors() -> void {
-  _errors.clear();
+auto Compiler::evaluate(const Lambda& group) -> void {
 }
 
-auto Compiler::errors() const -> const std::vector<ParsingError>& {
-  return _errors;
+auto Compiler::evaluate(const Assignment& assignment) -> void {
+}
+
+auto Compiler::evaluate(const Identifier& id) -> void {
+}
+
+auto Compiler::evaluate(const Grouping& group) -> void {
+}
+
+auto Compiler::evaluate(const Call& call) -> void {
+}
+
+auto Compiler::evaluate(const Get& get) -> void {
+}
+
+auto Compiler::execute(const Empty&) -> void {
+  emit(VM_NOP);
+}
+
+auto Compiler::execute(const Package& pkg) -> void {
+}
+
+auto Compiler::execute(const Variable& var) -> void {
+}
+
+auto Compiler::execute(const Function& fct) -> void {
+}
+
+auto Compiler::execute(const Struct&) -> void {
+}
+
+auto Compiler::execute(const Loop& l) -> void {
+}
+
+auto Compiler::execute(const Conditional& cond) -> void {
+}
+
+auto Compiler::execute(const Block& blk) -> void {
+}
+
+auto Compiler::execute(const Interrupt& r) -> void {
+}
+
+auto Compiler::execute(const ExprStmt& e) -> void {
 }
 
 // public compile function
 
-auto Compiler::compile(Iter begin, Iter end) noexcept -> void {
-  free_chunks();
-  _chunks.clear();
+auto Compiler::compile(const AST& ast) noexcept -> void {
+  init_program(&_program);
 
-  this->_tok = begin;
-  this->_end = end;
-
-  while (!eof()) {
-    try {
-      expression();
-    } catch (ParsingError& err) {
-      _errors.push_back(err);
-
-      while (!eof() && !match(TokenType::sym_semicolon)) {
-        forward();
-      }
+  try {
+    for (const auto& node : ast.program) {
+      visit_node(node);
     }
-  }
+  } catch (...) {}
 }
 
 auto Compiler::write_to_file(std::string_view file) noexcept -> void {
   const char* err = nullptr;
-
-  Program prog = {
-    .len  = _chunks.size(),
-    .cnks = _chunks.data(),
-  };
-
-  write_file(file.data(), &prog, &err);
-  if (err) { _errors.push_back(ParsingError {Severity::error, err, {0, 0}}); }
+  write_file(file.data(), &_program, &err);
+  if (err) report_error({0, 0}, err);
 }

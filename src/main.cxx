@@ -1,5 +1,6 @@
 
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -7,16 +8,30 @@
 #include <fmt/core.h>
 #include <fmt/format.h>
 
+#include <silk/common/checker.h>
 #include <silk/common/error.h>
 #include <silk/common/lexer.h>
+#include <silk/common/parser.h>
 #include <silk/compiler/compiler.h>
-#include <silk/interpreter/analyzers/checker.h>
-#include <silk/interpreter/analyzers/parser.h>
-#include <silk/interpreter/repl.h>
-#include <silk/interpreter/runtime/interpreter.h>
+#include <silk/debugger/debugger.h>
+#include <silk/repl/repl.h>
 #include <silk/util/cli.h>
 #include <silk/util/filepath.h>
 #include <silk/util/parameters.h>
+
+template <class Reporter>
+void handle_errors(Reporter* err_rep) {
+  if (err_rep->has_warning()) {
+    for (const auto& error : err_rep->errors()) {
+      std::cout << fmt::format("{}", error);
+    }
+
+    if (err_rep->has_error()) {
+      delete err_rep;
+      std::exit(1);
+    }
+  }
+}
 
 int main(const int argc, const char** argv) {
   auto params = Parameters {argc, argv};
@@ -46,56 +61,32 @@ int main(const int argc, const char** argv) {
 
     const auto tokens = Lexer {}.scan(file_stream);
 
+    auto parser = new Parser {};
+    auto ast    = parser->parse(begin(tokens), end(tokens));
+    handle_errors(parser);
+    delete parser;
+
+    auto checker = new Checker {};
+    checker->check(ast);
+    handle_errors(checker);
+    delete checker;
+
     if (params.flag(Flag::DEBUG)) {
-      // debug using interpreter
-      auto parser = Parser {};
-      auto ast    = parser.parse(begin(tokens), end(tokens));
-
-      if (parser.has_error()) {
-        for (const auto& error : parser.errors()) {
-          std::cout << fmt::format("{}", error);
-        }
-
-        return 1;
-      }
-
-      auto checker = Checker {};
-      checker.check(ast);
-
-      if (checker.has_error()) {
-        for (const auto& error : checker.errors()) {
-          std::cout << fmt::format("{}", error);
-        }
-
-        return 1;
-      }
-
-      auto interpreter = Interpreter {};
-      interpreter.interpret(ast, std::cin, std::cout);
-
+      // debug using the debugger
+      auto debugger = Debugger {};
+      debugger.debug(ast, std::cin, std::cout);
     } else {
       // compile to vm bytecode
-      auto compiler = Compiler {};
-      compiler.compile(begin(tokens), end(tokens));
+      auto compiler = new Compiler {};
+      compiler->compile(ast);
+      handle_errors(compiler);
 
-      if (compiler.has_error()) {
-        for (const auto& error : compiler.errors()) {
-          std::cout << fmt::format("{}", error);
-        }
-
-        return 1;
-      }
-
+      // output to file
       const auto file_name = get_file_name(file);
-      compiler.write_to_file(file_name);
+      compiler->write_to_file(file_name);
+      handle_errors(compiler);
 
-      if (compiler.has_error()) {
-        for (const auto& error : compiler.errors()) {
-          std::cout << fmt::format("{}", error);
-        }
-
-        return 1;
-      }
+      delete compiler;
     }
   }
 

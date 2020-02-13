@@ -54,12 +54,6 @@ static const char* footer = "SVMEND";
         break;                                                                 \
       }                                                                        \
                                                                                \
-      case T_BOOL: {                                                           \
-        READ_BYTE_IN(bool_val);                                                \
-        v.as.boolean = bool_val != 0x0;                                        \
-        break;                                                                 \
-      }                                                                        \
-                                                                               \
       case T_STR: {                                                            \
         long start = ftell(f);                                                 \
                                                                                \
@@ -77,7 +71,19 @@ static const char* footer = "SVMEND";
         break;                                                                 \
       }                                                                        \
                                                                                \
+      case T_BOOL: {                                                           \
+        break;                                                                 \
+      }                                                                        \
+                                                                               \
       case T_VID: {                                                            \
+        break;                                                                 \
+      }                                                                        \
+                                                                               \
+      case T_OBJ: {                                                            \
+        break;                                                                 \
+      }                                                                        \
+                                                                               \
+      case T_REF: {                                                            \
         break;                                                                 \
       }                                                                        \
     }                                                                          \
@@ -148,19 +154,26 @@ void read_file(const char* file, Program* prog, const char** err) {
         break;                                                                 \
       }                                                                        \
                                                                                \
-      case T_BOOL: {                                                           \
-        WRITE_BYTE(c.as.boolean);                                              \
-        break;                                                                 \
-      }                                                                        \
-                                                                               \
       case T_STR: {                                                            \
         fwrite(c.as.string, sizeof(char), strlen(c.as.string), f);             \
         int null_byte = 0x0;                                                   \
         WRITE_BYTE(null_byte);                                                 \
         break;                                                                 \
+      };                                                                       \
+                                                                               \
+      case T_BOOL: {                                                           \
+        break;                                                                 \
       }                                                                        \
                                                                                \
       case T_VID: {                                                            \
+        break;                                                                 \
+      }                                                                        \
+                                                                               \
+      case T_OBJ: {                                                            \
+        break;                                                                 \
+      }                                                                        \
+                                                                               \
+      case T_REF: {                                                            \
         break;                                                                 \
       }                                                                        \
     }                                                                          \

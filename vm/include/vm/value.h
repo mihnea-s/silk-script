@@ -8,21 +8,26 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "object.h"
+
 typedef enum {
   T_VID,
   T_INT,
   T_REAL,
   T_BOOL,
   T_STR,
+  T_OBJ,
+  T_REF,
 } ValueType;
 
 typedef struct {
   ValueType type;
   union {
-    int32_t integer;
+    int64_t integer;
     double  real;
     bool    boolean;
     char*   string;
+    Object* object;
   } as;
 } Value;
 
@@ -31,6 +36,8 @@ typedef struct {
 #define IS_REAL(val) val.type == T_REAL
 #define IS_BOOL(val) val.type == T_BOOL
 #define IS_STR(val)  val.type == T_STR
+#define IS_OBJ(val)  val.type == T_OBJ
+#define IS_REF(val)  val.type == T_REF
 
 #define VID_VAL                                                                \
   (Value) {                                                                    \

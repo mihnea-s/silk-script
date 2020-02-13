@@ -34,6 +34,10 @@ typedef enum {
   VM_GTE, // greater than equal
   VM_LTE, // less than equal
 
+  VM_PI,  // pi constant 3.141...
+  VM_TAU, // tau constant 6.28...
+  VM_EUL, // euler constant 2.78...
+
 } OpCode;
 
 #ifdef __cplusplus

@@ -60,10 +60,6 @@ enum class TokenType {
   kw_main,    // main
   kw_import,  // use
 
-  kw_true,  // true
-  kw_false, // false
-  kw_vid,   // vid
-
   kw_let,      // let
   kw_if,       // if
   kw_else,     // else
@@ -77,6 +73,15 @@ enum class TokenType {
   literal_dbl,
   literal_str,
   identifier,
+
+  // constants --------------
+  cnst_true,  // true
+  cnst_false, // false
+  cnst_vid,   // vid
+
+  cnst_pi,  // pi
+  cnst_tau, // tau
+  cnst_eul, // euler
 };
 
 // Token is a struct used for storing logical groupings
