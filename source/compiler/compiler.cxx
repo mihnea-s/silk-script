@@ -49,8 +49,8 @@ auto Compiler::evaluate(const Unary& node) -> void {
 }
 
 auto Compiler::evaluate(const Binary& node) -> void {
-  visit_node(node.right);
   visit_node(node.left);
+  visit_node(node.right);
 
   switch (node.operation) {
     case TokenType::sym_plus: return emit(VM_ADD);
