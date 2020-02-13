@@ -312,7 +312,7 @@ inline TokenType Lexer::keyword(std::string_view sv) {
 
     case 't': {
       if (sv.size() < 3) return TokenType::identifier;
-      switch (sv[2]) {
+      switch (sv[1]) {
         case 'a': return matchesRest("u", sv.substr(2), TokenType::cnst_tau);
         case 'r': return matchesRest("ue", sv.substr(2), TokenType::cnst_true);
       }
