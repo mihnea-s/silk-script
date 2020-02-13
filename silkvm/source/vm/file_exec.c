@@ -177,7 +177,7 @@ void read_file(const char* file, Program* prog, const char** err) {
         break;                                                                 \
       }                                                                        \
     }                                                                          \
-  } while (false) // TODO
+  } while (false)
 
 void write_file(const char* file, Program* prog, const char** err) {
   FILE* f = fopen(file, "w");

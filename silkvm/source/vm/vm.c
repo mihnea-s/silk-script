@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include <chunk.h>
+#include <macros.h>
 #include <mem.h>
 #include <opcode.h>
 #include <program.h>
@@ -10,40 +11,10 @@
 #include <value.h>
 #include <vm.h>
 
-#define NEXT *(vm->ip++)
-
-#define CNST vm->cnk->constants.vals[NEXT]
-
-#define PUSH(val) push_stk(&vm->stk, val)
-#define POP()     pop_stk(&vm->stk)
-
-#define UNARY(op)                                                              \
-  do {                                                                         \
-    Value res = {                                                              \
-      .type       = T_REAL,                                                    \
-      .as.integer = op POP()->as.integer,                                      \
-    };                                                                         \
-    PUSH(res);                                                                 \
-  } while (false)
-
-#define BINRY(op)                                                              \
-  do {                                                                         \
-    Value* b   = POP();                                                        \
-    Value* a   = POP();                                                        \
-    Value  res = {                                                             \
-      .type       = T_INT,                                                    \
-      .as.integer = a->as.integer op b->as.integer,                           \
-    };                                                                        \
-    PUSH(res);                                                                 \
-  } while (false)
-
-#define CASE(C, A)                                                             \
-  case C: A; break;
-
 void init_vm(VM* vm) {
   vm->cnk = NULL;
   vm->ip  = NULL;
-  vm->st  = VM_OK;
+  vm->st  = STATUS_OK;
 
   vm->stk = (Stack) {};
   init_stk(&vm->stk);
@@ -56,43 +27,34 @@ void run(VM* vm, Program* prog) {
   vm->ip  = cnk->codes;
 
   for (;;) {
-#define SILKVM_STRACE
-#ifdef SILKVM_STRACE
-    printf("[");
-    for (Value* slt = vm->stk.ptr; slt < vm->stk.sp; slt++) {
-      print_value(slt);
-      if (!(slt == vm->stk.sp - 1)) printf(", ");
-    }
-    printf("]\n");
-#endif
+    PRINT_STRACE
 
-    uint8_t ins = NEXT;
-    switch (ins) {
+    switch (NEXT) {
       CASE(VM_RET, return );
-      CASE(VM_VAL, PUSH(CNST));
+      CASE(VM_VAL, PUSH(CNST(ARG)));
 
-      CASE(VM_NEG, UNARY(-));
+      CASE(VM_NEG, INT_UNARY_OP(-));
       CASE(VM_NOT, PUSH(BOOL_VAL(falsy(POP()))));
 
-      CASE(VM_ADD, BINRY(+));
-      CASE(VM_SUB, BINRY(-));
-      CASE(VM_MUL, BINRY(*));
-      CASE(VM_DIV, BINRY(/));
-      CASE(VM_RIV, );
-      CASE(VM_POW, );
-      CASE(VM_MOD, BINRY(%));
+      CASE(VM_ADD, AUTO_BINARY_OP(+));
+      CASE(VM_SUB, AUTO_BINARY_OP(-));
+      CASE(VM_MUL, AUTO_BINARY_OP(*));
+      CASE(VM_DIV, AUTO_BINARY_OP(/));
+      CASE(VM_RIV, REAL_BINARY_FN(MUL_FLR));
+      CASE(VM_POW, REAL_BINARY_FN(pow));
+      CASE(VM_MOD, INT_BINARY_OP(%));
 
       CASE(VM_NOP, );
       CASE(VM_VID, PUSH(VID_VAL));
       CASE(VM_TRU, PUSH(BOOL_VAL(true)));
       CASE(VM_FAL, PUSH(BOOL_VAL(false)));
 
-      CASE(VM_EQ, BINRY(==));
-      CASE(VM_NEQ, BINRY(!=));
-      CASE(VM_GT, BINRY(>));
-      CASE(VM_LT, BINRY(<));
-      CASE(VM_GTE, BINRY(>=));
-      CASE(VM_LTE, BINRY(<=));
+      CASE(VM_EQ, CMP_EQ());
+      CASE(VM_NEQ, CMP_NEQ());
+      CASE(VM_GT, CMP_GT());
+      CASE(VM_LT, CMP_LT());
+      CASE(VM_GTE, CMP_GTE());
+      CASE(VM_LTE, CMP_LTE());
 
       CASE(VM_PI, PUSH(REAL_VAL(M_PI)));
       CASE(VM_TAU, PUSH(REAL_VAL(2.0 * M_PI)));

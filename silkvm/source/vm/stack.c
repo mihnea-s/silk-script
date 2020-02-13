@@ -22,14 +22,14 @@ void push_stk(Stack* stk, Value val) {
   stk->sz++;
 }
 
-Value* pop_stk(Stack* stk) {
+Value pop_stk(Stack* stk) {
   stk->sp--;
   stk->sz--;
-  return stk->sp;
+  return *stk->sp;
 }
 
-Value* peek_stk(Stack* stk, size_t dist) {
-  return stk->sp - dist;
+Value peek_stk(Stack* stk, size_t dist) {
+  return *(stk->sp - dist);
 }
 
 void reset_stk(Stack* stk) {

@@ -5,6 +5,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 set(SILK_VM_LIB "silkvm")
 set(SILK_VM_EXE "sce-run")
 
+if (NOT WIN32)
+  set(C_MATH_LIB "m")
+endif()
+
 set(VM_SRC
   "source/vm/chunk.c"
   "source/vm/constants.c"
@@ -31,4 +35,5 @@ add_executable(${SILK_VM_EXE}
 target_include_directories(${SILK_VM_LIB} PUBLIC include/vm)
 target_include_directories(${SILK_VM_EXE} PRIVATE include/)
 
+target_link_libraries(${SILK_VM_LIB} ${C_MATH_LIB})
 target_link_libraries(${SILK_VM_EXE} ${SILK_VM_LIB})

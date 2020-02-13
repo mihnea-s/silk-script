@@ -12,9 +12,10 @@ extern "C" {
 #define REALLOC_ARRAY(PTR, TYPE, OLD, NEW)                                     \
   (TYPE*)memory(PTR, OLD * sizeof(TYPE), NEW * sizeof(TYPE))
 
-#define FREE_ARRAY(PTR, TYPE, SIZE) memory(PTR, SIZE * sizeof(TYPE), 0)
+#define FREE_ARRAY(PTR, TYPE, SIZE) release(PTR, SIZE * sizeof(TYPE))
 
 void* memory(void*, size_t, size_t);
+void  release(void*, size_t);
 
 #ifdef __cplusplus
 }

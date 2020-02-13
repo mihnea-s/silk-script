@@ -9,8 +9,9 @@ extern "C" {
 #include "stack.h"
 
 typedef enum {
-  VM_OK,
-  VM_ERR,
+  STATUS_OK,
+  STATUS_ERR,
+  STATUS_FATAL,
 } VMStatus;
 
 typedef struct {

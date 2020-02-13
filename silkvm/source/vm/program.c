@@ -11,5 +11,5 @@ void free_program(Program* prog) {
     free_chunk(&prog->cnks[i]);
   }
 
-  FREE_ARRAY(prog->cnks, Chunk, prog->len);
+  release(prog->cnks, prog->len * sizeof(Chunk));
 }

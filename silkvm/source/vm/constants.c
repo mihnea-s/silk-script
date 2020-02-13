@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <string.h>
 
 #include <constants.h>
 #include <mem.h>
@@ -24,7 +25,9 @@ void write_constant(Constants* cnst, Value val) {
 void free_constants(Constants* cnst) {
   for (size_t i = 0; i < cnst->len; i++) {
     if (cnst->vals[i].type == T_STR) {
-      memory(cnst->vals[i].as.string, 0x0, 0x0);
+      char*  str_ptr  = cnst->vals[i].as.string;
+      size_t str_size = strlen(str_ptr) + 1;
+      release(str_ptr, str_size);
     }
   }
 
