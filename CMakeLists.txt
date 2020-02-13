@@ -3,42 +3,43 @@ project(SilkTool C CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 set(EXECUTABLE_NAME           "silk")
+set(SILKVM_FOLDER           "silkvm")
 
 # silkvm
-add_subdirectory(vm)
+add_subdirectory(${SILKVM_FOLDER})
 
 # {fmt}
 add_subdirectory(vendor/fmt-6.1.2)
 
 add_executable(${EXECUTABLE_NAME}
-  "src/main.cxx"
+  "source/main.cxx"
 
   # common files
-  "src/common/error.cxx"
-  "src/common/token.cxx"
-  "src/common/lexer.cxx"
-  "src/common/parser.cxx"
-  "src/common/checker.cxx"
+  "source/common/error.cxx"
+  "source/common/token.cxx"
+  "source/common/lexer.cxx"
+  "source/common/parser.cxx"
+  "source/common/checker.cxx"
   
   # debugger specific
-  "src/debugger/debugger.cxx"
+  "source/debugger/debugger.cxx"
 
   # compiler specific
-  "src/compiler/compiler.cxx"
+  "source/compiler/compiler.cxx"
 
   # repl
-  "src/repl/repl.cxx"
+  "source/repl/repl.cxx"
 
   # util
-  "src/util/cli.cxx"
-  "src/util/parameters.cxx"
-  "src/util/filepath.cxx"
+  "source/util/cli.cxx"
+  "source/util/parameters.cxx"
+  "source/util/filepath.cxx"
 )
 
 set_target_properties(${EXECUTABLE_NAME} PROPERTIES
   CXX_STANDARD 17
 )
 
-target_include_directories(${EXECUTABLE_NAME} PUBLIC include vm/include)
+target_include_directories(${EXECUTABLE_NAME} PUBLIC include ${SILKVM_FOLDER}/include)
 
 target_link_libraries(${EXECUTABLE_NAME} fmt::fmt silkvm)

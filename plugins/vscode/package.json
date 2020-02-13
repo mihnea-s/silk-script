@@ -1,0 +1,39 @@
+{
+    "name": "silk-code",
+    "publisher": "Silk Script",
+    "displayName": "Silk Code",
+    "description": "Silk Script language support",
+    "license": "MIT",
+    "repository": {
+        "url": "https://github.com/mihnea-s/silk-code"
+    },
+    "version": "0.1.0",
+    "engines": {
+        "vscode": "^1.41.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "silkscript",
+                "aliases": [
+                    "Silk Script",
+                    "silkscript"
+                ],
+                "extensions": [
+                    ".silk"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "silkscript",
+                "scopeName": "source.silk",
+                "path": "./syntaxes/silkscript.tmLanguage.json"
+            }
+        ]
+    }
+}
