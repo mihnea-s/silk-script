@@ -17,7 +17,6 @@ typedef enum {
   T_BOOL, // 3
   T_STR,  // 4
   T_OBJ,  // 5
-  T_REF,  // 6
 } ValueType;
 
 typedef struct {
@@ -36,8 +35,6 @@ typedef struct {
 #define IS_REAL(val) val.type == T_REAL
 #define IS_BOOL(val) val.type == T_BOOL
 #define IS_STR(val)  val.type == T_STR
-#define IS_OBJ(val)  val.type == T_OBJ
-#define IS_REF(val)  val.type == T_REF
 
 #define VID_VAL                                                                \
   (Value) {                                                                    \
@@ -54,6 +51,10 @@ typedef struct {
 #define BOOL_VAL(x)                                                            \
   (Value) {                                                                    \
     .type = T_BOOL, .as.boolean = x                                            \
+  }
+#define OBJ_VAL(x)                                                             \
+  (Value) {                                                                    \
+    .type = T_OBJ, .as.object = x                                              \
   }
 
 bool truthy(Value);

@@ -26,20 +26,18 @@ void run(VM* vm, Program* prog) {
   vm->cnk = cnk;
   vm->ip  = cnk->codes;
 
-  for (;;) {
+  while (vm->st == STATUS_OK) {
     PRINT_STRACE
 
     switch (NEXT) {
       CASE(VM_RET, return );
-      CASE(VM_VAL, PUSH(CNST(ARG)));
+      CASE(VM_VAL, PUSH(RODATA(ARG)));
 
       CASE(VM_NEG, INT_UNARY_OP(-));
       CASE(VM_NOT, PUSH(BOOL_VAL(falsy(POP()))));
 
-      CASE(VM_ADD, AUTO_BINARY_OP(+));
-      CASE(VM_SUB, AUTO_BINARY_OP(-));
-      CASE(VM_MUL, AUTO_BINARY_OP(*));
-      CASE(VM_DIV, AUTO_BINARY_OP(/));
+      CASE(VM_SUB, NUM_BINARY_OP(-));
+      CASE(VM_DIV, NUM_BINARY_OP(/));
       CASE(VM_RIV, REAL_BINARY_FN(MUL_FLR));
       CASE(VM_POW, REAL_BINARY_FN(pow));
       CASE(VM_MOD, INT_BINARY_OP(%));
@@ -59,6 +57,45 @@ void run(VM* vm, Program* prog) {
       CASE(VM_PI, PUSH(REAL_VAL(M_PI)));
       CASE(VM_TAU, PUSH(REAL_VAL(2.0 * M_PI)));
       CASE(VM_EUL, PUSH(REAL_VAL(M_E)));
+
+      case VM_ADD: {
+        Value b = POP();
+        Value a = POP();
+        if (IS_INT(a) && IS_INT(b)) {
+          Value res = INT_VAL(a.as.integer + b.as.integer);
+          PUSH(res);
+        } else if (IS_REAL(a) && IS_REAL(b)) {
+          Value res = REAL_VAL(a.as.real + b.as.real);
+          PUSH(res);
+        } else if (
+          (IS_STR(a) || IS_OBJ_STR(a)) && (IS_STR(b) || IS_OBJ_STR(b))) {
+          PUSH(
+            OBJ_VAL((Object*)obj_str_concat(VAL_GET_STR(a), VAL_GET_STR(b))));
+        } else {
+          vm->st = STATUS_INVT;
+        }
+
+        break;
+      }
+
+      case VM_MUL: {
+        Value b = POP();
+        Value a = POP();
+        if (IS_INT(a) && IS_INT(b)) {
+          Value res = INT_VAL(a.as.integer * b.as.integer);
+          PUSH(res);
+        } else if (IS_REAL(a) && IS_REAL(b)) {
+          Value res = REAL_VAL(a.as.real * b.as.real);
+          PUSH(res);
+        } else if ((IS_STR(a) || IS_OBJ_STR(a)) && IS_INT(b)) {
+          PUSH(
+            OBJ_VAL((Object*)obj_str_multiply(VAL_GET_STR(a), b.as.integer)));
+        } else {
+          vm->st = STATUS_INVT;
+        }
+
+        break;
+      }
     }
   }
 }

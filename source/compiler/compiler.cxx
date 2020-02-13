@@ -1,16 +1,16 @@
-#include "silk/common/ast.h"
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 
 #include <vm/chunk.h>
-#include <vm/constants.h>
+#include <vm/rodata.h>
 #include <vm/file_exec.h>
 #include <vm/mem.h>
 #include <vm/object.h>
 #include <vm/opcode.h>
 #include <vm/value.h>
 
+#include <silk/common/ast.h>
 #include <silk/common/error.h>
 #include <silk/common/token.h>
 #include <silk/compiler/compiler.h>
@@ -27,10 +27,10 @@ auto Compiler::current_chunk() -> Chunk* {
 
 auto Compiler::cnst(Value value) -> std::uint8_t {
   auto cnk = current_chunk();
-  auto id  = cnk->constants.len;
+  auto id  = 
+  write_rod(cnk, value);
   write_ins(cnk, VM_VAL);
   write_ins(cnk, id);
-  write_constant(&cnk->constants, value);
   return id;
 }
 

@@ -19,6 +19,12 @@ typedef struct {
   ObjType type;
 } Object;
 
+#define IS_OBJ(val)     (val.type == T_OBJ)
+#define IS_OBJ_STR(val) (IS_OBJ(val) && val.as.object->type == O_STRING)
+#define IS_OBJ_LST(val) (IS_OBJ(val) && val.as.object->type == O_LIST)
+#define IS_OBJ_VEC(val) (IS_OBJ(val) && val.as.object->type == O_VECTOR)
+#define IS_OBJ_PCT(val) (IS_OBJ(val) && val.as.object->type == O_POINT)
+
 typedef struct {
   Object obj;
   size_t size;

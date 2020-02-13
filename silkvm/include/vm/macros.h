@@ -9,7 +9,7 @@
 #define ARG  NEXT
 #define VARG NEXT // TODO temporary
 
-#define CNST(i) vm->cnk->constants.vals[i]
+#define RODATA(i) vm->cnk->rod.vals[i]
 
 #define PUSH(val) push_stk(&vm->stk, val)
 #define POP()     pop_stk(&vm->stk)
@@ -35,8 +35,10 @@
     Value a = POP();                                                           \
     if (IS_BOOL(a)) {                                                          \
       PUSH(BOOL_VAL(op a.as.boolean));                                         \
-    } else {                                                                   \
+    } else if (IS_INT(a)) {                                                    \
       PUSH(INT_VAL(op a.as.integer));                                          \
+    } else {                                                                   \
+      vm->st = STATUS_INVT;                                                    \
     }                                                                          \
   } while (false)
 
@@ -76,29 +78,18 @@
     PUSH(res);                                                                 \
   } while (false);
 
-#define AUTO_BINARY_OP(op)                                                     \
+#define NUM_BINARY_OP(op)                                                      \
   do {                                                                         \
     Value b = POP();                                                           \
     Value a = POP();                                                           \
     if (IS_INT(a) && IS_INT(b)) {                                              \
       Value res = INT_VAL(a.as.integer op b.as.integer);                       \
       PUSH(res);                                                               \
-    } else {                                                                   \
+    } else if (IS_REAL(a) && IS_REAL(b)) {                                     \
       Value res = REAL_VAL(a.as.real op b.as.real);                            \
       PUSH(res);                                                               \
-    }                                                                          \
-  } while (false)
-
-#define AUTO_BINARY_FN(fn)                                                     \
-  do {                                                                         \
-    Value b = POP();                                                           \
-    Value a = POP();                                                           \
-    if (IS_INT(a) && IS_INT(b)) {                                              \
-      Value res = INT_VAL(fn(a.as.integer, b.as.integer));                     \
-      PUSH(res);                                                               \
     } else {                                                                   \
-      Value res = REAL_VAL(fn(a.as.real, b.as.real));                          \
-      PUSH(res);                                                               \
+      vm->st = STATUS_INVT;                                                    \
     }                                                                          \
   } while (false)
 
@@ -114,6 +105,11 @@
 // ============================================================================
 
 #define MUL_FLR(a, b) floor(a* b)
+
+#define NOTHING(...)
+
+#define VAL_GET_STR(a)                                                         \
+  IS_STR(a) ? a.as.string : ((ObjectString*)a.as.object)->data
 
 #define CASE(C, A)                                                             \
   case C:                                                                      \

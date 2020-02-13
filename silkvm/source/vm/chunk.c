@@ -2,17 +2,14 @@
 #include <stdint.h>
 
 #include <chunk.h>
-#include <constants.h>
+#include <rodata.h>
 #include <mem.h>
 
 void init_chunk(Chunk *cnk) {
   cnk->cap = 0;
   cnk->len = 0;
   cnk->codes = NULL;
-
-  Constants cnst;
-  init_constants(&cnst);
-  cnk->constants = cnst;
+  init_rodata(&cnk->rod);
 }
 
 void write_ins(Chunk *cnk, uint8_t ins) {
@@ -26,12 +23,12 @@ void write_ins(Chunk *cnk, uint8_t ins) {
   cnk->len++;
 }
 
-size_t constant(Chunk *cnk, Value val) {
-  write_constant(&cnk->constants, val);
-  return cnk->constants.len - 1;
+size_t write_rod(Chunk *cnk, Value val) {
+  rodata_write(&cnk->rod, val);
+  return cnk->rod.len - 1;
 }
 
 void free_chunk(Chunk *cnk) {
+  free_rodata(&cnk->rod);
   FREE_ARRAY(cnk->codes, uint8_t, cnk->cap);
-  free_constants(&cnk->constants);
 }

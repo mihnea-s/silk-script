@@ -16,7 +16,7 @@ size_t single(size_t ofst, const char* name) {
 size_t load_val(Chunk* cnk, size_t ofst) {
   uint8_t val_ofst = cnk->codes[ofst + 1];
   printf("0x%03zx VAL 0x%02d (", ofst, val_ofst);
-  print_value(cnk->constants.vals[val_ofst]);
+  print_value(cnk->rod.vals[val_ofst]);
   printf(")\n");
   return ofst + 2;
 }

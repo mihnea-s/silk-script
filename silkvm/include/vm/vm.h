@@ -10,8 +10,10 @@ extern "C" {
 
 typedef enum {
   STATUS_OK,
-  STATUS_ERR,
-  STATUS_FATAL,
+  STATUS_FIN,
+  STATUS_INVT,
+  STATUS_INVA,
+
 } VMStatus;
 
 typedef struct {

@@ -82,10 +82,6 @@ static const char* footer = "SVMEND";
       case T_OBJ: {                                                            \
         break;                                                                 \
       }                                                                        \
-                                                                               \
-      case T_REF: {                                                            \
-        break;                                                                 \
-      }                                                                        \
     }                                                                          \
   } while (false);
 
@@ -114,7 +110,7 @@ void read_file(const char* file, Program* prog, const char** err) {
 
     for (; constant_count; constant_count--) {
       READ_VALUE_IN(constant_value);
-      constant(cnk, constant_value);
+      write_rod(cnk, constant_value);
     }
 
     READ_WORD_IN(instruction_count);
@@ -172,10 +168,6 @@ void read_file(const char* file, Program* prog, const char** err) {
       case T_OBJ: {                                                            \
         break;                                                                 \
       }                                                                        \
-                                                                               \
-      case T_REF: {                                                            \
-        break;                                                                 \
-      }                                                                        \
     }                                                                          \
   } while (false)
 
@@ -194,12 +186,12 @@ void write_file(const char* file, Program* prog, const char** err) {
   for (size_t i = 0; i < prog->len; i++) {
     Chunk* cnk = &prog->cnks[i];
 
-    uint8_t constant_count = cnk->constants.len;
+    uint8_t constant_count = cnk->rod.len;
 
     WRITE_BYTE(constant_count);
 
     for (size_t i = 0; i < constant_count; i++) {
-      WRITE_VALUE(cnk->constants.vals[i]);
+      WRITE_VALUE(cnk->rod.vals[i]);
     }
 
     uint16_t instruction_count = cnk->len;

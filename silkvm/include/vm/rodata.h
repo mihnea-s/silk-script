@@ -13,11 +13,11 @@ typedef struct {
   size_t len;
   size_t cap;
   Value* vals;
-} Constants;
+} Rodata;
 
-void init_constants(Constants*);
-void write_constant(Constants*, Value);
-void free_constants(Constants*);
+void init_rodata(Rodata*);
+void rodata_write(Rodata*, Value);
+void free_rodata(Rodata*);
 
 #ifdef __cplusplus
 }

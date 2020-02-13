@@ -11,10 +11,11 @@ endif()
 
 set(VM_SRC
   "source/vm/chunk.c"
-  "source/vm/constants.c"
+  "source/vm/rodata.c"
   "source/vm/disas.c"
   "source/vm/mem.c"
   "source/vm/program.c"
+  "source/vm/object.c"
   "source/vm/value.c"
   "source/vm/vm.c"
   "source/vm/stack.c"

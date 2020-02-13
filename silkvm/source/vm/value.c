@@ -14,7 +14,6 @@ bool truthy(Value v) {
     case T_BOOL: return v.as.boolean;
     case T_STR: return v.as.string[0] != '\0';
     case T_OBJ: return true;
-    case T_REF: return true;
   }
 }
 
@@ -29,7 +28,6 @@ void print_value(Value v) {
     case T_BOOL: PRINT_BR("%s", v.as.boolean ? "true" : "false");
     case T_STR: PRINT_BR("'%s'", v.as.string);
     case T_VID: PRINT_BR("[vid]");
-    case T_REF: PRINT_BR("[reference]");
     case T_OBJ: PRINT_BR("[object]")
   }
 }
