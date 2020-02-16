@@ -69,7 +69,11 @@ SilkType Checker::evaluate(const Lambda&) {
   return SilkType::CALLABLE;
 }
 
-SilkType Checker::evaluate(const Identifier& node) {
+SilkType Checker::evaluate(const IdentifierRef& node) {
+  return variable_type(node.identifier);
+}
+
+SilkType Checker::evaluate(const IdentifierVal& node) {
   return variable_type(node.identifier);
 }
 
@@ -92,6 +96,10 @@ SilkType Checker::evaluate(const Grouping& node) {
   return visit_node(node.inner);
 }
 
+SilkType Checker::evaluate(const ConstExpr& node) {
+  return visit_node(node.inner);
+}
+
 SilkType Checker::evaluate(const Call& node) {
   auto callee = visit_node(node.target);
 
@@ -102,7 +110,7 @@ SilkType Checker::evaluate(const Call& node) {
   return SilkType::DYNAMIC;
 }
 
-SilkType Checker::evaluate(const Get& node) {
+SilkType Checker::evaluate(const Access& node) {
   auto target = visit_node(node.target);
 
   if (!of_type_or_dyn(target, SilkType::INSTANCE)) {
@@ -159,7 +167,15 @@ SilkType Checker::execute(const Loop& node) {
 SilkType Checker::execute(const Conditional& node) {
   visit_node(node.clause);
   visit_node(node.if_true);
-  visit_node(node.if_false);
+  if (node.if_false) visit_node(node.if_false);
+  return SilkType::NONE;
+}
+
+SilkType Checker::execute(const Match&) {
+  return SilkType::NONE;
+}
+
+SilkType Checker::execute(const MatchCase&) {
   return SilkType::NONE;
 }
 
@@ -175,9 +191,15 @@ SilkType Checker::execute(const Interrupt&) {
   return SilkType::NONE;
 }
 
+SilkType Checker::execute(const Return&) {
+  return SilkType::NONE;
+}
+
 // check ast function
 auto Checker::check(const AST& ast) noexcept -> void {
   for (const auto& node : ast.program) {
-    visit_node(node);
+    try {
+      visit_node(node);
+    } catch (...) {}
   }
 }

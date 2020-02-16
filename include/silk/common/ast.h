@@ -10,6 +10,8 @@
 
 #include "token.h"
 
+struct ASTNode;
+
 struct ASTNode {
   enum NodeType {
     Unary,
@@ -21,11 +23,13 @@ struct ASTNode {
     Vid,
     Constant,
     Lambda,
-    Identifier,
+    IdentifierRef,
+    IdentifierVal,
     Assignment,
     Grouping,
     Call,
-    Get,
+    Access,
+    ConstExpr,
 
     Empty,
     Package,
@@ -35,8 +39,11 @@ struct ASTNode {
     Struct,
     Loop,
     Conditional,
+    Match,
+    MatchCase,
     Block,
     Interrupt,
+    Return,
   };
 
   using Location = std::pair<std::uint64_t, std::uint64_t>;
@@ -105,8 +112,13 @@ struct Lambda : ASTNode {
   const ASTNodePtr      body;
 };
 
-struct Identifier : ASTNode {
-  constexpr static auto node_enum = ASTNode::Identifier;
+struct IdentifierRef : ASTNode {
+  constexpr static auto node_enum = ASTNode::IdentifierRef;
+  const std::string     identifier;
+};
+
+struct IdentifierVal : ASTNode {
+  constexpr static auto node_enum = ASTNode::IdentifierVal;
   const std::string     identifier;
 };
 
@@ -127,10 +139,15 @@ struct Call : ASTNode {
   const ASTNodeList     args;
 };
 
-struct Get : ASTNode {
-  constexpr static auto node_enum = ASTNode::Get;
+struct Access : ASTNode {
+  constexpr static auto node_enum = ASTNode::Access;
   const ASTNodePtr      target;
   const ASTNodePtr      property;
+};
+
+struct ConstExpr : ASTNode {
+  constexpr static auto node_enum = ASTNode::ConstExpr;
+  const ASTNodePtr      inner;
 };
 
 // Statements
@@ -164,6 +181,18 @@ struct Conditional : ASTNode {
   const ASTNodePtr      if_false;
 };
 
+struct Match : ASTNode {
+  constexpr static auto node_enum = ASTNode::Match;
+  const ASTNodePtr      target;
+  const ASTNodeList     cases;
+};
+
+struct MatchCase : ASTNode {
+  constexpr static auto node_enum = ASTNode::MatchCase;
+  const ASTNodePtr      pattern;
+  const ASTNodePtr      body;
+};
+
 struct Block : ASTNode {
   constexpr static auto node_enum = ASTNode::Block;
   const ASTNodeList     body;
@@ -176,11 +205,17 @@ struct Interrupt : ASTNode {
   const InterruptType type;
 };
 
+struct Return : ASTNode {
+  constexpr static auto node_enum = ASTNode::Return;
+  const ASTNodePtr      value;
+};
+
 struct Variable : ASTNode {
   constexpr static auto node_enum = ASTNode::Variable;
   const std::string     name;
   const ASTType         type;
   const ASTNodePtr      initializer;
+  const bool            is_constant;
 };
 
 struct Function : ASTNode {
@@ -190,6 +225,7 @@ struct Function : ASTNode {
   const ASTParameters   parameters;
   const ASTNodePtr      body;
   const bool            is_virtual;
+  const bool            is_async;
 };
 
 struct Struct : ASTNode {
@@ -218,11 +254,13 @@ class ASTVisitor {
   virtual T evaluate(const Vid&)           = 0;
   virtual T evaluate(const Constant&)      = 0;
   virtual T evaluate(const Lambda&)        = 0;
-  virtual T evaluate(const Identifier&)    = 0;
+  virtual T evaluate(const IdentifierRef&) = 0;
+  virtual T evaluate(const IdentifierVal&) = 0;
   virtual T evaluate(const Assignment&)    = 0;
   virtual T evaluate(const Grouping&)      = 0;
   virtual T evaluate(const Call&)          = 0;
-  virtual T evaluate(const Get&)           = 0;
+  virtual T evaluate(const Access&)        = 0;
+  virtual T evaluate(const ConstExpr&)     = 0;
 
   virtual T execute(const Empty&)       = 0;
   virtual T execute(const Package&)     = 0;
@@ -231,9 +269,12 @@ class ASTVisitor {
   virtual T execute(const Function&)    = 0;
   virtual T execute(const Struct&)      = 0;
   virtual T execute(const Loop&)        = 0;
+  virtual T execute(const Match&)       = 0;
+  virtual T execute(const MatchCase&)   = 0;
   virtual T execute(const Conditional&) = 0;
   virtual T execute(const Block&)       = 0;
   virtual T execute(const Interrupt&)   = 0;
+  virtual T execute(const Return&)      = 0;
 
   T visit_node(const ASTNodePtr& node) {
     auto& node_ref = *node.get();
@@ -256,16 +297,20 @@ class ASTVisitor {
         return evaluate(static_cast<const Constant&>(node_ref));
       case ASTNode::Lambda: //
         return evaluate(static_cast<const Lambda&>(node_ref));
-      case ASTNode::Identifier: //
-        return evaluate(static_cast<const Identifier&>(node_ref));
+      case ASTNode::IdentifierRef: //
+        return evaluate(static_cast<const IdentifierRef&>(node_ref));
+      case ASTNode::IdentifierVal: //
+        return evaluate(static_cast<const IdentifierVal&>(node_ref));
       case ASTNode::Assignment: //
         return evaluate(static_cast<const Assignment&>(node_ref));
       case ASTNode::Grouping: //
         return evaluate(static_cast<const Grouping&>(node_ref));
       case ASTNode::Call: //
         return evaluate(static_cast<const Call&>(node_ref));
-      case ASTNode::Get: //
-        return evaluate(static_cast<const Get&>(node_ref));
+      case ASTNode::Access: //
+        return evaluate(static_cast<const Access&>(node_ref));
+      case ASTNode::ConstExpr: //
+        return evaluate(static_cast<const ConstExpr&>(node_ref));
 
       case ASTNode::Empty: //
         return execute(static_cast<const Empty&>(node_ref));
@@ -281,12 +326,18 @@ class ASTVisitor {
         return execute(static_cast<const Struct&>(node_ref));
       case ASTNode::Loop: //
         return execute(static_cast<const Loop&>(node_ref));
+      case ASTNode::Match: //
+        return execute(static_cast<const Match&>(node_ref));
+      case ASTNode::MatchCase: //
+        return execute(static_cast<const MatchCase&>(node_ref));
       case ASTNode::Conditional: //
         return execute(static_cast<const Conditional&>(node_ref));
       case ASTNode::Block: //
         return execute(static_cast<const Block&>(node_ref));
       case ASTNode::Interrupt: //
         return execute(static_cast<const Interrupt&>(node_ref));
+      case ASTNode::Return: //
+        return execute(static_cast<const Return&>(node_ref));
 
       default: throw std::logic_error {"invalid program state"};
     }

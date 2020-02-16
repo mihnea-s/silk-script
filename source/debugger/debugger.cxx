@@ -294,7 +294,11 @@ auto Debugger::evaluate(const Assignment& node) -> ValuePtr {
   return nullptr;
 }
 
-auto Debugger::evaluate(const Identifier& node) -> ValuePtr {
+auto Debugger::evaluate(const IdentifierRef& node) -> ValuePtr {
+  return nullptr;
+}
+
+auto Debugger::evaluate(const IdentifierVal& node) -> ValuePtr {
   return nullptr;
 }
 
@@ -306,7 +310,11 @@ auto Debugger::evaluate(const Call& node) -> ValuePtr {
   return nullptr;
 }
 
-auto Debugger::evaluate(const Get& node) -> ValuePtr {
+auto Debugger::evaluate(const Access& node) -> ValuePtr {
+  return nullptr;
+}
+
+auto Debugger::evaluate(const ConstExpr& node) -> ValuePtr {
   return nullptr;
 }
 
@@ -388,6 +396,14 @@ auto Debugger::execute(const Conditional& node) -> ValuePtr {
   return nullptr;
 }
 
+auto Debugger::execute(const Match&) -> ValuePtr {
+  return nullptr;
+}
+
+auto Debugger::execute(const MatchCase&) -> ValuePtr {
+  return nullptr;
+}
+
 auto Debugger::execute(const Block& node) -> ValuePtr {
   // auto scp = _env.new_scope();
 
@@ -404,6 +420,10 @@ auto Debugger::execute(const Interrupt& node) -> ValuePtr {
   //   Interrupt::Type::ret,
   // };
 
+  return nullptr;
+}
+
+auto Debugger::execute(const Return& node) -> ValuePtr {
   return nullptr;
 }
 

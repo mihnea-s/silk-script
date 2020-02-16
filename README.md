@@ -12,7 +12,7 @@ of `std::variant`, `std::shared_ptr`s and dynamic casts.
 
 - [Introduction](#introduction)
 - [Command line interface](#command-line-interface)
-- [The Virtual Machine](#the-virtual-machine)
+- [The Virtual Machine (Moth)](#the-virtual-machine-moth)
 - [Documentation](#documentation)
   - [Variables](#variables)
   - [Primitive types](#primitive-types)
@@ -39,9 +39,9 @@ with it's own interpreter.
   -i, --interactive ->  open a repl session
 ```
 
-## The Virtual Machine
+## The Virtual Machine (Moth)
 
-SilkVM is still a work in progress.
+Moth VM is still a work in progress.
 
 ## Documentation
 

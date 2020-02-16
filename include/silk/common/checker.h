@@ -26,7 +26,7 @@ class Checker : ASTVisitor<SilkType>, public ErrorReporter {
   template <class... Args>
   constexpr auto of_type_or_dyn(SilkType type, Args... others) -> bool {
     if (type == SilkType::DYNAMIC) return true;
-    return of_type(type, others...);
+    return of_type(type, others...) || ((others == SilkType::DYNAMIC) || ...);
   }
 
   template <class... Args>
@@ -69,11 +69,13 @@ class Checker : ASTVisitor<SilkType>, public ErrorReporter {
   SilkType evaluate(const Vid&) final;
   SilkType evaluate(const Constant&) final;
   SilkType evaluate(const Lambda&) final;
-  SilkType evaluate(const Identifier&) final;
+  SilkType evaluate(const IdentifierVal&) final;
+  SilkType evaluate(const IdentifierRef&) final;
   SilkType evaluate(const Assignment&) final;
   SilkType evaluate(const Grouping&) final;
   SilkType evaluate(const Call&) final;
-  SilkType evaluate(const Get&) final;
+  SilkType evaluate(const Access&) final;
+  SilkType evaluate(const ConstExpr&) final;
 
   SilkType execute(const Empty&) final;
   SilkType execute(const Package&) final;
@@ -83,8 +85,11 @@ class Checker : ASTVisitor<SilkType>, public ErrorReporter {
   SilkType execute(const Struct&) final;
   SilkType execute(const Loop&) final;
   SilkType execute(const Conditional&) final;
+  SilkType execute(const Match&) final;
+  SilkType execute(const MatchCase&) final;
   SilkType execute(const Block&) final;
   SilkType execute(const Interrupt&) final;
+  SilkType execute(const Return&) final;
 
   public:
   // check ast function

@@ -54,7 +54,13 @@ const Lexer::TokensVector& Lexer::scan(std::istream& in) noexcept {
               add(TokenType::sym_minusequal, "-=");
               break;
             }
-            case '\0':
+
+            case '>': {
+              advance_column();
+              add(TokenType::sym_arrow, "->");
+              break;
+            }
+
             default: {
               add(TokenType::sym_minus, "-");
               break;
@@ -75,7 +81,7 @@ const Lexer::TokensVector& Lexer::scan(std::istream& in) noexcept {
         }
 
         case '%': {
-          add(TokenType::sym_percent, "%");
+          compound("%%", {TokenType::sym_percent, TokenType::sym_percperc});
           break;
         }
 
@@ -95,7 +101,23 @@ const Lexer::TokensVector& Lexer::scan(std::istream& in) noexcept {
         }
 
         case '<': {
-          compound("<=", {TokenType::sym_lt, TokenType::sym_ltequal});
+          switch (peek()) {
+            case '=': {
+              add(TokenType::sym_ltequal, "<=");
+              break;
+            }
+
+            case '-': {
+              add(TokenType::sym_rarrow, "<-");
+              break;
+            }
+
+            default: {
+              add(TokenType::sym_lt, "<");
+              break;
+            }
+          }
+
           break;
         }
 
@@ -109,6 +131,26 @@ const Lexer::TokensVector& Lexer::scan(std::istream& in) noexcept {
           break;
         }
 
+        case '?': {
+          compound("??", {TokenType::sym_qmark, TokenType::sym_qmarkqmark});
+          break;
+        }
+
+        case ':': {
+          compound("::", {TokenType::sym_colon, TokenType::sym_coloncolon});
+          break;
+        }
+
+        case '@': {
+          compound("@@", {TokenType::sym_at, TokenType::sym_atat});
+          break;
+        }
+
+        case '_': {
+          compound("__", {TokenType::sym_uscore, TokenType::sym_uscoreuscore});
+          break;
+        }
+
         case '~': {
           add(TokenType::sym_tilde, "~");
           break;
@@ -119,18 +161,8 @@ const Lexer::TokensVector& Lexer::scan(std::istream& in) noexcept {
           break;
         }
 
-        case ':': {
-          add(TokenType::sym_colon, ":");
-          break;
-        }
-
         case ';': {
           add(TokenType::sym_semicolon, ";");
-          break;
-        }
-
-        case '?': {
-          add(TokenType::sym_question, "?");
           break;
         }
 
@@ -138,7 +170,7 @@ const Lexer::TokensVector& Lexer::scan(std::istream& in) noexcept {
           if (std::isdigit(peek())) {
             number(true);
           } else {
-            add(TokenType::sym_dot, ".");
+            compound("..", {TokenType::sym_dot, TokenType::sym_dotdot});
           }
 
           break;
@@ -153,11 +185,6 @@ const Lexer::TokensVector& Lexer::scan(std::istream& in) noexcept {
           while (!eol()) {
             advance_column();
           }
-          break;
-        }
-
-        case '@': {
-          add(TokenType::sym_at, "@");
           break;
         }
 
@@ -272,10 +299,20 @@ Lexer::matchesRest(std::string_view s, std::string_view v, TokenType t) {
 inline TokenType Lexer::keyword(std::string_view sv) {
   switch (sv[0]) {
 
+    case 'a': {
+      if (sv.size() < 2) return TokenType::identifier;
+      switch (sv[1]) {
+        case 's': return matchesRest("ync", sv.substr(2), TokenType::kw_async);
+        case 'w': return matchesRest("ait", sv.substr(2), TokenType::kw_await);
+        case 'n': return matchesRest("d", sv.substr(2), TokenType::kw_and);
+        default: return TokenType::identifier;
+      }
+    }
+
     case 'f': {
       if (sv.size() < 2) return TokenType::identifier;
       switch (sv[1]) {
-        case 'c': return matchesRest("t", sv.substr(2), TokenType::kw_function);
+        case 'c': return matchesRest("t", sv.substr(2), TokenType::kw_fct);
         case 'a':
           return matchesRest("lse", sv.substr(2), TokenType::cnst_false);
         case 'o': return matchesRest("r", sv.substr(2), TokenType::kw_for);
@@ -287,8 +324,15 @@ inline TokenType Lexer::keyword(std::string_view sv) {
       if (sv.size() < 2) return TokenType::identifier;
       switch (sv[1]) {
         case 't': return matchesRest("or", sv.substr(2), TokenType::kw_ctor);
-        case 'o':
-          return matchesRest("ntinue", sv.substr(2), TokenType::kw_continue);
+        case 'o': {
+          if (sv.size() < 4) return TokenType::identifier;
+          switch (sv[3]) { // c o n [s]
+            case 's': matchesRest("t", sv.substr(4), TokenType::kw_const);
+            case 't':
+              return matchesRest("inue", sv.substr(4), TokenType::kw_continue);
+            default: return TokenType::identifier;
+          }
+        }
         default: return TokenType::identifier;
       }
     }
@@ -305,32 +349,71 @@ inline TokenType Lexer::keyword(std::string_view sv) {
 
     case 'p': {
       if (sv.size() < 2) return TokenType::identifier;
-      if (sv.size() == 2)
-        return sv[1] == 'i' ? TokenType::cnst_pi : TokenType::identifier;
-      return matchesRest("kg", sv.substr(1), TokenType::kw_package);
+      switch (sv[1]) {
+        case 'i': return matchesRest("", sv.substr(2), TokenType::cnst_pi);
+        case 'k': return matchesRest("g", sv.substr(2), TokenType::kw_pkg);
+        default: return TokenType::identifier;
+      }
     }
 
     case 't': {
       if (sv.size() < 3) return TokenType::identifier;
       switch (sv[1]) {
+        case 'y':
+          return matchesRest("peof", sv.substr(2), TokenType::kw_typeof);
         case 'a': return matchesRest("u", sv.substr(2), TokenType::cnst_tau);
         case 'r': return matchesRest("ue", sv.substr(2), TokenType::cnst_true);
+        default: return TokenType::identifier;
       }
     }
 
     case 'e': {
       if (sv.size() < 2) return TokenType::cnst_eul;
-      return matchesRest("lse", sv.substr(1), TokenType::kw_else);
+      switch (sv[1]) {
+        case 'l': return matchesRest("se", sv.substr(2), TokenType::kw_else);
+        case 'x':
+          return matchesRest("tern", sv.substr(2), TokenType::kw_extern);
+        default: return TokenType::identifier;
+      }
+    }
+
+    case 'm': {
+      if (sv.size() < 3 || sv[1] != 'a') return TokenType::identifier;
+      switch (sv[2]) {
+        case 't': return matchesRest("ch", sv.substr(3), TokenType::kw_match);
+        case 'i': return matchesRest("n", sv.substr(3), TokenType::kw_main);
+        default: return TokenType::identifier;
+      }
+    }
+
+    case 'i': {
+      if (sv.size() < 2) return TokenType::identifier;
+      switch (sv[1]) {
+        case 'f': return matchesRest("", sv.substr(2), TokenType::kw_if);
+        case 's': {
+          if (sv.size() == 2) return TokenType::kw_is;
+          return matchesRest("nt", sv.substr(3), TokenType::kw_isnt);
+        }
+        default: return TokenType::identifier;
+      }
+    }
+
+    case 'd': {
+      if (sv.size() < 2) return TokenType::identifier;
+      switch (sv[1]) {
+        case 't': return matchesRest("or", sv.substr(2), TokenType::kw_dtor);
+        case 'e': return matchesRest("f", sv.substr(2), TokenType::kw_def);
+        default: return TokenType::identifier;
+      }
     }
 
     case 's': return matchesRest("truct", sv.substr(1), TokenType::kw_struct);
-    case 'r': return matchesRest("eturn", sv.substr(1), TokenType::kw_break);
-    case 'd': return matchesRest("tor", sv.substr(1), TokenType::kw_dtor);
-    case 'm': return matchesRest("ain", sv.substr(1), TokenType::kw_main);
-    case 'u': return matchesRest("se", sv.substr(1), TokenType::kw_import);
+    case 'r': return matchesRest("eturn", sv.substr(1), TokenType::kw_return);
+    case 'u': return matchesRest("se", sv.substr(1), TokenType::kw_use);
     case 'l': return matchesRest("et", sv.substr(1), TokenType::kw_let);
-    case 'i': return matchesRest("f", sv.substr(1), TokenType::kw_if);
     case 'b': return matchesRest("reak", sv.substr(1), TokenType::kw_break);
+    case 'n': return matchesRest("ot", sv.substr(1), TokenType::kw_not);
+    case 'o': return matchesRest("r", sv.substr(1), TokenType::kw_or);
 
     default: return TokenType::identifier;
   }

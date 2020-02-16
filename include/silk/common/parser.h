@@ -19,14 +19,14 @@ class Parser : public ErrorReporter {
   enum class Precedence {
     ANY,        // lowest
     ASSIGNMENT, // =
-    OR,         // ||
+    OR,         // || is isnt
     AND,        // &&
     EQUALITY,   // == !=
     COMPARISON, // < > <= >=
     TERM,       // + -
     FACTOR,     // * / // %
     POWER,      // **
-    UNARY,      // ! -
+    UNARY,      // ! - typeof
     CALL,       // . ()
     NONE,       // highest
   };
@@ -40,18 +40,20 @@ class Parser : public ErrorReporter {
     Precedence prec    = Precedence::ANY;
   };
 
-  static std::unordered_map<TokenType, Rule> rules;
+  static const Rule no_rule;
+
+  static const std::unordered_map<TokenType, Rule> rules;
 
   // position helper functions
   inline auto forward() -> void;
   inline auto backward() -> void;
 
   // move forward and return previous token
-  inline auto advance() -> Token;
+  inline auto advance() -> const Token&;
 
   // token access
-  inline auto previous() const -> Token;
-  inline auto current() const -> Token;
+  inline auto previous() const -> const Token&;
+  inline auto current() const -> const Token&;
 
   // check end of token stream
   inline auto eof() const -> bool;
@@ -106,18 +108,49 @@ class Parser : public ErrorReporter {
   };
 
   // Pratt Parser functions
-  auto get_rule(TokenType) -> Rule&;
-  auto higher(Precedence) -> Precedence;
-  auto lower(Precedence) -> Precedence;
+  auto get_rule(const Token&) const -> const Rule&;
+  auto higher(Precedence) const -> Precedence;
+  auto lower(Precedence) const -> Precedence;
 
   auto precendece(Precedence) -> ASTNodePtr;
 
-  // expressions
+  auto parse_name() -> std::string;
+  auto parse_type() -> ASTType;
+  auto parse_pkg() -> std::string;
+  auto parse_parameters() -> ASTParameters;
+
+  auto declaration() -> ASTNodePtr;
+  auto statement() -> ASTNodePtr;
   auto expression() -> ASTNodePtr;
 
+  // declarations
+  auto decl_variable() -> ASTNodePtr;
+  auto decl_function() -> ASTNodePtr;
+  auto decl_struct() -> ASTNodePtr;
+  auto decl_method() -> ASTNodePtr;
+  auto decl_package() -> ASTNodePtr;
+
+  // statements
+  auto stmt_empty() -> ASTNodePtr;
+  auto stmt_block() -> ASTNodePtr;
+  auto stmt_conditional() -> ASTNodePtr;
+  auto stmt_loop() -> ASTNodePtr;
+  auto stmt_match() -> ASTNodePtr;
+  auto stmt_matchcase() -> ASTNodePtr;
+  auto stmt_interrupt() -> ASTNodePtr;
+  auto stmt_return() -> ASTNodePtr;
+  auto stmt_exprstmt() -> ASTNodePtr;
+
+  // expressions
   auto expr_unary() -> ASTNodePtr;
   auto expr_binary(ASTNodePtr) -> ASTNodePtr;
+  auto expr_const() -> ASTNodePtr;
+  auto expr_lambda() -> ASTNodePtr;
+  auto expr_call(ASTNodePtr) -> ASTNodePtr;
   auto expr_grouping() -> ASTNodePtr;
+  auto expr_constexpr() -> ASTNodePtr;
+  auto expr_assignment(ASTNodePtr) -> ASTNodePtr;
+  auto expr_identifier() -> ASTNodePtr;
 
   // literals
   auto literal_integer() -> ASTNodePtr;

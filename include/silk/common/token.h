@@ -17,6 +17,7 @@ enum class TokenType {
   sym_star,       // *
   sym_starstar,   // **
   sym_percent,    // %
+  sym_percperc,   // %%
 
   sym_equal,      // =
   sym_equalequal, // ==
@@ -26,6 +27,9 @@ enum class TokenType {
   sym_lt,         // <
   sym_ltequal,    // <=
 
+  sym_arrow,  // ->
+  sym_rarrow, // <-
+
   sym_amp,      // &
   sym_ampamp,   // &&
   sym_pipe,     // |
@@ -34,12 +38,18 @@ enum class TokenType {
   sym_bang,     // !
   sym_caret,    // ^
 
-  sym_colon,     // :
-  sym_semicolon, // ;
-  sym_question,  // ?
-  sym_dot,       // .
-  sym_comma,     // ,
-  sym_at,        // @
+  sym_colon,        // :
+  sym_coloncolon,   // :
+  sym_semicolon,    // ;
+  sym_qmark,        // ?
+  sym_qmarkqmark,   // ??
+  sym_dot,          // .
+  sym_dotdot,       // ..
+  sym_comma,        // ,
+  sym_at,           // @
+  sym_atat,         // @@
+  sym_uscore,       // _
+  sym_uscoreuscore, // __
 
   sym_lround,  // (
   sym_rround,  // )
@@ -50,23 +60,38 @@ enum class TokenType {
 
   // keywords ---------------
 
-  kw_function, // fct
-  kw_struct,   // struct
-  kw_ctor,     // ctor
-  kw_dtor,     // dtor
-  kw_virt,     // virt
+  kw_pkg,    // pkg
+  kw_main,   // main
+  kw_use,    // use
+  kw_extern, // extern
 
-  kw_package, // pkg
-  kw_main,    // main
-  kw_import,  // use
+  kw_let,    // let
+  kw_def,    // def
+  kw_const,  // const
+  kw_fct,    // fct
+  kw_struct, // struct
 
-  kw_let,      // let
-  kw_if,       // if
-  kw_else,     // else
-  kw_for,      // for
+  kw_ctor,   // ctor
+  kw_dtor,   // dtor
+  kw_virt,   // virt
+  kw_async,  // async
+  kw_await,  // await
+  kw_typeof, // typeof
+
+  kw_if,    // if
+  kw_else,  // else
+  kw_for,   // for
+  kw_match, // match
+
+  kw_return,   // return
   kw_break,    // break
   kw_continue, // continue
-  kw_return,   // return
+
+  kw_is,   // is
+  kw_isnt, // isnt
+  kw_and,  // and
+  kw_or,   // or
+  kw_not,  // not
 
   // literals and words -----
   literal_int,
@@ -93,7 +118,6 @@ enum class TokenType {
 
 struct Token {
   private:
-  // for brevity
   using Location = std::pair<std::uint64_t, std::uint64_t>;
 
   const TokenType   _type;     // type

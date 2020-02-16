@@ -79,10 +79,12 @@ public:
   auto evaluate(const Constant&) -> ValuePtr final;
   auto evaluate(const Lambda& group) -> ValuePtr final;
   auto evaluate(const Assignment& assignment) -> ValuePtr final;
-  auto evaluate(const Identifier& id) -> ValuePtr final;
+  auto evaluate(const IdentifierRef& id) -> ValuePtr final;
+  auto evaluate(const IdentifierVal& id) -> ValuePtr final;
   auto evaluate(const Grouping& group) -> ValuePtr final;
   auto evaluate(const Call& call) -> ValuePtr final;
-  auto evaluate(const Get& get) -> ValuePtr final;
+  auto evaluate(const Access& get) -> ValuePtr final;
+  auto evaluate(const ConstExpr& get) -> ValuePtr final;
 
   auto execute(const Empty&) -> ValuePtr final;
   auto execute(const Package& pkg) -> ValuePtr final;
@@ -91,9 +93,12 @@ public:
   auto execute(const Struct&) -> ValuePtr final;
   auto execute(const Loop& l) -> ValuePtr final;
   auto execute(const Conditional& cond) -> ValuePtr final;
+  auto execute(const Match&) -> ValuePtr final;
+  auto execute(const MatchCase&) -> ValuePtr final;
   auto execute(const Block& blk) -> ValuePtr final;
   auto execute(const Interrupt& r) -> ValuePtr final;
   auto execute(const ExprStmt& e) -> ValuePtr final;
+  auto execute(const Return& e) -> ValuePtr final;
 
   public:
   auto debug(AST& ast, std::istream&, std::ostream&) -> void;
