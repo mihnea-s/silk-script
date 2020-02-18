@@ -374,7 +374,13 @@ auto Parser::parse_pkg() -> std::string {
 }
 
 auto Parser::parse_parameters() -> ASTParameters {
-  return {};
+  ASTParameters params {};
+
+  while (!consume(TokenType::sym_rround)) {
+    params.push_back(parse_name());
+  }
+
+  return params;
 }
 
 auto Parser::declaration() -> ASTNodePtr {
@@ -631,7 +637,10 @@ auto Parser::expr_call(ASTNodePtr left) -> ASTNodePtr {
 
   while (!consume(TokenType::sym_rround)) {
     args.push_back(expression());
-    must_consume(TokenType::sym_comma, SilkErrors::missingComma());
+
+    if (!match(TokenType::sym_rround)) {
+      must_consume(TokenType::sym_comma, SilkErrors::missingComma());
+    }
   }
 
   return make_node<Call>(std::move(left), std::move(args));
