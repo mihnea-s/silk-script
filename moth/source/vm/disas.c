@@ -22,29 +22,29 @@ static void single(DissasmInfo* info, const char* name) {
   info->ofst++;
 }
 
-static void move(DissasmInfo* info, const char* name, const char* op) {
-  uint8_t index = info->codes[info->ofst + 1];
-  printf("0x%03x %s %s [%d]\n", info->ofst, name, op, index);
-  info->ofst += 2;
-}
-
 static uint32_t read_address(DissasmInfo* info, int addr_sz) {
   uint32_t val_ofst = 0;
   for (int i = 0; i < addr_sz; i++) {
     val_ofst <<= 8;
     val_ofst |= info->codes[info->ofst + i];
   }
+#if IS_BIG_ENDIAN
+  val_ofst = SWAP_BYTES(val_ofst);
+#endif
   return val_ofst;
+}
+
+static void move(DissasmInfo* info, const char* name, const char* op) {
+  info->ofst++;
+  uint8_t index = read_address(info, 2);
+  
+  printf("0x%03x %s %s [%d]\n", info->ofst, name, op, index);
+  info->ofst += 2;
 }
 
 static void load_val(DissasmInfo* info, int addr_sz) {
   info->ofst++;
-
   uint32_t val_ofst = read_address(info, addr_sz);
-
-#if IS_BIG_ENDIAN
-  val_ofst = SWAP_BYTES(val_ofst);
-#endif
 
   printf("0x%03x VAL%d 0x%02x (", info->ofst, addr_sz, val_ofst);
   print_value(info->rodata->arr[val_ofst]);
@@ -58,10 +58,6 @@ static void symbol_op(DissasmInfo* info, const char* op, int addr_sz) {
 
   uint32_t sym_off = read_address(info, addr_sz);
 
-#if IS_BIG_ENDIAN
-  sym_off = SWAP_BYTES(sym_off);
-#endif
-
   const char* sym_str = info->symtab->arr[sym_off].str;
   printf("0x%03x %s%d $%s [0x%02x]", info->ofst, op, addr_sz, sym_str, sym_off);
   printf("\n");
@@ -72,12 +68,7 @@ static void symbol_op(DissasmInfo* info, const char* op, int addr_sz) {
 static void jump(DissasmInfo* info, const char* op, int dir) {
   info->ofst++;
 
-  uint32_t off = read_address(info, 2);
-
-#if IS_BIG_ENDIAN
-  off = SWAP_BYTES(off);
-#endif
-
+  uint32_t off     = read_address(info, 2);
   uint32_t landing = info->ofst + 2 + off * dir;
   printf("0x%03x %s +%u (0x%03x)\n", info->ofst, op, off, landing);
   info->ofst += 2;
@@ -91,12 +82,7 @@ static void call(DissasmInfo* info, const char* op) {
 
 static void frame(DissasmInfo* info, const char* op, int addr_sz) {
   info->ofst++;
-
   uint32_t address = read_address(info, addr_sz);
-
-#if IS_BIG_ENDIAN
-  address = SWAP_BYTES(address);
-#endif
 
   printf("0x%03x %s >=> 0x%03x\n", info->ofst, op, address);
   info->ofst += addr_sz;

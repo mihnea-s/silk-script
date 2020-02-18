@@ -51,28 +51,7 @@ auto Compiler::argx_op(std::uint8_t base_op, std::uint32_t id) -> void {
   }
 }
 
-auto Compiler::load_val(std::uint32_t id) -> void {
-  argx_op(VM_VAL, id);
-}
-
-auto Compiler::load_var(std::uint8_t id) -> void {
-  emit(VM_PSH);
-  emit(id);
-}
-
-auto Compiler::define_sym(uint32_t id) -> void {
-  argx_op(VM_DEF, id);
-}
-
-auto Compiler::load_sym(std::uint32_t id) -> void {
-  argx_op(VM_SYM, id);
-}
-
-auto Compiler::assign_sym(uint32_t id) -> void {
-  argx_op(VM_ASN, id);
-}
-
-auto Compiler::program_offset() -> std::uint32_t {
+auto Compiler::get_offset() -> std::uint32_t {
   if (_targets.empty()) {
     return _program.len;
   } else {
@@ -80,30 +59,12 @@ auto Compiler::program_offset() -> std::uint32_t {
   }
 }
 
-auto Compiler::program_buffer() -> std::uint8_t* {
+auto Compiler::get_buffer() -> std::uint8_t* {
   if (_targets.empty()) {
     return _program.bytes;
   } else {
     return _targets.top().buffer.data();
   }
-}
-
-auto Compiler::jmp_insert(std::uint8_t type) -> std::uint32_t {
-  emit(type);
-  emit(0x0);
-  emit(0x0);
-  return program_offset();
-}
-
-auto Compiler::jmp_finish(std::uint32_t insc) -> void {
-  std::uint16_t jmp_size = program_offset() - insc;
-
-  if (jmp_size == 0) return;
-
-  if constexpr (IS_BIG_ENDIAN) jmp_size = SWAP_BYTES(jmp_size);
-
-  program_buffer()[insc - 1] = (jmp_size >> 0) & 0xff;
-  program_buffer()[insc - 2] = (jmp_size >> 8) & 0xff;
 }
 
 auto Compiler::push_scope() -> void {
@@ -127,7 +88,17 @@ auto Compiler::pop_scope() -> void {
   }
 }
 
-auto Compiler::to_scope(std::string_view name, bool is_const) -> bool {
+auto Compiler::load_stack_var(std::uint16_t id) -> void {
+  emit(VM_PSH);
+  argx(id, 2);
+}
+
+auto Compiler::store_stack_var(std::uint16_t id) -> void {
+  emit(VM_STR);
+  argx(id, 2);
+}
+
+auto Compiler::define_stack_var(std::string_view name, bool is_const) -> bool {
   auto& locals = _targets.empty() ? _main_locals : _targets.top().locals;
   auto& depth  = locals.depth;
   auto& decls  = locals.decls;
@@ -137,7 +108,7 @@ auto Compiler::to_scope(std::string_view name, bool is_const) -> bool {
   return true;
 }
 
-auto Compiler::from_scope(std::string_view name) -> const Varinfo* {
+auto Compiler::get_stack_var(std::string_view name) -> const Varinfo* {
   auto& locals = _targets.empty() ? _main_locals : _targets.top().locals;
   auto& decls  = locals.decls;
 
@@ -155,11 +126,15 @@ auto Compiler::encode_rodata(Value value) -> std::uint32_t {
   return write_rodata(&_program, value);
 }
 
+auto Compiler::load_rodata(std::uint32_t id) -> void {
+  argx_op(VM_VAL, id);
+}
+
 auto Compiler::encode_symbol(Symbol symbol) -> std::uint32_t {
   return write_symtable(&_program, symbol);
 }
 
-auto Compiler::encode_symbol_from_str(std::string_view str) -> std::uint32_t {
+auto Compiler::encode_symbol(std::string_view str) -> std::uint32_t {
   std::uint32_t symbol_id = 0;
 
   if (_symbols.find(str) != _symbols.end()) {
@@ -178,6 +153,36 @@ auto Compiler::encode_symbol_from_str(std::string_view str) -> std::uint32_t {
   }
 
   return symbol_id;
+}
+
+auto Compiler::define_symbol(uint32_t id) -> void {
+  argx_op(VM_DEF, id);
+}
+
+auto Compiler::load_symbol(std::uint32_t id) -> void {
+  argx_op(VM_SYM, id);
+}
+
+auto Compiler::assign_symbol(uint32_t id) -> void {
+  argx_op(VM_ASN, id);
+}
+
+auto Compiler::jmp_insert(std::uint8_t type) -> std::uint32_t {
+  emit(type);
+  emit(0x0);
+  emit(0x0);
+  return get_offset();
+}
+
+auto Compiler::jmp_finish(std::uint32_t insc) -> void {
+  std::uint16_t jmp_size = get_offset() - insc;
+
+  if (jmp_size == 0) return;
+
+  if constexpr (IS_BIG_ENDIAN) jmp_size = SWAP_BYTES(jmp_size);
+
+  get_buffer()[insc - 1] = (jmp_size >> 0) & 0xff;
+  get_buffer()[insc - 2] = (jmp_size >> 8) & 0xff;
 }
 
 auto Compiler::evaluate(const Unary& node) -> void {
@@ -234,7 +239,7 @@ auto Compiler::evaluate(const IntLiteral& node) -> void {
     _integers[node.value] = value_id;
   }
 
-  load_val(value_id);
+  load_rodata(value_id);
 }
 
 auto Compiler::evaluate(const RealLiteral& node) -> void {
@@ -251,7 +256,7 @@ auto Compiler::evaluate(const RealLiteral& node) -> void {
     _reals[node.value] = value_id;
   }
 
-  load_val(value_id);
+  load_rodata(value_id);
 }
 
 auto Compiler::evaluate(const StringLiteral& node) -> void {
@@ -272,7 +277,7 @@ auto Compiler::evaluate(const StringLiteral& node) -> void {
     _strings[node.value] = value_id;
   }
 
-  load_val(value_id);
+  load_rodata(value_id);
 }
 
 auto Compiler::evaluate(const BoolLiteral& node) -> void {
@@ -303,7 +308,7 @@ auto Compiler::evaluate(const Assignment& node) -> void {
 }
 
 auto Compiler::evaluate(const IdentifierVal& node) -> void {
-  auto varinfo = from_scope(node.identifier);
+  auto varinfo = get_stack_var(node.identifier);
 
   if (!varinfo) {
     if (_symbols.find(node.identifier) == _symbols.end()) {
@@ -311,14 +316,14 @@ auto Compiler::evaluate(const IdentifierVal& node) -> void {
         node.location, SilkErrors::undefUsage(node.identifier));
     }
 
-    return load_sym(_symbols[node.identifier]);
+    return load_symbol(_symbols[node.identifier]);
   }
 
-  load_var(varinfo->slot);
+  load_stack_var(varinfo->slot);
 }
 
 auto Compiler::evaluate(const IdentifierRef& node) -> void {
-  auto varinfo = from_scope(node.identifier);
+  auto varinfo = get_stack_var(node.identifier);
 
   if (!varinfo) {
     throw report_error(node.location, SilkErrors::undefAssign(node.identifier));
@@ -328,8 +333,7 @@ auto Compiler::evaluate(const IdentifierRef& node) -> void {
     throw report_error(node.location, SilkErrors::constAssign(node.identifier));
   }
 
-  emit(VM_STR);
-  emit(varinfo->slot);
+  store_stack_var(varinfo->slot);
 }
 
 auto Compiler::evaluate(const Grouping& node) -> void {
@@ -374,17 +378,19 @@ auto Compiler::execute(const Package& node) -> void {
 
 auto Compiler::execute(const Variable& node) -> void {
   visit_node(node.initializer);
-  if (!to_scope(node.name, node.is_constant)) {
+  if (!define_stack_var(node.name, node.is_constant)) {
     throw report_error(node.location, SilkErrors::noScope());
   }
 }
 
 auto Compiler::execute(const Function& node) -> void {
+  auto id = encode_symbol(node.name);
+
   _targets.emplace();
 
   push_scope();
   for (const auto& param : node.parameters) {
-    to_scope(param, false);
+    define_stack_var(param, false);
   }
 
   visit_node(node.body);
@@ -408,17 +414,16 @@ auto Compiler::execute(const Function& node) -> void {
   value.as.object = (Object*)fct;
 
   auto val = encode_rodata(value);
-  load_val(val);
+  load_rodata(val);
 
-  auto id = encode_symbol_from_str(node.name);
-  define_sym(id);
+  define_symbol(id);
 }
 
 auto Compiler::execute(const Struct& node) -> void {
 }
 
 auto Compiler::execute(const Loop& node) -> void {
-  auto clause = program_offset();
+  auto clause = get_offset();
 
   visit_node(node.clause);
 
@@ -430,7 +435,7 @@ auto Compiler::execute(const Loop& node) -> void {
 
   emit(VM_JBW);
 
-  auto dist = program_offset() + 2 - clause;
+  auto dist = get_offset() + 2 - clause;
   emit((dist >> 8) & 0xff);
   emit((dist >> 0) & 0xff);
 

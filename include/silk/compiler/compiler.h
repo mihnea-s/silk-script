@@ -55,26 +55,27 @@ class Compiler : ASTVisitor<void>, public ErrorReporter {
   auto argx(std::uint32_t, std::size_t) -> void;
   auto argx_op(std::uint8_t, std::uint32_t) -> void;
 
-  auto load_var(std::uint8_t) -> void;
-  auto load_val(std::uint32_t) -> void;
-  auto load_sym(std::uint32_t) -> void;
-  auto define_sym(std::uint32_t) -> void;
-  auto assign_sym(std::uint32_t) -> void;
-
-  auto program_offset() -> std::uint32_t;
-  auto program_buffer() -> std::uint8_t*;
-
-  auto jmp_insert(std::uint8_t) -> std::uint32_t;
-  auto jmp_finish(std::uint32_t) -> void;
+  auto get_offset() -> std::uint32_t;
+  auto get_buffer() -> std::uint8_t*;
 
   auto push_scope() -> void;
   auto pop_scope() -> void;
-  auto to_scope(std::string_view, bool) -> bool;
-  auto from_scope(std::string_view) -> const Varinfo*;
+  auto load_stack_var(std::uint16_t) -> void;
+  auto store_stack_var(std::uint16_t) -> void;
+  auto get_stack_var(std::string_view) -> const Varinfo*;
+  auto define_stack_var(std::string_view, bool) -> bool;
 
   auto encode_rodata(Value) -> std::uint32_t;
+  auto load_rodata(std::uint32_t) -> void;
+
   auto encode_symbol(Symbol) -> std::uint32_t;
-  auto encode_symbol_from_str(std::string_view) -> std::uint32_t;
+  auto encode_symbol(std::string_view) -> std::uint32_t;
+  auto load_symbol(std::uint32_t) -> void;
+  auto define_symbol(std::uint32_t) -> void;
+  auto assign_symbol(std::uint32_t) -> void;
+
+  auto jmp_insert(std::uint8_t) -> std::uint32_t;
+  auto jmp_finish(std::uint32_t) -> void;
 
   auto evaluate(const Unary&) -> void final;
   auto evaluate(const Binary&) -> void final;
