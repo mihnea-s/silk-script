@@ -11,6 +11,10 @@ void init_stk(Stack* stk) {
   stk_invoke(stk, 0x0, 0x0);
 }
 
+void reset_stk(Stack* stk) {
+  init_stk(stk);
+}
+
 Value stk_top(Stack* stk) {
   return *(stk->vtop - 1);
 }
@@ -47,13 +51,4 @@ Value stk_get(Stack* stk, size_t i) {
 
 void stk_set(Stack* stk, size_t i, Value val) {
   *(stk_frame(stk)->bp + i) = val;
-}
-
-void reset_stk(Stack* stk) {
-  init_stk(stk);
-}
-
-void free_stk(Stack* stk) {
-  // nothing do to this function
-  // is just for consistency
 }

@@ -60,10 +60,16 @@ class Compiler : ASTVisitor<void>, public ErrorReporter {
 
   auto push_scope() -> void;
   auto pop_scope() -> void;
+
+  auto define_stack_var(std::string_view, bool) -> bool;
+
+  auto get_stack_var(std::string_view) -> const Varinfo*;
   auto load_stack_var(std::uint16_t) -> void;
   auto store_stack_var(std::uint16_t) -> void;
-  auto get_stack_var(std::string_view) -> const Varinfo*;
-  auto define_stack_var(std::string_view, bool) -> bool;
+
+  auto get_upvalue(std::string_view) -> const Varinfo*;
+  auto load_upvalue(int, int) -> void;
+  auto store_upvalue(int, int) -> void;
 
   auto encode_rodata(Value) -> std::uint32_t;
   auto load_rodata(std::uint32_t) -> void;

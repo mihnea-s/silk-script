@@ -1,3 +1,4 @@
+#include "garbage.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -14,12 +15,12 @@
 #include <vm.h>
 
 typedef Value (*unary_op_fct)(VM*, Value);
-static Value unary_op(VM* vm, unary_op_fct f) {
+static inline Value unary_op(VM* vm, unary_op_fct f) {
   return f(vm, POP());
 }
 
 typedef Value (*binary_op_fct)(VM*, Value, Value);
-static Value binary_op(VM* vm, binary_op_fct f) {
+static inline Value binary_op(VM* vm, binary_op_fct f) {
   Value b = POP();
   Value a = POP();
   return f(vm, a, b);
@@ -34,7 +35,7 @@ static Value binary_op(VM* vm, binary_op_fct f) {
 //                           __/ |                                 //
 //                          |___/                                  //
 
-static Value negate_(VM* _, Value a) {
+static inline Value negate_(VM* _, Value a) {
   switch (a.type) {
     case T_INT: return INT_VAL(-a.as.integer);
     case T_REAL: return REAL_VAL(-a.as.real);
@@ -42,7 +43,7 @@ static Value negate_(VM* _, Value a) {
   }
 }
 
-static Value not_(VM* _, Value a) {
+static inline Value not_(VM* _, Value a) {
   return BOOL_VAL(falsy(a));
 }
 
@@ -55,20 +56,23 @@ static Value not_(VM* _, Value a) {
 //                             __/ |                               //
 //                            |___/                                //
 
-static Value add_(VM* _, Value a, Value b) {
+static inline Value add_(VM* _, Value a, Value b) {
   switch (TUP(a.type, b.type)) {
     case TUP(T_INT, T_INT): return INT_VAL(a.as.integer + b.as.integer);
     case TUP(T_REAL, T_REAL): return REAL_VAL(a.as.real + b.as.real);
 
     case TUP(T_STR, T_STR): {
-      return OBJ_VAL((Object*)obj_str_concat(a.as.string, b.as.string));
+      Object* str = (Object*)obj_str_concat(a.as.string, b.as.string);
+      gc_register(&_->gc, str);
+      return OBJ_VAL(str);
     }
 
     case TUP(T_OBJ, T_OBJ): {
       if (IS_OBJ_STR(a) && IS_OBJ_STR(b)) {
-        return OBJ_VAL((Object*)obj_str_concat(
-          OBJ_STR(a.as.object)->data, OBJ_STR(b.as.object)->data));
-        break;
+        Object* str = (Object*)obj_str_concat(
+          OBJ_STR(a.as.object)->data, OBJ_STR(b.as.object)->data);
+        gc_register(&_->gc, str);
+        return OBJ_VAL(str);
       }
     }
 
@@ -76,7 +80,7 @@ static Value add_(VM* _, Value a, Value b) {
   }
 }
 
-static Value subtract_(VM* _, Value a, Value b) {
+static inline Value subtract_(VM* _, Value a, Value b) {
   switch (TUP(a.type, b.type)) {
     case TUP(T_INT, T_INT): return INT_VAL(a.as.integer - b.as.integer);
     case TUP(T_REAL, T_REAL): return REAL_VAL(a.as.real - b.as.real);
@@ -84,7 +88,7 @@ static Value subtract_(VM* _, Value a, Value b) {
   }
 }
 
-static Value divide_(VM* _, Value a, Value b) {
+static inline Value divide_(VM* _, Value a, Value b) {
   switch (TUP(a.type, b.type)) {
     case TUP(T_REAL, T_REAL): return REAL_VAL(a.as.real / b.as.real);
 
@@ -96,7 +100,7 @@ static Value divide_(VM* _, Value a, Value b) {
   }
 }
 
-static Value multiply_(VM* _, Value a, Value b) {
+static inline Value multiply_(VM* _, Value a, Value b) {
   switch (TUP(a.type, b.type)) {
     case TUP(T_INT, T_INT): return INT_VAL(a.as.integer * b.as.integer);
     case TUP(T_REAL, T_REAL): return REAL_VAL(a.as.real * b.as.real);
@@ -104,14 +108,14 @@ static Value multiply_(VM* _, Value a, Value b) {
   }
 }
 
-static Value modulo_(VM* _, Value a, Value b) {
+static inline Value modulo_(VM* _, Value a, Value b) {
   switch (TUP(a.type, b.type)) {
     case TUP(T_INT, T_INT): return INT_VAL(a.as.integer % b.as.integer);
     default: SETERR(STATUS_INVTYP); return VID_VAL;
   }
 }
 
-static Value rounddiv_(VM* _, Value a, Value b) {
+static inline Value rounddiv_(VM* _, Value a, Value b) {
   switch (TUP(a.type, b.type)) {
     case TUP(T_INT, T_INT): return INT_VAL(a.as.integer / b.as.integer);
     case TUP(T_REAL, T_REAL): return INT_VAL(a.as.real / b.as.real);
@@ -119,7 +123,7 @@ static Value rounddiv_(VM* _, Value a, Value b) {
   }
 }
 
-static Value power_(VM* _, Value a, Value b) {
+static inline Value power_(VM* _, Value a, Value b) {
   switch (TUP(a.type, b.type)) {
     case TUP(T_INT, T_INT): return INT_VAL(pow(a.as.integer, b.as.integer));
     case TUP(T_REAL, T_REAL): return REAL_VAL(pow(a.as.real, b.as.real));
@@ -136,7 +140,7 @@ static Value power_(VM* _, Value a, Value b) {
 //           | |                     __/ |                         //
 //           |_|                    |___/                          //
 
-static Value equal_(VM* _, Value a, Value b) {
+static inline Value equal_(VM* _, Value a, Value b) {
   if (a.type != b.type) return BOOL_VAL(false);
   switch (a.type) {
     case T_INT: return BOOL_VAL(a.as.integer == b.as.integer);
@@ -152,7 +156,7 @@ static Value equal_(VM* _, Value a, Value b) {
   }
 }
 
-static Value not_equal_(VM* _, Value a, Value b) {
+static inline Value not_equal_(VM* _, Value a, Value b) {
   if (a.type == b.type) return BOOL_VAL(false);
   switch (a.type) {
     case T_INT: return BOOL_VAL(a.as.integer != b.as.integer);
@@ -179,24 +183,24 @@ static Value not_equal_(VM* _, Value a, Value b) {
 
 #define ORDOP(op)                                                              \
   switch (TUP(a.type, b.type)) {                                               \
-    case TUP(T_INT, T_INT): return INT_VAL(a.as.integer > b.as.integer);       \
-    case TUP(T_REAL, T_REAL): return REAL_VAL(a.as.real > b.as.real);          \
+    case TUP(T_INT, T_INT): return INT_VAL(a.as.integer op b.as.integer);      \
+    case TUP(T_REAL, T_REAL): return REAL_VAL(a.as.real op b.as.real);         \
     default: SETERR(STATUS_INVTYP); return VID_VAL;                            \
   }
 
-static Value greater_(VM* _, Value a, Value b) {
+static inline Value greater_(VM* _, Value a, Value b) {
   ORDOP(>);
 }
 
-static Value greater_eq_(VM* _, Value a, Value b) {
+static inline Value greater_eq_(VM* _, Value a, Value b) {
   ORDOP(>=);
 }
 
-static Value less_(VM* _, Value a, Value b) {
+static inline Value less_(VM* _, Value a, Value b) {
   ORDOP(<);
 }
 
-static Value less_eq_(VM* _, Value a, Value b) {
+static inline Value less_eq_(VM* _, Value a, Value b) {
   ORDOP(<=);
 }
 
@@ -211,15 +215,15 @@ static Value less_eq_(VM* _, Value a, Value b) {
 //        __/ | |                                                  //
 //       |___/|_|                                                  //
 
-static Value typeof_(VM* _, Value a) {
+static inline Value typeof_(VM* _, Value a) {
   return INT_VAL(a.type);
 }
 
-static Value is_(VM* _, Value a, Value b) {
+static inline Value is_(VM* _, Value a, Value b) {
   return BOOL_VAL(a.type == b.as.integer);
 }
 
-static Value isnt_(VM* _, Value a, Value b) {
+static inline Value isnt_(VM* _, Value a, Value b) {
   return BOOL_VAL(a.type != b.as.integer);
 }
 
@@ -232,25 +236,41 @@ static Value isnt_(VM* _, Value a, Value b) {
 //                                                                 //
 //                                                                 //
 
-static void frame_(VM* vm, uint32_t addr) {
+static inline void frame_(VM* vm, uint32_t addr) {
   stk_invoke(&vm->stk, vm->ip, ARG1);
   vm->ip = vm->prg->bytes + addr;
 }
 
-static void call_(VM* vm, uint8_t argc) {
+static inline void closeover_(VM* vm) {
+  Value val = POP();
+  if (!IS_OBJ_FCT(val)) ERROR(STATUS_INVTYP);
+
+  Object* closure = (Object*)obj_clj_from_fct(OBJ_FCT(val.as.object));
+  gc_register(&vm->gc, closure);
+  PUSH(OBJ_VAL(closure));
+}
+
+static inline void call_(VM* vm, uint8_t argc) {
   Value value = POP();
 
   if (IS_OBJ_FCT(value)) {
-    ObjectFunction* fct = (ObjectFunction*)value.as.object;
+    ObjectFunction* fct = OBJ_FCT(value.as.object);
     stk_invoke(&vm->stk, vm->ip, argc);
     vm->ip = fct->bytes;
+    return;
+  }
+
+  if (IS_OBJ_CLJ(value)) {
+    ObjectClosure* clj = OBJ_CLJ(value.as.object);
+    stk_invoke(&vm->stk, vm->ip, argc);
+    vm->ip = clj->fct->bytes;
     return;
   }
 
   ERROR(STATUS_NOTFCT);
 }
 
-static void return_(VM* vm) {
+static inline void return_(VM* vm) {
   Value ret = POP();
   vm->ip    = stk_return(&vm->stk);
   PUSH(ret);
@@ -275,6 +295,9 @@ void init_vm(VM* vm) {
 
   // initialize global env
   init_env(&vm->env);
+
+  // initialize garbage collection
+  init_gc(&vm->gc, &vm->stk);
 }
 
 void run(VM* vm, Program* prog) {
@@ -283,11 +306,9 @@ void run(VM* vm, Program* prog) {
   vm->st  = STATUS_OK;
 
   do {
-    PRINT_STRACE
+    // PRINT_STRACE
 
     switch (NEXT) {
-      CASE(VM_FIN, FINISH());
-
       // stack operations
       CASE(VM_POP, POP());
       CASE(VM_PSH, PUSH(GET_LOCAL(ARG2)));
@@ -310,6 +331,8 @@ void run(VM* vm, Program* prog) {
       CASE(VM_FRM2, FUNC(frame_, ARG2));
       CASE(VM_FRM3, FUNC(frame_, ARG3));
       CASE(VM_FRM4, FUNC(frame_, ARG4));
+
+      CASE(VM_CLO, FUNC(closeover_));
       CASE(VM_CAL, FUNC(call_, ARG1));
       CASE(VM_RET, FUNC(return_));
 
@@ -365,11 +388,13 @@ void run(VM* vm, Program* prog) {
       CASE(VM_ASN2, ASSIGN_SYMBOL(ARG2));
       CASE(VM_ASN3, ASSIGN_SYMBOL(ARG3));
       CASE(VM_ASN4, ASSIGN_SYMBOL(ARG4));
+
+      CASE(VM_FIN, FINISH());
     }
   } while (true);
 }
 
 void free_vm(VM* vm) {
-  free_stk(&vm->stk);
+  free_gc(&vm->gc);
   free_env(&vm->env);
 }

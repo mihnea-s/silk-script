@@ -10,189 +10,200 @@ auto Checker::variable_type(const std::string& name) -> SilkType {
   return _variables[name];
 }
 
-SilkType Checker::evaluate(const Unary& node) {
+auto Checker::stmt_result() const noexcept -> CheckerExprResult {
+  return {SilkType::NONE, false};
+}
+
+CheckerExprResult Checker::evaluate(const Unary& node) {
   auto operand = visit_node(node.operand);
 
   switch (node.operation) {
 
-    case TokenType::sym_bang: return SilkType::BOOLEAN;
+    case TokenType::sym_bang: return {SilkType::BOOLEAN, false};
 
     case TokenType::sym_tilde: {
-      if (!of_type_or_dyn(operand, SilkType::INTEGER)) {
+      if (!of_type_or_dyn(operand.type, SilkType::INTEGER)) {
         throw report_error(node.location, "invalid operator to operator tilde");
       }
 
-      return SilkType::INTEGER;
+      return {SilkType::INTEGER, false};
     }
 
     case TokenType::sym_minus: {
-      if (!of_type_or_dyn(operand, SilkType::REAL, SilkType::INTEGER)) {
+      if (!of_type_or_dyn(operand.type, SilkType::REAL, SilkType::INTEGER)) {
         throw report_error(node.location, "invalid operator to operator minus");
       }
 
-      return operand;
+      return {operand.type, false};
     };
 
-    default: return SilkType::DYNAMIC;
+    default: return {SilkType::DYNAMIC, false};
   }
 }
 
-SilkType Checker::evaluate(const Binary&) {
-  return SilkType::DYNAMIC;
+CheckerExprResult Checker::evaluate(const Binary&) {
+  return {SilkType::DYNAMIC, false};
 }
 
-SilkType Checker::evaluate(const IntLiteral&) {
-  return SilkType::INTEGER;
+CheckerExprResult Checker::evaluate(const IntLiteral&) {
+  return {SilkType::INTEGER, false};
 }
 
-SilkType Checker::evaluate(const RealLiteral&) {
-  return SilkType::REAL;
+CheckerExprResult Checker::evaluate(const RealLiteral&) {
+  return {SilkType::REAL, false};
 }
 
-SilkType Checker::evaluate(const BoolLiteral&) {
-  return SilkType::BOOLEAN;
+CheckerExprResult Checker::evaluate(const BoolLiteral&) {
+  return {SilkType::BOOLEAN, false};
 }
 
-SilkType Checker::evaluate(const StringLiteral&) {
-  return SilkType::STRING;
+CheckerExprResult Checker::evaluate(const StringLiteral&) {
+  return {SilkType::STRING, false};
 }
 
-SilkType Checker::evaluate(const Vid&) {
-  return SilkType::DYNAMIC;
+CheckerExprResult Checker::evaluate(const Vid&) {
+  return {SilkType::DYNAMIC, false};
 }
 
-SilkType Checker::evaluate(const Constant& node) {
-  return SilkType::REAL;
+CheckerExprResult Checker::evaluate(const Constant& node) {
+  return {SilkType::REAL, false};
 }
 
-SilkType Checker::evaluate(const Lambda&) {
-  return SilkType::CALLABLE;
+CheckerExprResult Checker::evaluate(const Lambda&) {
+  return {SilkType::CALLABLE, false};
 }
 
-SilkType Checker::evaluate(const IdentifierRef& node) {
-  return variable_type(node.identifier);
+CheckerExprResult Checker::evaluate(const IdentifierRef& node) {
+  return {variable_type(node.identifier), true};
 }
 
-SilkType Checker::evaluate(const IdentifierVal& node) {
-  return variable_type(node.identifier);
+CheckerExprResult Checker::evaluate(const IdentifierVal& node) {
+  return {variable_type(node.identifier), false};
 }
 
-SilkType Checker::evaluate(const Assignment& node) {
-  auto assign_type = visit_node(node.assignment);
-  auto target_type = visit_node(node.target);
+CheckerExprResult Checker::evaluate(const Assignment& node) {
+  auto assign = visit_node(node.assignment);
+  auto target = visit_node(node.target);
 
-  if (!of_type_or_dyn(target_type, assign_type)) {
+  if (!target.assignable) {
+    throw report_error(node.location, "cannot assign to expression");
+  }
+
+  if (!of_type_or_dyn(target.type, assign.type)) {
     throw report_error(
       node.location,
       "type mismatch: variable of type `{}` was assigned `{}`",
-      str_from_type(target_type),
-      str_from_type(assign_type));
+      str_from_type(target.type),
+      str_from_type(assign.type));
   }
 
-  return assign_type;
+  return {assign.type, false};
 }
 
-SilkType Checker::evaluate(const Grouping& node) {
+CheckerExprResult Checker::evaluate(const Grouping& node) {
   return visit_node(node.inner);
 }
 
-SilkType Checker::evaluate(const ConstExpr& node) {
+CheckerExprResult Checker::evaluate(const ConstExpr& node) {
   return visit_node(node.inner);
 }
 
-SilkType Checker::evaluate(const Call& node) {
+CheckerExprResult Checker::evaluate(const Call& node) {
   auto callee = visit_node(node.target);
 
-  if (!of_type_or_dyn(callee, SilkType::CALLABLE)) {
-    throw report_error(node.location, "tried calling type `{}`", callee);
+  if (!of_type_or_dyn(callee.type, SilkType::CALLABLE)) {
+    throw report_error(
+      node.location, "tried calling type `{}`", str_from_type(callee.type));
   }
 
-  return SilkType::DYNAMIC;
+  return {SilkType::DYNAMIC, false};
 }
 
-SilkType Checker::evaluate(const Access& node) {
+CheckerExprResult Checker::evaluate(const Access& node) {
   auto target = visit_node(node.target);
 
-  if (!of_type_or_dyn(target, SilkType::INSTANCE)) {
-    throw report_error(node.location, "tried accessing type `{}`", target);
+  if (!of_type_or_dyn(target.type, SilkType::INSTANCE)) {
+    throw report_error(
+      node.location, "tried accessing type `{}`", str_from_type(target.type));
   }
 
-  return SilkType::DYNAMIC;
+  return {SilkType::DYNAMIC, false};
 }
 
-SilkType Checker::execute(const Empty&) {
-  return SilkType::NONE;
+CheckerExprResult Checker::execute(const Empty&) {
+  return stmt_result();
 }
 
-SilkType Checker::execute(const Package&) {
-  return SilkType::NONE;
+CheckerExprResult Checker::execute(const Package&) {
+  return stmt_result();
 }
 
-SilkType Checker::execute(const ExprStmt&) {
-  return SilkType::NONE;
+CheckerExprResult Checker::execute(const ExprStmt& node) {
+  visit_node(node.expression);
+  return stmt_result();
 }
 
-SilkType Checker::execute(const Variable& node) {
-  auto var_type  = type_from_str(node.type);
-  auto init_type = visit_node(node.initializer);
+CheckerExprResult Checker::execute(const Variable& node) {
+  auto var_type = type_from_str(node.type);
+  auto init     = visit_node(node.initializer);
 
   declare_var(node.name, var_type);
 
-  if (!of_type_or_dyn(init_type, var_type)) {
+  if (!of_type_or_dyn(init.type, var_type)) {
     throw report_error(
       node.location,
       "type mismatch: `{}` of type `{}` was initialized with `{}`",
       node.name,
       str_from_type(var_type),
-      str_from_type(init_type));
+      str_from_type(init.type));
   }
 
-  return SilkType::NONE;
+  return stmt_result();
 }
 
-SilkType Checker::execute(const Function&) {
-  return SilkType::NONE;
+CheckerExprResult Checker::execute(const Function&) {
+  return stmt_result();
 }
 
-SilkType Checker::execute(const Struct&) {
-  return SilkType::NONE;
+CheckerExprResult Checker::execute(const Struct&) {
+  return stmt_result();
 }
 
-SilkType Checker::execute(const Loop& node) {
+CheckerExprResult Checker::execute(const Loop& node) {
   visit_node(node.clause);
   visit_node(node.body);
-  return SilkType::NONE;
+  return stmt_result();
 }
 
-SilkType Checker::execute(const Conditional& node) {
+CheckerExprResult Checker::execute(const Conditional& node) {
   visit_node(node.clause);
   visit_node(node.if_true);
   if (node.if_false) visit_node(node.if_false);
-  return SilkType::NONE;
+  return stmt_result();
 }
 
-SilkType Checker::execute(const Match&) {
-  return SilkType::NONE;
+CheckerExprResult Checker::execute(const Match&) {
+  return stmt_result();
 }
 
-SilkType Checker::execute(const MatchCase&) {
-  return SilkType::NONE;
+CheckerExprResult Checker::execute(const MatchCase&) {
+  return stmt_result();
 }
 
-SilkType Checker::execute(const Block& node) {
+CheckerExprResult Checker::execute(const Block& node) {
   for (const auto& child_node : node.body) {
     visit_node(child_node);
   }
 
-  return SilkType::NONE;
+  return stmt_result();
 }
 
-SilkType Checker::execute(const Interrupt&) {
-  return SilkType::NONE;
+CheckerExprResult Checker::execute(const Interrupt&) {
+  return stmt_result();
 }
 
-SilkType Checker::execute(const Return&) {
-  return SilkType::NONE;
+CheckerExprResult Checker::execute(const Return&) {
+  return stmt_result();
 }
 
 // check ast function

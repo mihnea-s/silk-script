@@ -46,37 +46,19 @@ static uint8_t read_u8(FILE* f) {
   return fgetc(f);
 }
 
-static uint16_t read_u16(FILE* f) {
-  uint16_t x    = 0;
-  size_t   read = fread(&x, sizeof(uint16_t), 1, f);
-  if (read != 1) return 0x0;
-  SWAP_IF_BIG_ENDIAN(x);
-  return x;
-}
+#define DEFINE_READ(FUNCTION, TYPE)                                            \
+  static TYPE FUNCTION(FILE* f) {                                              \
+    TYPE   x    = 0;                                                           \
+    size_t read = fread(&x, sizeof(TYPE), 1, f);                               \
+    if (read != 1) return 0;                                                   \
+    SWAP_IF_BIG_ENDIAN(x);                                                     \
+    return x;                                                                  \
+  }
 
-static uint32_t read_u32(FILE* f) {
-  uint32_t x    = 0;
-  size_t   read = fread(&x, sizeof(uint32_t), 1, f);
-  if (read != 1) return 0x0;
-  SWAP_IF_BIG_ENDIAN(x);
-  return x;
-}
-
-static int64_t read_i64(FILE* f) {
-  int64_t x    = 0;
-  size_t  read = fread(&x, sizeof(int64_t), 1, f);
-  if (read != 1) return 0x0;
-  SWAP_IF_BIG_ENDIAN(x);
-  return x;
-}
-
-static double read_dbl(FILE* f) {
-  double x    = 0;
-  size_t read = fread(&x, sizeof(double), 1, f);
-  if (read != 1) return 0.0;
-  SWAP_IF_BIG_ENDIAN(x);
-  return x;
-}
+DEFINE_READ(read_u16, uint16_t);
+DEFINE_READ(read_u32, uint32_t);
+DEFINE_READ(read_i64, int64_t);
+DEFINE_READ(read_dbl, double);
 
 static char* read_str(FILE* f) {
   if (feof(f)) return NULL;
@@ -221,77 +203,53 @@ void read_file(const char* file, Program* prog, const char** err) {
   fclose(f);
 }
 
-#define WRITE_U8(c) fwrite(&c, sizeof(uint8_t), 1, f)
+#define DEFINE_WRITE(FUNCTION, TYPE)                                           \
+  static void FUNCTION(TYPE t, FILE* f) {                                      \
+    SWAP_IF_BIG_ENDIAN(t);                                                     \
+    fwrite(&t, sizeof(TYPE), 1, f);                                            \
+  }
 
-#define WRITE_U16(c) SWAP_IF_BIG_ENDIAN(c) fwrite(&c, sizeof(uint16_t), 1, f)
+DEFINE_WRITE(write_u8, uint8_t);
+DEFINE_WRITE(write_u16, uint16_t);
+DEFINE_WRITE(write_u32, uint32_t);
+DEFINE_WRITE(write_i64, int64_t);
+DEFINE_WRITE(write_dbl, double);
 
-#define WRITE_U32(c)                                                           \
-  SWAP_IF_BIG_ENDIAN(c);                                                       \
-  fwrite(&c, sizeof(uint32_t), 1, f)
+static void write_str(const char* s, FILE* f) {
+  fwrite(s, sizeof(char), strlen(s), f);
+  write_u8(0x0, f);
+}
 
-#define WRITE_I64(c)                                                           \
-  SWAP_IF_BIG_ENDIAN(c);                                                       \
-  fwrite(&c, sizeof(int64_t), 1, f)
+static void write_obj(Object* obj, FILE* f) {
+  write_u8(obj->type, f);
+  switch (obj->type) {
 
-#define WRITE_DBL(c)                                                           \
-  SWAP_IF_BIG_ENDIAN(c);                                                       \
-  fwrite(&c, sizeof(double), 1, f)
+    case O_FUNCTION: {
+      ObjectFunction* fct = OBJ_FCT(obj);
+      write_u32(fct->len, f);
+      fwrite(fct->bytes, sizeof(uint8_t), fct->len, f);
+      break;
+    }
 
-#define WRITE_STR(c) fwrite(c, sizeof(char), strlen(c), f)
+    default: break;
+  }
+}
 
-#define WRITE_VALUE(c)                                                         \
-  do {                                                                         \
-    WRITE_U8(c.type);                                                          \
-    switch (c.type) {                                                          \
-      case T_INT: {                                                            \
-        WRITE_I64(c.as.integer);                                               \
-        break;                                                                 \
-      }                                                                        \
-                                                                               \
-      case T_REAL: {                                                           \
-        WRITE_DBL(c.as.real);                                                  \
-        break;                                                                 \
-      }                                                                        \
-                                                                               \
-      case T_STR: {                                                            \
-        WRITE_STR(c.as.string);                                                \
-        int null_byte = 0x0;                                                   \
-        WRITE_U8(null_byte);                                                   \
-        break;                                                                 \
-      }                                                                        \
-                                                                               \
-      case T_BOOL: {                                                           \
-        WRITE_U8(c.as.boolean);                                                \
-        break;                                                                 \
-      }                                                                        \
-                                                                               \
-      case T_VID: {                                                            \
-        break;                                                                 \
-      }                                                                        \
-                                                                               \
-      case T_OBJ: {                                                            \
-        WRITE_U8(c.as.object->type);                                           \
-        switch (c.as.object->type) {                                           \
-          case O_FUNCTION: {                                                   \
-            ObjectFunction* fct = OBJ_FCT(c.as.object);                        \
-            WRITE_U32(fct->len);                                               \
-            fwrite(fct->bytes, sizeof(uint8_t), fct->len, f);                  \
-            break;                                                             \
-          }                                                                    \
-                                                                               \
-          default: break;                                                      \
-        }                                                                      \
-        break;                                                                 \
-      }                                                                        \
-    }                                                                          \
-  } while (false)
+static void write_value(Value v, FILE* f) {
+  write_u8(v.type, f);
+  switch (v.type) {
+    case T_INT: return write_i64(v.as.integer, f);
+    case T_REAL: return write_dbl(v.as.real, f);
+    case T_STR: return write_str(v.as.string, f);
+    case T_BOOL: return write_u8(v.as.boolean, f);
+    case T_OBJ: return write_obj(v.as.object, f);
+    default: return;
+  }
+}
 
-#define WRITE_SYMBOL(c)                                                        \
-  do {                                                                         \
-    WRITE_STR(c.str);                                                          \
-    int null_byte = 0x0;                                                       \
-    WRITE_U8(null_byte);                                                       \
-  } while (false)
+static void write_symbol(Symbol sy, FILE* f) {
+  write_str(sy.str, f);
+}
 
 void write_file(const char* file, Program* prog, const char** err) {
   FILE* f = fopen(file, "w");
@@ -301,29 +259,26 @@ void write_file(const char* file, Program* prog, const char** err) {
   }
 
   fwrite(header, strlen(header), 1, f);
+  write_u16(version, f);
 
-  uint16_t ver = version;
-  WRITE_U16(ver);
-
-  WRITE_U32(prog->len);
-  WRITE_U32(prog->rod.len);
-  WRITE_U32(prog->stb.len);
+  write_u32(prog->len, f);
+  write_u32(prog->rod.len, f);
+  write_u32(prog->stb.len, f);
 
   for (uint32_t i = 0; i < prog->len; i++) {
-    WRITE_U8(prog->bytes[i]);
+    write_u8(prog->bytes[i], f);
   }
 
   for (uint32_t i = 0; i < prog->rod.len; i++) {
-    WRITE_VALUE(prog->rod.arr[i]);
+    write_value(prog->rod.arr[i], f);
   }
 
   for (uint32_t i = 0; i < prog->stb.len; i++) {
-    WRITE_SYMBOL(prog->stb.arr[i]);
+    write_symbol(prog->stb.arr[i], f);
   }
 
   uint32_t checksum = 0;
-
-  WRITE_U32(checksum);
+  write_u32(checksum, f);
 
   fwrite(footer, strlen(footer), 1, f);
   fclose(f);

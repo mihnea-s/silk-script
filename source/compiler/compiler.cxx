@@ -88,16 +88,6 @@ auto Compiler::pop_scope() -> void {
   }
 }
 
-auto Compiler::load_stack_var(std::uint16_t id) -> void {
-  emit(VM_PSH);
-  argx(id, 2);
-}
-
-auto Compiler::store_stack_var(std::uint16_t id) -> void {
-  emit(VM_STR);
-  argx(id, 2);
-}
-
 auto Compiler::define_stack_var(std::string_view name, bool is_const) -> bool {
   auto& locals = _targets.empty() ? _main_locals : _targets.top().locals;
   auto& depth  = locals.depth;
@@ -120,6 +110,32 @@ auto Compiler::get_stack_var(std::string_view name) -> const Varinfo* {
   }
 
   return nullptr;
+}
+
+auto Compiler::load_stack_var(std::uint16_t id) -> void {
+  emit(VM_PSH);
+  argx(id, 2);
+}
+
+auto Compiler::store_stack_var(std::uint16_t id) -> void {
+  emit(VM_STR);
+  argx(id, 2);
+}
+
+auto Compiler::get_upvalue(std::string_view name) -> const Varinfo* {
+  if (_targets.size() < 2) return nullptr;
+
+  // for (const auto& var : _targets.top().locals.decls) {
+  //   if (var.name == name) return &var;
+  // }
+
+  return nullptr;
+}
+
+auto Compiler::load_upvalue(int depth, int slot) -> void {
+}
+
+auto Compiler::store_upvalue(int depth, int slot) -> void {
 }
 
 auto Compiler::encode_rodata(Value value) -> std::uint32_t {
@@ -308,32 +324,40 @@ auto Compiler::evaluate(const Assignment& node) -> void {
 }
 
 auto Compiler::evaluate(const IdentifierVal& node) -> void {
-  auto varinfo = get_stack_var(node.identifier);
+  const Varinfo* varinfo = {nullptr};
 
-  if (!varinfo) {
-    if (_symbols.find(node.identifier) == _symbols.end()) {
-      throw report_error(
-        node.location, SilkErrors::undefUsage(node.identifier));
-    }
+  if ((varinfo = get_stack_var(node.identifier))) {
+    return load_stack_var(varinfo->slot);
+  }
 
+  if ((varinfo = get_upvalue(node.identifier))) {
+    return load_upvalue(varinfo->depth, varinfo->slot);
+  }
+
+  if (_symbols.find(node.identifier) != _symbols.end()) {
     return load_symbol(_symbols[node.identifier]);
   }
 
-  load_stack_var(varinfo->slot);
+  throw report_error(node.location, SilkErrors::undefUsage(node.identifier));
 }
 
 auto Compiler::evaluate(const IdentifierRef& node) -> void {
-  auto varinfo = get_stack_var(node.identifier);
+  const Varinfo* varinfo = nullptr;
 
-  if (!varinfo) {
-    throw report_error(node.location, SilkErrors::undefAssign(node.identifier));
+  if ((varinfo = get_stack_var(node.identifier))) {
+    if (varinfo->is_const) {
+      throw report_error(
+        node.location, SilkErrors::constAssign(node.identifier));
+    }
+
+    return store_stack_var(varinfo->slot);
   }
 
-  if (varinfo->is_const) {
-    throw report_error(node.location, SilkErrors::constAssign(node.identifier));
+  if ((varinfo = get_upvalue(node.identifier))) {
+    return store_upvalue(varinfo->depth, varinfo->slot);
   }
 
-  store_stack_var(varinfo->slot);
+  throw report_error(node.location, SilkErrors::undefAssign(node.identifier));
 }
 
 auto Compiler::evaluate(const Grouping& node) -> void {

@@ -5,19 +5,28 @@
 #include "ast.h"
 #include "error.h"
 
-enum class SilkType {
-  DYNAMIC,
-  INTEGER,
-  REAL,
-  STRING,
-  BOOLEAN,
-  CALLABLE,
-  INSTANCE,
-  NONE,
+// struct
+
+struct CheckerExprResult {
+  enum SilkType {
+    DYNAMIC,
+    INTEGER,
+    REAL,
+    STRING,
+    BOOLEAN,
+    CALLABLE,
+    INSTANCE,
+    NONE,
+  };
+
+  SilkType type;
+  bool     assignable;
 };
 
-class Checker : ASTVisitor<SilkType>, public ErrorReporter {
+class Checker : ASTVisitor<CheckerExprResult>, public ErrorReporter {
   private:
+  using SilkType = CheckerExprResult::SilkType;
+
   std::unordered_map<std::string, SilkType> _variables;
 
   auto declare_var(const std::string& name, SilkType type) -> void;
@@ -58,38 +67,38 @@ class Checker : ASTVisitor<SilkType>, public ErrorReporter {
     }
   }
 
-  // error helper
+  CheckerExprResult stmt_result() const noexcept;
 
-  SilkType evaluate(const Unary&) final;
-  SilkType evaluate(const Binary&) final;
-  SilkType evaluate(const IntLiteral&) final;
-  SilkType evaluate(const RealLiteral&) final;
-  SilkType evaluate(const BoolLiteral&) final;
-  SilkType evaluate(const StringLiteral&) final;
-  SilkType evaluate(const Vid&) final;
-  SilkType evaluate(const Constant&) final;
-  SilkType evaluate(const Lambda&) final;
-  SilkType evaluate(const IdentifierVal&) final;
-  SilkType evaluate(const IdentifierRef&) final;
-  SilkType evaluate(const Assignment&) final;
-  SilkType evaluate(const Grouping&) final;
-  SilkType evaluate(const Call&) final;
-  SilkType evaluate(const Access&) final;
-  SilkType evaluate(const ConstExpr&) final;
+  CheckerExprResult evaluate(const Unary&) final;
+  CheckerExprResult evaluate(const Binary&) final;
+  CheckerExprResult evaluate(const IntLiteral&) final;
+  CheckerExprResult evaluate(const RealLiteral&) final;
+  CheckerExprResult evaluate(const BoolLiteral&) final;
+  CheckerExprResult evaluate(const StringLiteral&) final;
+  CheckerExprResult evaluate(const Vid&) final;
+  CheckerExprResult evaluate(const Constant&) final;
+  CheckerExprResult evaluate(const Lambda&) final;
+  CheckerExprResult evaluate(const IdentifierVal&) final;
+  CheckerExprResult evaluate(const IdentifierRef&) final;
+  CheckerExprResult evaluate(const Assignment&) final;
+  CheckerExprResult evaluate(const Grouping&) final;
+  CheckerExprResult evaluate(const Call&) final;
+  CheckerExprResult evaluate(const Access&) final;
+  CheckerExprResult evaluate(const ConstExpr&) final;
 
-  SilkType execute(const Empty&) final;
-  SilkType execute(const Package&) final;
-  SilkType execute(const ExprStmt&) final;
-  SilkType execute(const Variable&) final;
-  SilkType execute(const Function&) final;
-  SilkType execute(const Struct&) final;
-  SilkType execute(const Loop&) final;
-  SilkType execute(const Conditional&) final;
-  SilkType execute(const Match&) final;
-  SilkType execute(const MatchCase&) final;
-  SilkType execute(const Block&) final;
-  SilkType execute(const Interrupt&) final;
-  SilkType execute(const Return&) final;
+  CheckerExprResult execute(const Empty&) final;
+  CheckerExprResult execute(const Package&) final;
+  CheckerExprResult execute(const ExprStmt&) final;
+  CheckerExprResult execute(const Variable&) final;
+  CheckerExprResult execute(const Function&) final;
+  CheckerExprResult execute(const Struct&) final;
+  CheckerExprResult execute(const Loop&) final;
+  CheckerExprResult execute(const Conditional&) final;
+  CheckerExprResult execute(const Match&) final;
+  CheckerExprResult execute(const MatchCase&) final;
+  CheckerExprResult execute(const Block&) final;
+  CheckerExprResult execute(const Interrupt&) final;
+  CheckerExprResult execute(const Return&) final;
 
   public:
   // check ast function

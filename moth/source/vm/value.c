@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <object.h>
 #include <value.h>
 
 #define PRINT_BR(...)                                                          \
@@ -41,6 +42,9 @@ void print_value(Value v) {
     case T_BOOL: PRINT_BR("%s", v.as.boolean ? "true" : "false");
     case T_STR: PRINT_BR("'%s'", v.as.string);
     case T_VID: PRINT_BR("[vid]");
-    case T_OBJ: PRINT_BR("[object]");
+    case T_OBJ:
+      printf("obj = ");
+      print_object(v.as.object);
+      break;
   }
 }

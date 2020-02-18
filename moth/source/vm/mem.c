@@ -6,54 +6,30 @@
 
 typedef struct Alloc Alloc;
 
-struct Alloc {
-  Alloc* next;
-  size_t size;
-  void*  ptr;
-};
-
-static Alloc* freelist = NULL;
+static char  stack[2048];
+static char* top = stack;
 
 void* memory(void* ptr, size_t old_sz, size_t new_sz) {
-  if (freelist) {
-    Alloc* prev = NULL;
-    Alloc* it   = freelist;
+  void* nptr = NULL;
 
-    while (it) {
-
-      if (it->size == new_sz) {
-        if (ptr) memcpy(it->ptr, ptr, old_sz);
-
-        prev->next = it->next;
-        return it->ptr;
-      }
-
-      prev = it;
-      it   = it->next;
-    }
+  if (new_sz < 24) {
+    nptr = top;
+    top += new_sz + new_sz % sizeof(size_t);
+    if (nptr) memcpy(nptr, ptr, old_sz);
+  } else {
+    nptr = realloc(ptr, new_sz);
+    ptr  = NULL;
   }
 
-  void* ptrr = realloc(ptr, new_sz);
-  return ptrr;
-}
-
-void cleanup() {
-  while (freelist) {
-    Alloc* next = freelist->next;
-    free(freelist->ptr);
-    free(freelist);
-    freelist = next;
-  }
+  if (ptr) release(ptr, old_sz);
+  return nptr;
 }
 
 void release(void* ptr, size_t size) {
-  if (!ptr) return;
-  if (!freelist) atexit(cleanup);
+  if (stack <= (char*)ptr && (char*)ptr <= top) {
+    if (ptr == top) top -= size + size % sizeof(size_t);
+    return;
+  }
 
-  size_t allc_sz = sizeof(Alloc);
-  Alloc* allc    = malloc(allc_sz);
-  allc->ptr      = ptr;
-  allc->size     = size;
-  allc->next     = freelist;
-  freelist       = allc;
+  free(ptr);
 }

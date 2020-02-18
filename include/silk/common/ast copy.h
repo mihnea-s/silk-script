@@ -178,10 +178,12 @@ using ASTVariant = std::variant<
   Call,
   Access>;
 
-struct ASTNode {
+struct ASTNode : ASTVariant {
   using Location = std::pair<std::uint64_t, std::uint64_t>;
   const Location location;
-  const ASTVariant node;
+  // const ASTVariant node;
+
+  using ASTVariant::ASTVariant;
 
   // ASTNode(Location loc, ASTVariant&& var) :
   //     location(loc), ASTVariant(std::move(var)) {
@@ -191,8 +193,8 @@ struct ASTNode {
 // Visitor
 
 const ASTNode nis = {
-  {0, 2},
-  Vid{},
+
+  Vid {},
 };
 
 template <class T>

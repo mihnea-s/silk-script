@@ -5,9 +5,20 @@
 extern "C" {
 #endif
 
+#include "object.h"
+#include "stack.h"
+
 typedef struct {
-  int test;
+  size_t   len;
+  size_t   cap;
+  Stack*   stk;
+  Object** objs;
 } GarbageCollector;
+
+void init_gc(GarbageCollector* gc, Stack* stk);
+void gc_collect(GarbageCollector* gc);
+void gc_register(GarbageCollector* gc, Object* obj);
+void free_gc(GarbageCollector* gc);
 
 #ifdef __cplusplus
 }

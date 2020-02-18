@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include "env.h"
+#include "garbage.h"
 #include "program.h"
 #include "stack.h"
 
@@ -18,11 +19,12 @@ typedef enum {
 } VMStatus;
 
 typedef struct {
-  Program*    prg;
-  uint8_t*    ip;
-  Stack       stk;
-  VMStatus    st;
-  Environment env;
+  Program*         prg;
+  uint8_t*         ip;
+  Stack            stk;
+  VMStatus         st;
+  Environment      env;
+  GarbageCollector gc;
 } VM;
 
 void init_vm(VM*);

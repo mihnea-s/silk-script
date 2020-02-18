@@ -21,14 +21,10 @@ static Entry* env_empty_bucket(Environment* env, Symbol key) {
 static Entry* env_find_bucket(Environment* env, Symbol key) {
   Entry* end    = env->ptr + env->cap;
   Entry* bucket = env->ptr + (key.hash % env->cap);
-  Entry* start  = bucket;
 
   while (bucket->key.str != key.str) {
-    if (bucket->key.str == NULL && bucket->key.hash == 0x0) { return NULL; }
-
+    if (bucket->key.str == NULL && bucket->key.hash == 0x0) return NULL;
     bucket++;
-
-    if (bucket == start) return NULL;
     if (bucket == end) bucket = env->ptr;
   }
 
@@ -93,8 +89,6 @@ Entry* env_get(Environment* env, Symbol key) {
   if (env->len == 0) return NULL;
 
   Entry* bucket = env_find_bucket(env, key);
-  if (bucket == NULL) return NULL;
-
   return bucket;
 }
 
@@ -106,8 +100,6 @@ void env_delete(Environment* env, Symbol key) {
 
   bucket->key.hash = 0x1;
   bucket->key.str  = NULL;
-
-  env->len--;
 }
 
 void free_env(Environment* env) {

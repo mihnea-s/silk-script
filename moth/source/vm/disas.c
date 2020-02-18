@@ -37,7 +37,7 @@ static uint32_t read_address(DissasmInfo* info, int addr_sz) {
 static void move(DissasmInfo* info, const char* name, const char* op) {
   info->ofst++;
   uint8_t index = read_address(info, 2);
-  
+
   printf("0x%03x %s %s [%d]\n", info->ofst, name, op, index);
   info->ofst += 2;
 }
@@ -93,6 +93,7 @@ static void instruction(DissasmInfo* info) {
   switch (code) {
     case VM_FIN: return single(info, "FIN");
 
+    case VM_CLO: return single(info, "CLO");
     case VM_CAL: return call(info, "CAL");
     case VM_FRM: return frame(info, "FRM", 1);
     case VM_FRM2: return frame(info, "FRM", 2);
@@ -170,7 +171,7 @@ void disassemble(const char* name, Program* prog) {
   info.rodata = &prog->rod;
   info.symtab = &prog->stb;
 
-  printf("@ %-10s: \n", name);
+  printf("%% %-10s: \n", name);
   for (Value* v = info.rodata->arr; v < info.rodata->arr + info.rodata->len;
        v++) {
     if (!IS_OBJ_FCT((*v))) continue;

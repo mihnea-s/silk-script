@@ -15,6 +15,7 @@ typedef enum {
   VM_FRM3, // 3 bytes
   VM_FRM4, // 4 bytes
 
+  VM_CLO, // close over
   VM_CAL, // function call
   VM_RET, // return
 
@@ -58,6 +59,26 @@ typedef enum {
   VM_RIV, // round division
   VM_POW, // power
   VM_MOD, // modulo
+
+  // integer arithmetic
+  VM_IADD,
+  VM_ISUB,
+  VM_IDIV,
+  VM_IMUL,
+  VM_IPOW,
+  VM_IMOD,
+
+  // real arithmetic
+  VM_RADD,
+  VM_RSUB,
+  VM_RDIV,
+  VM_RMUL,
+  VM_RRIV,
+  VM_RPOW,
+
+  // strings
+  VM_SCC, // string concat
+  VM_SML, // string multiply
 
   VM_NOP, // no operation
   VM_VID, // vid

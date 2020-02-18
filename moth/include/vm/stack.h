@@ -26,6 +26,7 @@ typedef struct {
 } Stack;
 
 void init_stk(Stack* stk);
+void reset_stk(Stack* stk);
 
 Value stk_top(Stack* stk);
 Value stk_pop(Stack* stk);
@@ -37,9 +38,6 @@ void  stk_set(Stack* stk, size_t i, Value);
 Frame*   stk_frame(Stack* stk);
 void     stk_invoke(Stack* stk, uint8_t* ra, uint8_t argc);
 uint8_t* stk_return(Stack* stk);
-
-void reset_stk(Stack* stk);
-void free_stk(Stack* stk);
 
 #ifdef __cplusplus
 }
