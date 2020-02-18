@@ -1,3 +1,4 @@
+#include "value.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -5,27 +6,30 @@
 #include <symtable.h>
 
 void init_symtable(Symtable* stb, uint32_t init_len) {
-  stb->len  = init_len;
-  stb->cap  = init_len;
-  stb->syms = NULL;
-  if (init_len) stb->syms = memory(stb->syms, 0x0, stb->len);
+  stb->len = init_len;
+  stb->cap = init_len;
+  stb->arr = init_len ? memory(NULL, 0, sizeof(Symbol) * init_len) : NULL;
 }
 
 void symtable_write(Symtable* stb, Symbol sym) {
   if (stb->cap == stb->len) {
-    uint32_t new_size = GROW_ARRAY(stb->cap);
-    stb->syms         = REALLOC_ARRAY(stb->syms, Symbol, stb->cap, new_size);
-    stb->cap          = new_size;
+    uint32_t new_cap = GROW_CAP(stb->cap);
+
+    size_t new_size = sizeof(Symbol) * new_cap;
+    size_t old_size = sizeof(Symbol) * stb->cap;
+
+    stb->cap = new_cap;
+    stb->arr = memory(stb->arr, old_size, new_size);
   }
 
-  stb->syms[stb->len] = sym;
+  stb->arr[stb->len] = sym;
   stb->len++;
 }
 
 void free_symtable(Symtable* stb) {
   for (uint32_t i = 0; i < stb->len; i++) {
-    release(stb->syms[i].str, strlen(stb->syms[i].str) + 1);
+    release(stb->arr[i].str, strlen(stb->arr[i].str) + 1); // null byte
   }
 
-  FREE_ARRAY(stb->syms, Symbol, stb->cap);
+  release(stb->arr, sizeof(Symbol) * stb->cap);
 }

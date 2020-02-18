@@ -13,30 +13,30 @@ extern "C" {
 #define MOTHVM_STK_CAP 1024
 
 typedef struct {
-  uint8_t* rt;
-  Value*   bp;
-} Invokation;
+  uint8_t* ra; // return address
+  Value*   bp; // base pointer
+} Frame;
 
 typedef struct {
-  Invokation* itop;
-  Invokation  iarr[MOTHVM_FRM_CAP];
+  Frame* ftop;                 // frame top
+  Frame  farr[MOTHVM_FRM_CAP]; // frame array
 
-  Value* vtop;
-  Value  varr[MOTHVM_STK_CAP];
+  Value* vtop;                 // value top
+  Value  varr[MOTHVM_STK_CAP]; // value array
 } Stack;
 
 void init_stk(Stack* stk);
 
-Value top_stk(Stack* stk);
-Value pop_stk(Stack* stk);
-void  push_stk(Stack* stk, Value);
+Value stk_top(Stack* stk);
+Value stk_pop(Stack* stk);
+void  stk_push(Stack* stk, Value);
 
-Invokation* frame_stk(Stack* stk);
-uint8_t*    return_stk(Stack* stk);
-void        invoke_stk(Stack* stk, uint8_t* rt);
+Value stk_get(Stack* stk, size_t i);
+void  stk_set(Stack* stk, size_t i, Value);
 
-Value get_stk_local(Stack* stk, size_t i);
-void  set_stk_local(Stack* stk, size_t i, Value);
+Frame*   stk_frame(Stack* stk);
+void     stk_invoke(Stack* stk, uint8_t* ra, uint8_t argc);
+uint8_t* stk_return(Stack* stk);
 
 void reset_stk(Stack* stk);
 void free_stk(Stack* stk);

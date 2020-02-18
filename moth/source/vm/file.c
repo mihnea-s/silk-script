@@ -31,161 +31,189 @@ static const char*    footer  = "SILKEND";
 #define SET_ERR(to_what)                                                       \
   if (err) { *err = to_what; }
 
-#define ERR_ON_EOF                                                             \
+#define MALFORMED() SET_ERR("malformed silk executable");
+
+#define MALFORMED_EOF()                                                        \
   if (feof(f)) {                                                               \
-    SET_ERR("malformed silk executable");                                      \
+    MALFORMED();                                                               \
     return;                                                                    \
   }
 
 #define SWAP_IF_BIG_ENDIAN(x)                                                  \
   if (IS_BIG_ENDIAN) { x = SWAP_BYTES(x); }
 
-#define READ_U8(x) ERR_ON_EOF x = getc(f);
+static uint8_t read_u8(FILE* f) {
+  return fgetc(f);
+}
 
-#define READ_U16(x)                                                            \
-  ERR_ON_EOF                                                                   \
-  fread(&x, sizeof(uint16_t), 1, f);                                           \
-  SWAP_IF_BIG_ENDIAN(x)
+static uint16_t read_u16(FILE* f) {
+  uint16_t x    = 0;
+  size_t   read = fread(&x, sizeof(uint16_t), 1, f);
+  if (read != 1) return 0x0;
+  SWAP_IF_BIG_ENDIAN(x);
+  return x;
+}
 
-#define READ_U32(x)                                                            \
-  ERR_ON_EOF                                                                   \
-  fread(&x, sizeof(uint32_t), 1, f);                                           \
-  SWAP_IF_BIG_ENDIAN(x)
+static uint32_t read_u32(FILE* f) {
+  uint32_t x    = 0;
+  size_t   read = fread(&x, sizeof(uint32_t), 1, f);
+  if (read != 1) return 0x0;
+  SWAP_IF_BIG_ENDIAN(x);
+  return x;
+}
 
-#define READ_I64(x)                                                            \
-  ERR_ON_EOF                                                                   \
-  fread(&x, sizeof(int64_t), 1, f);                                            \
-  SWAP_IF_BIG_ENDIAN(x)
+static int64_t read_i64(FILE* f) {
+  int64_t x    = 0;
+  size_t  read = fread(&x, sizeof(int64_t), 1, f);
+  if (read != 1) return 0x0;
+  SWAP_IF_BIG_ENDIAN(x);
+  return x;
+}
 
-#define READ_DBL(x)                                                            \
-  ERR_ON_EOF                                                                   \
-  fread(&x, sizeof(double), 1, f);                                             \
-  SWAP_IF_BIG_ENDIAN(x)
+static double read_dbl(FILE* f) {
+  double x    = 0;
+  size_t read = fread(&x, sizeof(double), 1, f);
+  if (read != 1) return 0.0;
+  SWAP_IF_BIG_ENDIAN(x);
+  return x;
+}
 
-#define READ_STR(x)                                                            \
-  ERR_ON_EOF                                                                   \
-  do {                                                                         \
-    long start = ftell(f);                                                     \
-    char ch;                                                                   \
-    while (true) {                                                             \
-      READ_U8(ch);                                                             \
-      if (ch == 0x0) break;                                                    \
-    }                                                                          \
-    long str_len = ftell(f) - start;                                           \
-    fseek(f, start, SEEK_SET);                                                 \
-    x = memory(NULL, 0, str_len * sizeof(char));                               \
-    fread(x, sizeof(char), str_len, f);                                        \
-  } while (false)
+static char* read_str(FILE* f) {
+  if (feof(f)) return NULL;
 
-#define READ_VALUE(x)                                                          \
-  do {                                                                         \
-    READ_U8(x.type);                                                           \
-    switch (x.type) {                                                          \
-      case T_INT: {                                                            \
-        READ_I64(x.as.integer);                                                \
-        break;                                                                 \
-      }                                                                        \
-                                                                               \
-      case T_REAL: {                                                           \
-        READ_DBL(x.as.real);                                                   \
-        break;                                                                 \
-      }                                                                        \
-                                                                               \
-      case T_STR: {                                                            \
-        READ_STR(x.as.string);                                                 \
-        break;                                                                 \
-      }                                                                        \
-                                                                               \
-      case T_BOOL: {                                                           \
-        READ_U8(x.as.boolean);                                                 \
-        break;                                                                 \
-      }                                                                        \
-                                                                               \
-      case T_VID: {                                                            \
-        break;                                                                 \
-      }                                                                        \
-                                                                               \
-      case T_OBJ: {                                                            \
-        ObjType type;                                                          \
-        READ_U8(type);                                                         \
-        switch (type) {                                                        \
-          case O_FUNCTION: {                                                   \
-            uint32_t len;                                                      \
-            READ_U32(len);                                                     \
-                                                                               \
-            ObjectFunction* fct = memory(                                      \
-              NULL, 0x0, sizeof(ObjectFunction) + sizeof(uint8_t) * len);      \
-                                                                               \
-            fct->obj.type = type;                                              \
-            fct->len      = len;                                               \
-            x.as.object   = (Object*)fct;                                      \
-            fread(fct->ins, sizeof(uint8_t), len, f);                          \
-                                                                               \
-            break;                                                             \
-          }                                                                    \
-                                                                               \
-          default: break;                                                      \
-        }                                                                      \
-        break;                                                                 \
-      }                                                                        \
-    }                                                                          \
-  } while (false)
+  long start = ftell(f);
 
-#define READ_SYMBOL(x)                                                         \
-  do {                                                                         \
-    READ_STR(x.str);                                                           \
-    x.hash = hash(x.str);                                                      \
-  } while (false)
+  while (true) {
+    if (feof(f)) return NULL;
+    if (read_u8(f) == 0x0) break;
+  }
+
+  long  str_len = ftell(f) - start;
+  char* str     = memory(NULL, 0, str_len * sizeof(char));
+
+  fseek(f, start, SEEK_SET);
+  size_t read = fread(str, sizeof(char), str_len, f);
+
+  if (read != str_len) {
+    release(str, str_len * sizeof(char));
+    return NULL;
+  }
+
+  return str;
+}
+
+static void read_value(Value* x, FILE* f, const char** err) {
+  MALFORMED_EOF();
+  x->type = read_u8(f);
+
+  switch (x->type) {
+
+    case T_INT: {
+      MALFORMED_EOF();
+      x->as.integer = read_i64(f);
+      break;
+    }
+
+    case T_REAL: {
+      MALFORMED_EOF();
+      x->as.real = read_dbl(f);
+      break;
+    }
+
+    case T_STR: {
+      MALFORMED_EOF();
+      x->as.string = read_str(f);
+      break;
+    }
+
+    case T_BOOL: {
+      MALFORMED_EOF();
+      x->as.boolean = read_u8(f);
+      break;
+    }
+
+    case T_VID: {
+      break;
+    }
+
+    case T_OBJ: {
+      MALFORMED_EOF();
+      ObjType type = read_u8(f);
+
+      switch (type) {
+        case O_FUNCTION: {
+          MALFORMED_EOF();
+          uint32_t len = read_u32(f);
+
+          ObjectFunction* fct =
+            memory(NULL, 0x0, sizeof(ObjectFunction) + sizeof(uint8_t) * len);
+
+          fct->obj.type = type;
+          fct->len      = len;
+          x->as.object  = (Object*)fct;
+          size_t read   = fread(fct->bytes, sizeof(uint8_t), len, f);
+
+          if (read != len) SET_ERR("malformed silk executable");
+          break;
+        }
+
+        default: break;
+      }
+      break;
+    }
+  }
+}
 
 void read_file(const char* file, Program* prog, const char** err) {
   FILE* f = fopen(file, "r");
+
   if (!f) {
-    SET_ERR("could not find file");
+    SET_ERR("file not found");
     return;
+  } else {
+    SET_ERR(NULL);
   }
 
   for (size_t i = 0; i < strlen(header); i++) {
     if (feof(f) || getc(f) != header[i]) {
-      SET_ERR("file is not a silk executable");
+      MALFORMED();
       return;
     }
   }
 
-  uint16_t ver;
-  READ_U16(ver);
-
-  if (ver != version) {
-    SET_ERR("version error");
+  if (read_u16(f) != version) {
+    MALFORMED();
     return;
   }
 
-  uint32_t ins_len, rod_len, sym_len;
-
-  READ_U32(ins_len);
-  READ_U32(rod_len);
-  READ_U32(sym_len);
-
+  uint32_t ins_len = read_u32(f);
+  uint32_t rod_len = read_u32(f);
+  uint32_t sym_len = read_u32(f);
   init_program(prog, ins_len, rod_len, sym_len);
 
   for (uint32_t i = 0; i < ins_len; i++) {
-    READ_U8(prog->ins[i]);
+    MALFORMED_EOF();
+    prog->bytes[i] = read_u8(f);
   }
 
   for (uint32_t i = 0; i < rod_len; i++) {
-    READ_VALUE(prog->rod.vls[i]);
+    MALFORMED_EOF();
+    read_value(prog->rod.arr + i, f, err);
+    if (*err) return;
   }
 
   for (uint32_t i = 0; i < sym_len; i++) {
-    READ_SYMBOL(prog->stb.syms[i]);
+    MALFORMED_EOF();
+    Symbol* sym = prog->stb.arr + i;
+    sym->str    = read_str(f);
+    sym->hash   = hash(sym->str);
   }
 
-  uint32_t checksum;
-
-  READ_U32(checksum);
+  uint32_t checksum = read_u32(f);
 
   for (size_t i = 0; i < strlen(footer); i++) {
     if (feof(f) || getc(f) != footer[i]) {
-      SET_ERR("malformed silk file");
+      MALFORMED();
       return;
     }
   }
@@ -247,7 +275,7 @@ void read_file(const char* file, Program* prog, const char** err) {
           case O_FUNCTION: {                                                   \
             ObjectFunction* fct = OBJ_FCT(c.as.object);                        \
             WRITE_U32(fct->len);                                               \
-            fwrite(fct->ins, sizeof(uint8_t), fct->len, f);                    \
+            fwrite(fct->bytes, sizeof(uint8_t), fct->len, f);                  \
             break;                                                             \
           }                                                                    \
                                                                                \
@@ -282,15 +310,15 @@ void write_file(const char* file, Program* prog, const char** err) {
   WRITE_U32(prog->stb.len);
 
   for (uint32_t i = 0; i < prog->len; i++) {
-    WRITE_U8(prog->ins[i]);
+    WRITE_U8(prog->bytes[i]);
   }
 
   for (uint32_t i = 0; i < prog->rod.len; i++) {
-    WRITE_VALUE(prog->rod.vls[i]);
+    WRITE_VALUE(prog->rod.arr[i]);
   }
 
   for (uint32_t i = 0; i < prog->stb.len; i++) {
-    WRITE_SYMBOL(prog->stb.syms[i]);
+    WRITE_SYMBOL(prog->stb.arr[i]);
   }
 
   uint32_t checksum = 0;

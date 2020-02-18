@@ -13,6 +13,7 @@ of `std::variant`, `std::shared_ptr`s and dynamic casts.
 - [Introduction](#introduction)
 - [Command line interface](#command-line-interface)
 - [The Virtual Machine (Moth)](#the-virtual-machine-moth)
+  - [Codebase Terminology](#codebase-terminology)
 - [Documentation](#documentation)
   - [Variables](#variables)
   - [Primitive types](#primitive-types)
@@ -42,6 +43,12 @@ with it's own interpreter.
 ## The Virtual Machine (Moth)
 
 Moth VM is still a work in progress.
+
+### Codebase Terminology
+
+  - size -> refers to actual size in BYTES
+  - length -> refers to the number of elements INITIALIZED
+  - capacity -> refers to the number of elements ALLOCATED
 
 ## Documentation
 

@@ -13,7 +13,7 @@ extern "C" {
 typedef struct {
   uint32_t len;
   uint32_t cap;
-  Symbol*  syms;
+  Symbol*  arr;
 } Symtable;
 
 void init_symtable(Symtable*, uint32_t);

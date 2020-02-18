@@ -16,12 +16,12 @@ typedef struct {
 } Symbol;
 
 typedef enum {
-  T_VID,  // 0
-  T_INT,  // 1
-  T_REAL, // 2
-  T_BOOL, // 3
-  T_STR,  // 4
-  T_OBJ,  // 5
+  T_VID  = 2,
+  T_INT  = 3,
+  T_REAL = 5,
+  T_BOOL = 7,
+  T_STR  = 11,
+  T_OBJ  = 13,
 } ValueType;
 
 typedef struct {

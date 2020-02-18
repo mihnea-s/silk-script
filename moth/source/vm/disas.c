@@ -47,7 +47,7 @@ static void load_val(DissasmInfo* info, int addr_sz) {
 #endif
 
   printf("0x%03x VAL%d 0x%02x (", info->ofst, addr_sz, val_ofst);
-  print_value(info->rodata->vls[val_ofst]);
+  print_value(info->rodata->arr[val_ofst]);
   printf(")\n");
 
   info->ofst += addr_sz;
@@ -62,7 +62,7 @@ static void symbol_op(DissasmInfo* info, const char* op, int addr_sz) {
   sym_off = SWAP_BYTES(sym_off);
 #endif
 
-  const char* sym_str = info->symtab->syms[sym_off].str;
+  const char* sym_str = info->symtab->arr[sym_off].str;
   printf("0x%03x %s%d $%s [0x%02x]", info->ofst, op, addr_sz, sym_str, sym_off);
   printf("\n");
 
@@ -83,6 +83,12 @@ static void jump(DissasmInfo* info, const char* op, int dir) {
   info->ofst += 2;
 }
 
+static void call(DissasmInfo* info, const char* op) {
+  info->ofst++;
+  uint8_t argc = info->codes[info->ofst++];
+  printf("0x%03x %s #%d\n", info->ofst, op, argc);
+}
+
 static void frame(DissasmInfo* info, const char* op, int addr_sz) {
   info->ofst++;
 
@@ -97,16 +103,16 @@ static void frame(DissasmInfo* info, const char* op, int addr_sz) {
 }
 
 static void instruction(DissasmInfo* info) {
-  uint8_t ins = info->codes[info->ofst];
-  switch (ins) {
+  OpCode code = info->codes[info->ofst];
+  switch (code) {
     case VM_FIN: return single(info, "FIN");
 
+    case VM_CAL: return call(info, "CAL");
     case VM_FRM: return frame(info, "FRM", 1);
     case VM_FRM2: return frame(info, "FRM", 2);
     case VM_FRM3: return frame(info, "FRM", 3);
     case VM_FRM4: return frame(info, "FRM", 4);
 
-    case VM_CAL: return single(info, "CAL");
     case VM_RET: return single(info, "RET");
 
     case VM_POP: return single(info, "POP");
@@ -179,22 +185,24 @@ void disassemble(const char* name, Program* prog) {
   info.symtab = &prog->stb;
 
   printf("@ %-10s: \n", name);
-  for (Value* v = info.rodata->vls; v < info.rodata->vls + info.rodata->len;
+  for (Value* v = info.rodata->arr; v < info.rodata->arr + info.rodata->len;
        v++) {
     if (!IS_OBJ_FCT((*v))) continue;
-    printf("~~ fct @ 0x%02lx ~~~~~~~~~~~\n", v - info.rodata->vls);
+    printf("~~ fct @ 0x%02lx ~~~~~~~~~~~\n", v - info.rodata->arr);
 
-    info.codes = OBJ_FCT(v)->ins;
+    info.codes = OBJ_FCT(v->as.object)->bytes;
     info.ofst  = 0;
 
-    while (info.ofst < OBJ_FCT(v)->len) {
+    const uint32_t len = OBJ_FCT(v->as.object)->len;
+
+    while (info.ofst < len) {
       instruction(&info);
     }
 
     printf("~~~~~~~~~~~~~~~~~~~~~~~~~\n");
   }
 
-  info.codes = prog->ins;
+  info.codes = prog->bytes;
   info.ofst  = 0;
 
   printf("= main =================\n");

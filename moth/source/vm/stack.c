@@ -5,47 +5,48 @@
 #include <value.h>
 
 void init_stk(Stack* stk) {
-  stk->itop = stk->iarr;
+  stk->ftop = stk->farr;
   stk->vtop = stk->varr;
 
-  invoke_stk(stk, 0x0);
+  stk_invoke(stk, 0x0, 0x0);
 }
 
-Value top_stk(Stack* stk) {
+Value stk_top(Stack* stk) {
   return *(stk->vtop - 1);
 }
 
-Value pop_stk(Stack* stk) {
+Value stk_pop(Stack* stk) {
   stk->vtop--;
   return *stk->vtop;
 }
 
-void push_stk(Stack* stk, Value val) {
+void stk_push(Stack* stk, Value val) {
   (*stk->vtop) = val;
   stk->vtop++;
 }
 
-Invokation* frame_stk(Stack* stk) {
-  return stk->itop - 1;
+Frame* stk_frame(Stack* stk) {
+  return stk->ftop - 1;
 }
 
-uint8_t* return_stk(Stack* stk) {
-  stk->itop--;
-  return stk->itop->rt;
+uint8_t* stk_return(Stack* stk) {
+  stk->ftop--;
+  stk->vtop = stk->ftop->bp;
+  return stk->ftop->ra;
 }
 
-void invoke_stk(Stack* stk, uint8_t* rt) {
-  stk->itop->rt = rt;
-  stk->itop->bp = stk->vtop;
-  stk->itop++;
+void stk_invoke(Stack* stk, uint8_t* ra, uint8_t argc) {
+  stk->ftop->ra = ra;
+  stk->ftop->bp = stk->vtop - argc;
+  stk->ftop++;
 }
 
-Value get_stk_local(Stack* stk, size_t i) {
-  return *(frame_stk(stk)->bp + i);
+Value stk_get(Stack* stk, size_t i) {
+  return *(stk_frame(stk)->bp + i);
 }
 
-void set_stk_local(Stack* stk, size_t i, Value val) {
-  *(frame_stk(stk)->bp + i) = val;
+void stk_set(Stack* stk, size_t i, Value val) {
+  *(stk_frame(stk)->bp + i) = val;
 }
 
 void reset_stk(Stack* stk) {

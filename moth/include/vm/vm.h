@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "hash_map.h"
+#include "env.h"
 #include "program.h"
 #include "stack.h"
 
@@ -18,11 +18,11 @@ typedef enum {
 } VMStatus;
 
 typedef struct {
-  Program* prg;
-  uint8_t* ip;
-  Stack    stk;
-  VMStatus st;
-  HashMap  env;
+  Program*    prg;
+  uint8_t*    ip;
+  Stack       stk;
+  VMStatus    st;
+  Environment env;
 } VM;
 
 void init_vm(VM*);

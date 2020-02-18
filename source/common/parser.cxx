@@ -316,7 +316,7 @@ inline void Parser::must_consume(TokenType type, std::string msg) {
 
 auto Parser::get_rule(const Token& tok) const -> const Rule& {
   if (rules.find(tok.type()) == rules.end()) {
-    report_warning(error_location(), "rule not found for: {}", tok.lexeme());
+    // report_warning(error_location(), "rule not found for: {}", tok.lexeme());
     return no_rule;
   }
   return rules.at(tok.type());
@@ -350,6 +350,11 @@ auto Parser::precendece(Precedence prec) -> ASTNodePtr {
   return prefix;
 }
 
+auto Parser::next_assign() -> bool {
+  return match(
+    TokenType::sym_equal, TokenType::sym_plusequal, TokenType::sym_minusequal);
+}
+
 auto Parser::parse_name() -> std::string {
   must_match(
     TokenType::identifier, SilkErrors::expectedIdentif(current().lexeme()));
@@ -374,8 +379,11 @@ auto Parser::parse_parameters() -> ASTParameters {
 
 auto Parser::declaration() -> ASTNodePtr {
   switch (current().type()) {
+    case TokenType::kw_def: [[fallthrough]];
     case TokenType::kw_let: return decl_variable();
+
     case TokenType::kw_fct: return decl_function();
+    case TokenType::kw_struct: return decl_struct();
 
     case TokenType::kw_pkg: [[fallthrough]];
     case TokenType::kw_use: [[fallthrough]];
@@ -445,7 +453,7 @@ auto Parser::decl_function() -> ASTNodePtr {
   auto is_async   = consume(TokenType::kw_async);
 
   if (match(TokenType::sym_arrow)) {
-    body = make_node<Interrupt>(expression(), Interrupt::RETURN);
+    body = make_node<Return>(expression());
   } else if (match(TokenType::sym_lbrace)) {
     body = stmt_block();
   }
@@ -481,6 +489,10 @@ auto Parser::decl_package() -> ASTNodePtr {
 
     default: throw report_error(error_location(), SilkErrors::invalidState());
   }
+}
+
+auto Parser::decl_struct() -> ASTNodePtr {
+  return make_node<Vid>();
 }
 
 auto Parser::stmt_empty() -> ASTNodePtr {
@@ -546,7 +558,9 @@ auto Parser::stmt_match() -> ASTNodePtr {
 }
 
 auto Parser::stmt_matchcase() -> ASTNodePtr {
-  auto pattern = expression();
+  auto pattern = ASTNodePtr {nullptr};
+
+  if (!consume(TokenType::sym_uscoreuscore)) pattern = expression();
 
   must_match(TokenType::sym_arrow, "expected arrow after case");
 
@@ -556,7 +570,19 @@ auto Parser::stmt_matchcase() -> ASTNodePtr {
 }
 
 auto Parser::stmt_interrupt() -> ASTNodePtr {
-  return make_node<Interrupt>();
+  switch (advance().type()) {
+    case TokenType::kw_break: {
+      return make_node<Interrupt>(Interrupt::BREAK);
+    }
+
+    case TokenType::kw_continue: {
+      return make_node<Interrupt>(Interrupt::CONTINUE);
+    }
+
+    default: {
+      throw report_error(error_location(), SilkErrors::expectedInterrupt());
+    }
+  }
 }
 
 auto Parser::stmt_return() -> ASTNodePtr {
@@ -566,7 +592,7 @@ auto Parser::stmt_return() -> ASTNodePtr {
 
   if (!match(TokenType::sym_semicolon)) ret = expression();
 
-  must_match(TokenType::sym_semicolon, SilkErrors::stmtSemicolon());
+  must_consume(TokenType::sym_semicolon, SilkErrors::stmtSemicolon());
   return make_node<Return>(std::move(ret));
 }
 
@@ -620,19 +646,31 @@ auto Parser::expr_grouping() -> ASTNodePtr {
 }
 
 auto Parser::expr_assignment(ASTNodePtr target) -> ASTNodePtr {
-  must_consume(
-    TokenType::sym_equal, SilkErrors::expectedAfter("=", "assignment"));
-  return make_node<Assignment>(std::move(target), std::move(expression()));
+  switch (advance().type()) {
+    case TokenType::sym_equal: {
+      return make_node<Assignment>(
+        std::move(target), expression(), Assignment::ASSIGN);
+    }
+
+    case TokenType::sym_plusequal: {
+      return make_node<Assignment>(
+        std::move(target), expression(), Assignment::ADD);
+    }
+
+    case TokenType::sym_minusequal: {
+      return make_node<Assignment>(
+        std::move(target), expression(), Assignment::SUBTRACT);
+    }
+
+    default: throw report_error(error_location(), SilkErrors::expectedAssign());
+  }
 }
 
 auto Parser::expr_identifier() -> ASTNodePtr {
   must_consume(
     TokenType::identifier, SilkErrors::expectedIdentif(current().lexeme()));
 
-  if (match(TokenType::sym_equal)) {
-    return make_node<IdentifierRef>(previous().lexeme());
-  }
-
+  if (next_assign()) return make_node<IdentifierRef>(previous().lexeme());
   return make_node<IdentifierVal>(previous().lexeme());
 }
 

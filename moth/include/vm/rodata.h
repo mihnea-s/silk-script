@@ -12,7 +12,7 @@ extern "C" {
 typedef struct {
   uint32_t len;
   uint32_t cap;
-  Value*   vls;
+  Value*   arr;
 } Rodata;
 
 void init_rodata(Rodata*, uint32_t);

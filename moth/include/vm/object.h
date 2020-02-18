@@ -40,7 +40,7 @@ typedef struct {
 typedef struct {
   Object   obj;
   uint32_t len;
-  uint8_t  ins[];
+  uint8_t  bytes[];
 } ObjectFunction;
 
 typedef struct {

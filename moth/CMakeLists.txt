@@ -14,8 +14,8 @@ endif()
 set(VM_SRC
   "source/vm/mem.c"
 
+  "source/vm/env.c"
   "source/vm/stack.c"
-  "source/vm/hash_map.c"
 
   "source/vm/rodata.c"
   "source/vm/symtable.c"

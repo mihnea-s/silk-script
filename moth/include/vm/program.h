@@ -15,13 +15,13 @@ typedef struct {
   uint32_t len;
   Rodata   rod;
   Symtable stb;
-  uint8_t* ins;
+  uint8_t* bytes;
 } Program;
 
 void     init_program(Program*, uint32_t, uint32_t, uint32_t);
-void     write_ins(Program*, uint8_t);
-uint32_t write_rod(Program*, Value);
-uint32_t write_sym(Program*, Symbol);
+void     write_byte(Program*, uint8_t);
+uint32_t write_rodata(Program*, Value);
+uint32_t write_symtable(Program*, Symbol);
 void     free_program(Program*);
 
 #ifdef __cplusplus

@@ -114,6 +114,8 @@ class Parser : public ErrorReporter {
 
   auto precendece(Precedence) -> ASTNodePtr;
 
+  auto next_assign() -> bool;
+
   auto parse_name() -> std::string;
   auto parse_type() -> ASTType;
   auto parse_pkg() -> std::string;

@@ -7,12 +7,7 @@ extern "C" {
 
 #include <stddef.h>
 
-#define GROW_ARRAY(SIZE) (SIZE < 4) ? 4 : SIZE * 2.0
-
-#define REALLOC_ARRAY(PTR, TYPE, OLD, NEW)                                     \
-  (TYPE*)memory(PTR, OLD * sizeof(TYPE), NEW * sizeof(TYPE))
-
-#define FREE_ARRAY(PTR, TYPE, SIZE) release(PTR, SIZE * sizeof(TYPE))
+#define GROW_CAP(OLD_CAP) (OLD_CAP < 4) ? 4 : OLD_CAP * 2.0
 
 void* memory(void*, size_t, size_t);
 void  release(void*, size_t);

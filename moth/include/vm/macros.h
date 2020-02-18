@@ -16,43 +16,43 @@ extern "C" {
 #define ARG3 ((ARG2 << 8) | NEXT)
 #define ARG4 ((ARG3 << 8) | NEXT)
 
-#define RODATA(i) (vm->prg->rod.vls[i])
+#define RODATA(INDEX) (vm->prg->rod.arr[INDEX])
 
-#define JUMP(z) (vm->ip += z)
+#define JUMP(OFFSET) (vm->ip += OFFSET)
 
-#define SETERR(e) _->st = e;
+#define SETERR(ERROR_CODE) _->st = ERROR_CODE;
 
-#define ERROR(e)                                                               \
+#define ERROR(ERROR_CODE)                                                      \
   do {                                                                         \
-    vm->st = e;                                                                \
+    vm->st = ERROR_CODE;                                                       \
     return;                                                                    \
   } while (false)
 
 #define FINISH() ERROR(STATUS_OK)
 
-#define OFST() (uint32_t)(vm->ip - vm->prg->ins)
-#define RET()  (vm->ip = vm->prg->ins + return_stk(&vm->stk))
+// #define OFST() (uint32_t)(vm->ip - vm->prg->ins)
+// #define RET()  (vm->ip = vm->prg->ins + stk_return(&vm->stk))
 
-#define TOP()     (top_stk(&vm->stk))
-#define POP()     (pop_stk(&vm->stk))
-#define PUSH(val) (push_stk(&vm->stk, val))
+#define TOP()       (stk_top(&vm->stk))
+#define POP()       (stk_pop(&vm->stk))
+#define PUSH(VALUE) (stk_push(&vm->stk, VALUE))
 
-#define GET_LOCAL(i)    (get_stk_local(&vm->stk, i))
-#define SET_LOCAL(i, v) (set_stk_local(&vm->stk, i, v))
+#define GET_LOCAL(INDEX)        (stk_get(&vm->stk, INDEX))
+#define SET_LOCAL(INDEX, VALUE) (stk_set(&vm->stk, INDEX, VALUE))
 
 #define TRUTHY() (truthy(TOP()))
 #define FALSY()  (falsy(TOP()))
 
-#define BOP(fct) PUSH(binary_op(vm, fct))
-#define UOP(fct) PUSH(unary_op(vm, fct))
+#define BOP(FUNCTION) PUSH(binary_op(vm, FUNCTION))
+#define UOP(FUNCTION) PUSH(unary_op(vm, FUNCTION))
 
-#define FUNC(f, ...) f(vm, ##__VA_ARGS__)
+#define FUNC(FUNCTION, ...) FUNCTION(vm, ##__VA_ARGS__)
 
-#define DEFINE_SYMBOL(i) hash_map_set(&vm->env, vm->prg->stb.syms[i], POP());
+#define DEFINE_SYMBOL(INDEX) env_set(&vm->env, vm->prg->stb.arr[INDEX], POP());
 
-#define LOAD_SYMBOL(i)                                                         \
+#define LOAD_SYMBOL(INDEX)                                                     \
   do {                                                                         \
-    Entry* entry = hash_map_get(&vm->env, vm->prg->stb.syms[i]);               \
+    Entry* entry = env_get(&vm->env, vm->prg->stb.arr[INDEX]);                 \
     if (!entry) {                                                              \
       ERROR(STATUS_UNDEFN);                                                    \
     } else {                                                                   \
@@ -60,9 +60,9 @@ extern "C" {
     }                                                                          \
   } while (false)
 
-#define ASSIGN_SYMBOL(i)                                                       \
+#define ASSIGN_SYMBOL(INDEX)                                                   \
   do {                                                                         \
-    if (!hash_map_set_existing(&vm->env, vm->prg->stb.syms[i], TOP())) {       \
+    if (!env_set_existing(&vm->env, vm->prg->stb.arr[INDEX], TOP())) {         \
       ERROR(STATUS_UNDEFN);                                                    \
     }                                                                          \
   } while (false)
@@ -71,7 +71,7 @@ extern "C" {
 // === UTILITY ================================================================
 // ============================================================================
 
-#define TUP(a, b) a* b
+#define TUP(A, B) (A * B)
 
 #define NOTHING(...)
 
@@ -84,8 +84,8 @@ extern "C" {
   #define SWAP_BYTES    bswap_64
 #endif
 
-#define VAL_GET_STR(a)                                                         \
-  IS_STR(a) ? a.as.string : ((ObjectString*)a.as.object)->data
+#define VAL_GET_STR(VALUE)                                                     \
+  IS_STR(VALUE) ? VALUE.as.string : ((ObjectString*)VALUE.as.object)->data
 
 #define CASE(C, A)                                                             \
   case C:                                                                      \
@@ -95,7 +95,7 @@ extern "C" {
 #ifndef NDEBUG
   #define PRINT_STRACE                                                         \
     printf("[");                                                               \
-    for (Value* slt = frame_stk(&vm->stk)->bp; slt < vm->stk.vtop; slt++) {    \
+    for (Value* slt = stk_frame(&vm->stk)->bp; slt < vm->stk.vtop; slt++) {    \
       print_value(*slt);                                                       \
       printf(", ");                                                            \
     }                                                                          \

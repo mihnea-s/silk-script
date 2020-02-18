@@ -20,10 +20,8 @@ class SilkErrors {
     return "multiple package declarations in the same file";
   }
 
-  SILKERRORCNST static std::string
-  expectedAfter(std::string_view expect, std::string_view after) {
-    using namespace fmt::literals;
-    return "expected `{}` after {}"_format(expect, after);
+  SILKERRORCNST static std::string expectedAssign() {
+    return "expected `=`/`+=`/`-=` after assignment";
   }
 
   SILKERRORCNST static std::string expectedIdentif(std::string_view instead) {
@@ -39,6 +37,10 @@ class SilkErrors {
   SILKERRORCNST static std::string expectedStr(std::string_view instead) {
     using namespace fmt::literals;
     return "expected a string, found '{}' instead"_format(instead);
+  }
+
+  SILKERRORCNST static std::string expectedInterrupt() {
+    return "expected `continue` or `break`";
   }
 
   SILKERRORCNST static std::string stmtSemicolon() {

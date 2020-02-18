@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include <hash_map.h>
+#include <env.h>
 #include <macros.h>
 #include <mem.h>
 #include <object.h>
@@ -233,17 +233,17 @@ static Value isnt_(VM* _, Value a, Value b) {
 //                                                                 //
 
 static void frame_(VM* vm, uint32_t addr) {
-  invoke_stk(&vm->stk, vm->ip);
-  vm->ip = vm->prg->ins + addr;
+  stk_invoke(&vm->stk, vm->ip, ARG1);
+  vm->ip = vm->prg->bytes + addr;
 }
 
-static void call_(VM* vm) {
+static void call_(VM* vm, uint8_t argc) {
   Value value = POP();
 
   if (IS_OBJ_FCT(value)) {
     ObjectFunction* fct = (ObjectFunction*)value.as.object;
-    invoke_stk(&vm->stk, vm->ip);
-    vm->ip = fct->ins;
+    stk_invoke(&vm->stk, vm->ip, argc);
+    vm->ip = fct->bytes;
     return;
   }
 
@@ -251,7 +251,9 @@ static void call_(VM* vm) {
 }
 
 static void return_(VM* vm) {
-  vm->ip = return_stk(&vm->stk);
+  Value ret = POP();
+  vm->ip    = stk_return(&vm->stk);
+  PUSH(ret);
 }
 
 //                            _   _                                //
@@ -272,12 +274,12 @@ void init_vm(VM* vm) {
   init_stk(&vm->stk);
 
   // initialize global env
-  init_hash_map(&vm->env);
+  init_env(&vm->env);
 }
 
 void run(VM* vm, Program* prog) {
   vm->prg = prog;
-  vm->ip  = prog->ins;
+  vm->ip  = prog->bytes;
   vm->st  = STATUS_OK;
 
   do {
@@ -308,7 +310,7 @@ void run(VM* vm, Program* prog) {
       CASE(VM_FRM2, FUNC(frame_, ARG2));
       CASE(VM_FRM3, FUNC(frame_, ARG3));
       CASE(VM_FRM4, FUNC(frame_, ARG4));
-      CASE(VM_CAL, FUNC(call_));
+      CASE(VM_CAL, FUNC(call_, ARG1));
       CASE(VM_RET, FUNC(return_));
 
       // unary operations
@@ -369,5 +371,5 @@ void run(VM* vm, Program* prog) {
 
 void free_vm(VM* vm) {
   free_stk(&vm->stk);
-  free_hash_map(&vm->env);
+  free_env(&vm->env);
 }

@@ -8,7 +8,6 @@
 #include <util/message.h>
 #include <vm/disas.h>
 #include <vm/file.h>
-#include <vm/opcode.h>
 #include <vm/program.h>
 #include <vm/vm.h>
 

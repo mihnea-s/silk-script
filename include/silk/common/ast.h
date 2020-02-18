@@ -124,8 +124,10 @@ struct IdentifierVal : ASTNode {
 
 struct Assignment : ASTNode {
   constexpr static auto node_enum = ASTNode::Assignment;
-  const ASTNodePtr      target;
-  const ASTNodePtr      assignment;
+  enum AssignType { ASSIGN, ADD, SUBTRACT };
+  const ASTNodePtr target;
+  const ASTNodePtr assignment;
+  const AssignType type;
 };
 
 struct Grouping : ASTNode {
@@ -200,8 +202,7 @@ struct Block : ASTNode {
 
 struct Interrupt : ASTNode {
   constexpr static auto node_enum = ASTNode::Interrupt;
-  enum InterruptType { RETURN, BREAK, CONTINUE };
-  const ASTNodePtr    payload;
+  enum InterruptType { BREAK, CONTINUE };
   const InterruptType type;
 };
 

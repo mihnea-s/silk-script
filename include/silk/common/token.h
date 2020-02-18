@@ -7,17 +7,17 @@ enum class TokenType {
   // symbols ----------------
 
   sym_plus,       // +
-  sym_plusplus,   // ++
+  sym_plusplus,   // ++ (UNUSED)
   sym_plusequal,  // +=
   sym_minus,      // -
-  sym_minusminus, // --
+  sym_minusminus, // -- (UNUSED)
   sym_minusequal, // -=
   sym_slash,      // /
   sym_slashslash, // //
   sym_star,       // *
   sym_starstar,   // **
   sym_percent,    // %
-  sym_percperc,   // %%
+  sym_percperc,   // %% (UNUSED)
 
   sym_equal,      // =
   sym_equalequal, // ==
@@ -28,7 +28,7 @@ enum class TokenType {
   sym_ltequal,    // <=
 
   sym_arrow,  // ->
-  sym_rarrow, // <-
+  sym_rarrow, // <- (UNUSED)
 
   sym_amp,      // &
   sym_ampamp,   // &&
@@ -39,16 +39,16 @@ enum class TokenType {
   sym_caret,    // ^
 
   sym_colon,        // :
-  sym_coloncolon,   // :
+  sym_coloncolon,   // :: (UNUSED)
   sym_semicolon,    // ;
-  sym_qmark,        // ?
-  sym_qmarkqmark,   // ??
+  sym_qmark,        // ?  (UNUSED)
+  sym_qmarkqmark,   // ?? (UNUSED)
   sym_dot,          // .
-  sym_dotdot,       // ..
+  sym_dotdot,       // .. (UNUSED)
   sym_comma,        // ,
-  sym_at,           // @
-  sym_atat,         // @@
-  sym_uscore,       // _
+  sym_at,           // @  (UNUSED)
+  sym_atat,         // @@ (UNUSED)
+  sym_uscore,       // _  (UNUSED)
   sym_uscoreuscore, // __
 
   sym_lround,  // (

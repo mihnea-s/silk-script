@@ -20,12 +20,11 @@
 #include <silk/compiler/compiler.h>
 
 auto Compiler::emit(std::uint8_t byte) -> void {
-  if (_target.is_function) {
-    ;
-    return;
+  if (_targets.empty()) {
+    write_byte(&_program, byte);
+  } else {
+    _targets.top().buffer.push_back(byte);
   }
-
-  write_ins(&_program, byte);
 }
 
 auto Compiler::argx(std::uint32_t arg, std::size_t size) -> void {
@@ -73,57 +72,91 @@ auto Compiler::assign_sym(uint32_t id) -> void {
   argx_op(VM_ASN, id);
 }
 
+auto Compiler::program_offset() -> std::uint32_t {
+  if (_targets.empty()) {
+    return _program.len;
+  } else {
+    return _targets.top().buffer.size();
+  }
+}
+
+auto Compiler::program_buffer() -> std::uint8_t* {
+  if (_targets.empty()) {
+    return _program.bytes;
+  } else {
+    return _targets.top().buffer.data();
+  }
+}
+
 auto Compiler::jmp_insert(std::uint8_t type) -> std::uint32_t {
   emit(type);
   emit(0x0);
   emit(0x0);
-  return _program.len;
+  return program_offset();
 }
 
 auto Compiler::jmp_finish(std::uint32_t insc) -> void {
-  std::uint16_t jmp_size = _program.len - insc;
+  std::uint16_t jmp_size = program_offset() - insc;
 
   if (jmp_size == 0) return;
 
   if constexpr (IS_BIG_ENDIAN) jmp_size = SWAP_BYTES(jmp_size);
 
-  _program.ins[insc - 1] = (jmp_size >> 0) & 0xff;
-  _program.ins[insc - 2] = (jmp_size >> 8) & 0xff;
+  program_buffer()[insc - 1] = (jmp_size >> 0) & 0xff;
+  program_buffer()[insc - 2] = (jmp_size >> 8) & 0xff;
 }
 
 auto Compiler::push_scope() -> void {
-  _depth++;
+  if (_targets.empty()) {
+    _main_locals.depth++;
+  } else {
+    _targets.top().locals.depth++;
+  }
 }
 
 auto Compiler::pop_scope() -> void {
-  _depth--;
-  while (_variables.size() && _variables.back().depth > _depth) {
-    _variables.pop_back();
+  auto& locals = _targets.empty() ? _main_locals : _targets.top().locals;
+  auto& depth  = locals.depth;
+  auto& decls  = locals.decls;
+
+  depth--;
+
+  while (decls.size() && decls.back().depth > depth) {
+    decls.pop_back();
     emit(VM_POP);
   }
 }
 
 auto Compiler::to_scope(std::string_view name, bool is_const) -> bool {
-  if (_depth == -1) return false;
-  _variables.push_back({name, _depth, is_const});
+  auto& locals = _targets.empty() ? _main_locals : _targets.top().locals;
+  auto& depth  = locals.depth;
+  auto& decls  = locals.decls;
+
+  if (depth == -1) return false;
+  decls.push_back({name, depth, is_const});
   return true;
 }
 
-auto Compiler::from_scope(std::string_view name) const
-  -> const std::pair<_varinfo, int> {
-  for (int i = _variables.size() - 1; i >= 0; i--) {
-    if (_variables[i].name == name) { return {_variables[i], i}; }
+auto Compiler::from_scope(std::string_view name) -> const Varinfo* {
+  auto& locals = _targets.empty() ? _main_locals : _targets.top().locals;
+  auto& decls  = locals.decls;
+
+  for (int i = decls.size() - 1; i >= 0; i--) {
+    if (decls[i].name == name) {
+      decls[i].slot = i;
+      return &decls[i];
+    }
   }
 
-  return {{}, -1};
+  return nullptr;
 }
 
 auto Compiler::encode_rodata(Value value) -> std::uint32_t {
-  return write_rod(&_program, value);
+  return write_rodata(&_program, value);
 }
 
 auto Compiler::encode_symbol(Symbol symbol) -> std::uint32_t {
-  return write_sym(&_program, symbol);
+  return write_symtable(&_program, symbol);
 }
 
 auto Compiler::encode_symbol_from_str(std::string_view str) -> std::uint32_t {
@@ -271,40 +304,46 @@ auto Compiler::evaluate(const Assignment& node) -> void {
 
 auto Compiler::evaluate(const IdentifierVal& node) -> void {
   auto varinfo = from_scope(node.identifier);
-  if (varinfo.second == -1) {
+
+  if (!varinfo) {
     if (_symbols.find(node.identifier) == _symbols.end()) {
       throw report_error(
         node.location, SilkErrors::undefUsage(node.identifier));
     }
 
-    load_sym(_symbols[node.identifier]);
-    return;
+    return load_sym(_symbols[node.identifier]);
   }
 
-  load_var(varinfo.second);
+  load_var(varinfo->slot);
 }
 
 auto Compiler::evaluate(const IdentifierRef& node) -> void {
   auto varinfo = from_scope(node.identifier);
 
-  if (varinfo.second == -1) {
+  if (!varinfo) {
     throw report_error(node.location, SilkErrors::undefAssign(node.identifier));
   }
 
-  if (varinfo.first.is_const) {
+  if (varinfo->is_const) {
     throw report_error(node.location, SilkErrors::constAssign(node.identifier));
   }
 
   emit(VM_STR);
-  emit(varinfo.second);
+  emit(varinfo->slot);
 }
 
 auto Compiler::evaluate(const Grouping& node) -> void {
 }
 
 auto Compiler::evaluate(const Call& node) -> void {
+  for (const auto& arg : node.args) {
+    visit_node(arg);
+  }
+
   visit_node(node.target);
+
   emit(VM_CAL);
+  emit((std::uint8_t)node.args.size());
 }
 
 auto Compiler::evaluate(const Access& node) -> void {
@@ -341,22 +380,28 @@ auto Compiler::execute(const Variable& node) -> void {
 }
 
 auto Compiler::execute(const Function& node) -> void {
-  _target.is_function = true;
-  _target.buffer.clear();
+  _targets.emplace();
+
+  push_scope();
+  for (const auto& param : node.parameters) {
+    to_scope(param, false);
+  }
 
   visit_node(node.body);
   emit(VM_VID);
+  emit(VM_RET);
 
-  _target.is_function = false;
+  const auto& buf = _targets.top().buffer;
 
   // add function value
-  size_t fct_size =
-    sizeof(ObjectFunction) + sizeof(uint8_t) * _target.buffer.size();
+  size_t fct_size     = sizeof(ObjectFunction) + sizeof(uint8_t) * buf.size();
   ObjectFunction* fct = (ObjectFunction*)memory(NULL, 0x0, fct_size);
   fct->obj.type       = O_FUNCTION;
-  fct->len            = _target.buffer.size();
+  fct->len            = buf.size();
 
-  std::memcpy(fct->ins, _target.buffer.data(), fct->len);
+  std::memcpy(fct->bytes, buf.data(), fct->len);
+
+  _targets.pop();
 
   Value value;
   value.type      = T_OBJ;
@@ -373,7 +418,7 @@ auto Compiler::execute(const Struct& node) -> void {
 }
 
 auto Compiler::execute(const Loop& node) -> void {
-  auto clause = _program.len;
+  auto clause = program_offset();
 
   visit_node(node.clause);
 
@@ -385,7 +430,7 @@ auto Compiler::execute(const Loop& node) -> void {
 
   emit(VM_JBW);
 
-  auto dist = _program.len + 2 - clause;
+  auto dist = program_offset() + 2 - clause;
   emit((dist >> 8) & 0xff);
   emit((dist >> 0) & 0xff);
 
@@ -473,4 +518,8 @@ auto Compiler::write_to_file(std::string_view file) noexcept -> void {
   const char* err = nullptr;
   write_file(file.data(), &_program, &err);
   if (err) report_error({0, 0}, err);
+}
+
+auto Compiler::free_program() noexcept -> void {
+  ::free_program(&_program);
 }
