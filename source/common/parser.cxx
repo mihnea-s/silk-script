@@ -380,7 +380,7 @@ auto Parser::parse_parameters() -> ASTParameters {
     params.push_back(parse_name());
 
     if (!match(TokenType::sym_rround)) {
-      must_match(TokenType::sym_comma, SilkErrors::missingComma());
+      must_consume(TokenType::sym_comma, SilkErrors::missingComma());
     }
   }
 
