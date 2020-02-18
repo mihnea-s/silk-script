@@ -9,6 +9,7 @@
 
 #include <vm/program.h>
 #include <vm/value.h>
+#include <vm/vm.h>
 
 #include "../common/ast.h"
 #include "../common/error.h"
@@ -122,5 +123,6 @@ class Compiler : ASTVisitor<void>, public ErrorReporter {
   // compile entrypoint
   auto compile(const AST&) noexcept -> void;
   auto write_to_file(std::string_view) noexcept -> void;
+  auto run_in_vm() noexcept -> VMStatus;
   auto free_program() noexcept -> void;
 };

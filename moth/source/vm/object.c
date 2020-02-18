@@ -6,9 +6,9 @@
 #include <object.h>
 
 Object* alloc_object(ObjType type, size_t size) {
-  Object* obj = memory(NULL, 0, size);
-  obj->mark   = false;
-  obj->type   = type;
+  Object* obj    = memory(NULL, 0, size);
+  obj->reachable = false;
+  obj->type      = type;
   return obj;
 }
 

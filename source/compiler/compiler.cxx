@@ -12,6 +12,7 @@
 #include <vm/rodata.h>
 #include <vm/symtable.h>
 #include <vm/value.h>
+#include <vm/vm.h>
 
 #include <silk/common/ast.h>
 #include <silk/common/error.h>
@@ -547,6 +548,16 @@ auto Compiler::write_to_file(std::string_view file) noexcept -> void {
   const char* err = nullptr;
   write_file(file.data(), &_program, &err);
   if (err) report_error({0, 0}, err);
+}
+
+auto Compiler::run_in_vm() noexcept -> VMStatus {
+  VM vm;
+  init_vm(&vm);
+  run(&vm, &_program);
+  VMStatus status = vm.st;
+  free_vm(&vm);
+
+  return status;
 }
 
 auto Compiler::free_program() noexcept -> void {

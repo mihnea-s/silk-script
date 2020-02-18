@@ -4,12 +4,13 @@
 
 #include <mem.h>
 
-typedef struct Alloc Alloc;
-
 static char  stack[2048];
 static char* top = stack;
 
 void* memory(void* ptr, size_t old_sz, size_t new_sz) {
+  // todo
+  return realloc(ptr, new_sz);
+
   void* nptr = NULL;
 
   if (new_sz < 24) {
@@ -26,10 +27,10 @@ void* memory(void* ptr, size_t old_sz, size_t new_sz) {
 }
 
 void release(void* ptr, size_t size) {
-  if (stack <= (char*)ptr && (char*)ptr <= top) {
-    if (ptr == top) top -= size + size % sizeof(size_t);
-    return;
-  }
+  // if (stack <= (char*)ptr && (char*)ptr <= top) {
+  //   if (ptr == top) top -= size + size % sizeof(size_t);
+  //   return;
+  // }
 
   free(ptr);
 }

@@ -13,7 +13,23 @@ void init_gc(GarbageCollector* gc, Stack* stk) {
 }
 
 void gc_collect(GarbageCollector* gc) {
-  // collection time
+  for (Value* v = gc->stk->varr; v < gc->stk->vtop; v++) {
+    if (v->type != T_OBJ) continue;
+
+    Object* obj    = v->as.object;
+    obj->reachable = true;
+  }
+
+  for (Object** obj = gc->objs; obj < gc->objs + gc->len;) {
+    if (!(*obj)->reachable) {
+      free_object(*obj);
+      gc->len--;
+      *obj = *(gc->objs + gc->len);
+    } else {
+      (*obj)->reachable = false;
+      obj++;
+    }
+  }
 }
 
 void gc_register(GarbageCollector* gc, Object* obj) {

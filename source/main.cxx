@@ -51,6 +51,7 @@ int main(const int argc, const char** argv) {
     return 1;
   }
 
+  int return_value = 0;
   for (auto& file : params.files()) {
     auto file_stream = std::ifstream(file);
 
@@ -81,14 +82,21 @@ int main(const int argc, const char** argv) {
       compiler->compile(ast);
       handle_errors(compiler);
 
-      // output to file
-      const auto file_name = get_file_name(file);
-      compiler->write_to_file(file_name);
-      handle_errors(compiler);
+      if (params.flag(Flag::RUN)) {
+        // run in the embedded vm
+        return_value = compiler->run_in_vm();
+      }
+
+      if (params.flag(Flag::COMPILE) || !params.flag(Flag::RUN)) {
+        // output to file
+        const auto file_name = get_file_name(file);
+        compiler->write_to_file(file_name);
+        handle_errors(compiler);
+      }
 
       delete compiler;
     }
   }
 
-  return 0;
+  return return_value;
 }

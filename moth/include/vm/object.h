@@ -21,7 +21,7 @@ typedef enum {
 } ObjType;
 
 typedef struct Object {
-  bool    mark;
+  bool    reachable;
   ObjType type;
 } Object;
 

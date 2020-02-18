@@ -35,10 +35,12 @@ void free_rodata(Rodata* rod) {
         char*  str_ptr  = rod->arr[i].as.string;
         size_t str_size = strlen(str_ptr) + 1;
         release(str_ptr, str_size);
+        break;
       }
 
       case T_OBJ: {
         free_object(rod->arr[i].as.object);
+        break;
       }
 
       default: break;

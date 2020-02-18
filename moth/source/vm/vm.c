@@ -306,7 +306,7 @@ void run(VM* vm, Program* prog) {
   vm->st  = STATUS_OK;
 
   do {
-    // PRINT_STRACE
+    PRINT_STRACE
 
     switch (NEXT) {
       // stack operations
@@ -389,6 +389,7 @@ void run(VM* vm, Program* prog) {
       CASE(VM_ASN3, ASSIGN_SYMBOL(ARG3));
       CASE(VM_ASN4, ASSIGN_SYMBOL(ARG4));
 
+      CASE(VM_GC, gc_collect(&vm->gc));
       CASE(VM_FIN, FINISH());
     }
   } while (true);
