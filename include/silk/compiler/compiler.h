@@ -7,15 +7,15 @@
 #include <string_view>
 #include <vector>
 
-#include <vm/program.h>
-#include <vm/value.h>
-#include <vm/vm.h>
+#include <moth/program.h>
+#include <moth/value.h>
+#include <moth/vm.h>
 
-#include "../common/ast.h"
-#include "../common/error.h"
-#include "../common/token.h"
+#include <silk/lexer/token.h>
+#include <silk/parser/ast.h>
+#include <silk/util/error.h>
 
-class Compiler : ASTVisitor<void>, public ErrorReporter {
+class Compiler : ASTHandler<void, void>, public ErrorReporter {
   private:
   typedef struct {
     std::string_view              name;
@@ -84,36 +84,35 @@ class Compiler : ASTVisitor<void>, public ErrorReporter {
   auto jmp_insert(std::uint8_t) -> std::uint32_t;
   auto jmp_finish(std::uint32_t) -> void;
 
-  auto evaluate(const Unary&) -> void final;
-  auto evaluate(const Binary&) -> void final;
-  auto evaluate(const IntLiteral&) -> void final;
-  auto evaluate(const RealLiteral&) -> void final;
-  auto evaluate(const BoolLiteral&) -> void final;
-  auto evaluate(const StringLiteral& str) -> void final;
-  auto evaluate(const Vid&) -> void final;
-  auto evaluate(const Constant&) -> void final;
-  auto evaluate(const Lambda&) -> void final;
-  auto evaluate(const Assignment&) -> void final;
-  auto evaluate(const IdentifierRef&) -> void final;
-  auto evaluate(const IdentifierVal&) -> void final;
-  auto evaluate(const Grouping&) -> void final;
-  auto evaluate(const Call&) -> void final;
-  auto evaluate(const Access&) -> void final;
-  auto evaluate(const ConstExpr&) -> void final;
+  auto evaluate(Identifier&) -> void final;
+  auto evaluate(Unary&) -> void final;
+  auto evaluate(Binary&) -> void final;
+  auto evaluate(BoolLiteral&) -> void final;
+  auto evaluate(IntLiteral&) -> void final;
+  auto evaluate(RealLiteral&) -> void final;
+  auto evaluate(StringLiteral&) -> void final;
+  auto evaluate(ArrayLiteral&) -> void final;
+  auto evaluate(Constant&) -> void final;
+  auto evaluate(Lambda&) -> void final;
+  auto evaluate(Assignment&) -> void final;
+  auto evaluate(Call&) -> void final;
+  auto evaluate(Access&) -> void final;
+  auto evaluate(ConstExpr&) -> void final;
 
-  auto execute(const Empty&) -> void final;
-  auto execute(const Package&) -> void final;
-  auto execute(const Variable&) -> void final;
-  auto execute(const Function&) -> void final;
-  auto execute(const Struct&) -> void final;
-  auto execute(const Loop&) -> void final;
-  auto execute(const Conditional&) -> void final;
-  auto execute(const Match&) -> void final;
-  auto execute(const MatchCase&) -> void final;
-  auto execute(const Block&) -> void final;
-  auto execute(const Interrupt&) -> void final;
-  auto execute(const ExprStmt&) -> void final;
-  auto execute(const Return&) -> void final;
+  auto execute(Empty&) -> void final;
+  auto execute(Package&) -> void final;
+  auto execute(ExprStmt&) -> void final;
+  auto execute(Block&) -> void final;
+  auto execute(Conditional&) -> void final;
+  auto execute(Loop&) -> void final;
+  auto execute(Foreach&) -> void final;
+  auto execute(Match&) -> void final;
+  auto execute(MatchCase&) -> void final;
+  auto execute(ControlFlow&) -> void final;
+  auto execute(Return&) -> void final;
+  auto execute(Variable&) -> void final;
+  auto execute(Function&) -> void final;
+  auto execute(Struct&) -> void final;
 
   public:
   ~Compiler() {
@@ -123,6 +122,6 @@ class Compiler : ASTVisitor<void>, public ErrorReporter {
   // compile entrypoint
   auto compile(const AST&) noexcept -> void;
   auto write_to_file(std::string_view) noexcept -> void;
-  auto run_in_vm() noexcept -> VMStatus;
+  auto run_in_vm(VM*) noexcept -> VMStatus;
   auto free_program() noexcept -> void;
 };

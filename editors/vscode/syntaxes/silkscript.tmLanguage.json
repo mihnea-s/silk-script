@@ -1,0 +1,70 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Silk Script",
+	"patterns": [
+		{
+			"include": "#symbols"
+		},
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#literals"
+		},
+		{
+			"include": "#string"
+		}
+	],
+	"repository": {
+		"symbols": {
+			"patterns": [
+				{
+					"name": "comment.line",
+					"match": "#.*$\\n?"
+				}
+			]
+		},
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.import.silkscript",
+					"match": "\\b(pkg|use)\\b"
+				},
+				{
+					"name": "keyword.operator",
+					"match": "\\b(main|def|let)\\b"
+				},
+				{
+					"name": "keyword.other",
+					"match": "\\b(fun|enum|struct)\\b"
+				},
+				{
+					"name": "keyword.control.silkscript",
+					"match": "\\b(if|for|return|break|continue)\\b"
+				}
+			]
+		},
+		"literals": {
+			"patterns": [
+				{
+					"name": "constant.numeric.integer.double.silkscript",
+					"match": "(\\b|\\.)([0-9]+[.])?[0-9]+[.]?"
+				},
+				{
+					"name": "constant.language.silkscript",
+					"match": "\\b(void|true|false)\\b"
+				},
+				{
+					"name": "support.function.call.silkscript",
+					"match": "\\b\\w+\\("
+				}
+			]
+		},
+		"string": {
+			"name": "string.single.silkscript",
+			"begin": "'",
+			"end": "'"
+		}
+	},
+	"scopeName": "source.silk"
+}

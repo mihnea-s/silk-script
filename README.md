@@ -5,7 +5,7 @@
 
 Silk Script is a small little inefficient language written as an
 exercise for myself. It is written in *mostly* modern C++, it makes liberal use
-of `std::variant`, `std::shared_ptr`s and dynamic casts.
+of `std::variant` and `std::visit`.
 
 <!-- omit in toc -->
 ## Table of Contents
@@ -55,10 +55,9 @@ Moth VM is still a work in progress.
 ### Variables
 
 ```py
-let x;          # dynamic type, initialized to vid
-let z = 2;      # dynamic type, initialized to 2
-let y: int;     # static type, initialized to vid
-let w: int = 2; # static type, initialized to 2
+let x = 1;      # inferred type, initialized to 1
+let y: int = 2; # static type, initialized to 2
+let z: dyn = 3; # dynamic type, initialized to 3
 ```
 
 Variables in silk are lexically scoped, meaning that they are
@@ -99,9 +98,9 @@ which is used by logical statements (e.g. `if`, `for`).
 
   Booleans contain a `true` or `false` logical value.
 
-* #### Vid `(vid)`
+* #### Void `(void)`
 
-  Vids are used for uninitialized or invalid data, they
+  Voids are used for uninitialized or invalid data, they
   are always falsy.
 
 * #### Callable `(callable)`
