@@ -15,7 +15,7 @@ typedef enum {
   STATUS_INVTYP,
   STATUS_INVARG,
   STATUS_UNDEFN,
-  STATUS_NOTFCT,
+  STATUS_NOTFUN,
 } VMStatus;
 
 typedef struct {

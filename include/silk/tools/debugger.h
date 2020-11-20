@@ -5,7 +5,7 @@
 #include <silk/parser/ast.h>
 #include <silk/util/error.h>
 
-struct Debugger {
+class Debugger {
   private:
   // Prompts
   static constexpr auto PROMPT = YELLOW "$>" RESET " ";

@@ -58,12 +58,12 @@ auto CLIFlags::parse(const int argc, const char** argv) -> void {
 auto CLIFlags::help_string() noexcept -> std::string {
   std::ostringstream oss {};
 
-  oss << fmt::format(BLUE BOLD "(?) Help" RESET ": silk usage:\n");
+  oss << fmt_function(BLUE BOLD "(?) Help" RESET ": silk usage:\n");
 
   for (size_t fl = (size_t)Flag::HELP; fl != (size_t)Flag::LAST; fl++) {
     const auto [alias1, alias2] = CLIFlags::flag_aliases((Flag)fl);
 
-    oss << fmt::format(
+    oss << fmt_function(
       "\t" BOLD "{}" RESET ", " BOLD "{}" RESET "  ->  {}\n",
       alias1,
       alias2,

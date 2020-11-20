@@ -245,7 +245,7 @@ static inline void call_(VM* vm, uint8_t argc) {
     return;
   }
 
-  ERROR(STATUS_NOTFCT);
+  ERROR(STATUS_NOTFUN);
 }
 
 static inline void return_(VM* vm) {

@@ -15,8 +15,8 @@
 #include <silk/parser/ast.h>
 #include <silk/util/error.h>
 
-class Compiler : ASTHandler<void, void>, public ErrorReporter {
-  private:
+class Compiler final : public ErrorReporter, public ASTHandler<void, void> {
+private:
   typedef struct {
     std::string_view              name;
     std::vector<std::string_view> imports;
@@ -57,18 +57,18 @@ class Compiler : ASTHandler<void, void>, public ErrorReporter {
   auto argx_op(std::uint8_t, std::uint32_t) -> void;
 
   auto get_offset() -> std::uint32_t;
-  auto get_buffer() -> std::uint8_t*;
+  auto get_buffer() -> std::uint8_t *;
 
   auto push_scope() -> void;
   auto pop_scope() -> void;
 
   auto define_stack_var(std::string_view, bool) -> bool;
 
-  auto get_stack_var(std::string_view) -> const Varinfo*;
+  auto get_stack_var(std::string_view) -> const Varinfo *;
   auto load_stack_var(std::uint16_t) -> void;
   auto store_stack_var(std::uint16_t) -> void;
 
-  auto get_upvalue(std::string_view) -> const Varinfo*;
+  auto get_upvalue(std::string_view) -> const Varinfo *;
   auto load_upvalue(int, int) -> void;
   auto store_upvalue(int, int) -> void;
 
@@ -84,44 +84,49 @@ class Compiler : ASTHandler<void, void>, public ErrorReporter {
   auto jmp_insert(std::uint8_t) -> std::uint32_t;
   auto jmp_finish(std::uint32_t) -> void;
 
-  auto evaluate(Identifier&) -> void final;
-  auto evaluate(Unary&) -> void final;
-  auto evaluate(Binary&) -> void final;
-  auto evaluate(BoolLiteral&) -> void final;
-  auto evaluate(IntLiteral&) -> void final;
-  auto evaluate(RealLiteral&) -> void final;
-  auto evaluate(StringLiteral&) -> void final;
-  auto evaluate(ArrayLiteral&) -> void final;
-  auto evaluate(Constant&) -> void final;
-  auto evaluate(Lambda&) -> void final;
-  auto evaluate(Assignment&) -> void final;
-  auto evaluate(Call&) -> void final;
-  auto evaluate(Access&) -> void final;
-  auto evaluate(ConstExpr&) -> void final;
+  auto evaluate(ASTNode &, Identifier &) -> void override;
+  auto evaluate(ASTNode &, Unary &) -> void override;
+  auto evaluate(ASTNode &, Binary &) -> void override;
+  auto evaluate(ASTNode &, BoolLiteral &) -> void override;
+  auto evaluate(ASTNode &, IntLiteral &) -> void override;
+  auto evaluate(ASTNode &, RealLiteral &) -> void override;
+  auto evaluate(ASTNode &, CharLiteral &) -> void override;
+  auto evaluate(ASTNode &, StringLiteral &) -> void override;
+  auto evaluate(ASTNode &, ArrayLiteral &) -> void override;
+  auto evaluate(ASTNode &, Constant &) -> void override;
+  auto evaluate(ASTNode &, Lambda &) -> void override;
+  auto evaluate(ASTNode &, Assignment &) -> void override;
+  auto evaluate(ASTNode &, Call &) -> void override;
+  auto evaluate(ASTNode &, Access &) -> void override;
+  auto evaluate(ASTNode &, ConstExpr &) -> void override;
 
-  auto execute(Empty&) -> void final;
-  auto execute(Package&) -> void final;
-  auto execute(ExprStmt&) -> void final;
-  auto execute(Block&) -> void final;
-  auto execute(Conditional&) -> void final;
-  auto execute(Loop&) -> void final;
-  auto execute(Foreach&) -> void final;
-  auto execute(Match&) -> void final;
-  auto execute(MatchCase&) -> void final;
-  auto execute(ControlFlow&) -> void final;
-  auto execute(Return&) -> void final;
-  auto execute(Variable&) -> void final;
-  auto execute(Function&) -> void final;
-  auto execute(Struct&) -> void final;
+  auto execute(Empty &) -> void override;
+  auto execute(Package &) -> void override;
+  auto execute(ExprStmt &) -> void override;
+  auto execute(Block &) -> void override;
+  auto execute(Conditional &) -> void override;
+  auto execute(Loop &) -> void override;
+  auto execute(Foreach &) -> void override;
+  auto execute(Match &) -> void override;
+  auto execute(MatchCase &) -> void override;
+  auto execute(ControlFlow &) -> void override;
+  auto execute(Return &) -> void override;
+  auto execute(Variable &) -> void override;
+  auto execute(Function &) -> void override;
+  auto execute(Enum &) -> void override;
+  auto execute(Struct &) -> void override;
 
-  public:
+public:
+  Compiler() {
+  }
+
   ~Compiler() {
     free_program();
   }
 
   // compile entrypoint
-  auto compile(const AST&) noexcept -> void;
+  auto compile(AST &) noexcept -> void;
   auto write_to_file(std::string_view) noexcept -> void;
-  auto run_in_vm(VM*) noexcept -> VMStatus;
+  auto run_in_vm(VM *) noexcept -> VMStatus;
   auto free_program() noexcept -> void;
 };

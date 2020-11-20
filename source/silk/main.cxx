@@ -74,7 +74,7 @@ int main(const int argc, const char** argv) {
       }
 
       if (flags.is_set(CLIFlags::COMPILE)) {
-        compiler.write_to_file(fmt::format("{}.silkexe", file));
+        compiler.write_to_file(fmt_function("{}.silkexe", file));
 
         if (compiler.has_error()) {
           print_errors(std::cout, compiler);

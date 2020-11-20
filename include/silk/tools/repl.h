@@ -5,8 +5,8 @@
 
 #include <silk/util/cli.h>
 
-struct Repl {
-  private:
+class Repl {
+private:
   // Prompts
   static constexpr auto PROMPT       = CYAN "|>" RESET " ";
   static constexpr auto MULTI_PROMPT = CYAN "|:" RESET " ";
@@ -15,6 +15,6 @@ struct Repl {
   int  _nesting = 0;
   auto is_nested(std::string_view str) noexcept -> bool;
 
-  public:
-  auto run(std::istream& in, std::ostream& out) noexcept -> int;
+public:
+  auto run(std::istream &in, std::ostream &out) noexcept -> int;
 };

@@ -11,7 +11,7 @@
 #include <silk/util/error.h>
 
 class Parser : public ErrorReporter {
-  private:
+private:
   using Iter = std::vector<Token>::const_iterator;
 
   Iter _tok;
@@ -34,7 +34,7 @@ class Parser : public ErrorReporter {
 
   struct Rule {
     using UnParseFN    = ASTNode (Parser::*)();
-    using BinParseFN   = ASTNode (Parser::*)(ASTNode&&);
+    using BinParseFN   = ASTNode (Parser::*)(ASTNode &&);
     UnParseFN  prefix  = nullptr;
     BinParseFN infix   = nullptr;
     UnParseFN  postfix = nullptr;
@@ -46,11 +46,11 @@ class Parser : public ErrorReporter {
   static const std::unordered_map<TokenType, Rule> rules;
 
   // move forward and return previous token
-  inline auto advance() -> const Token&;
+  inline auto advance() -> const Token &;
 
   // token access
-  inline auto previous() const -> const Token&;
-  inline auto current() const -> const Token&;
+  inline auto previous() const -> const Token &;
+  inline auto current() const -> const Token &;
 
   // check end of token stream
   inline auto eof() const -> bool;
@@ -62,11 +62,11 @@ class Parser : public ErrorReporter {
   // token is equal to one of their arguments
   // false otherwise
   template <class... Args>
-  inline auto can_match(Args... args) const -> bool {
-    if (eof()) return false;
+  inline auto match(Args... args) const -> bool {
+    if (eof()) { return false; }
 
-    for (auto type : std::vector {args...}) {
-      if ((*_tok).type == type) return true;
+    for (auto type : std::vector{args...}) {
+      if ((*_tok).type == type) { return true; }
     }
 
     return false;
@@ -76,7 +76,7 @@ class Parser : public ErrorReporter {
   // the current token is equal to one of their arguments
   // they return false otherwise
   template <class... Args>
-  inline auto can_consume(Args... args) -> bool {
+  inline auto consume(Args... args) -> bool {
     if (match(args...)) {
       advance();
       return true;
@@ -93,15 +93,14 @@ class Parser : public ErrorReporter {
 
   template <class T, class... Args>
   auto make_node(Args... args) -> ASTNode {
-    return ASTNode {
-      .location   = previous().location,
-      .typing     = nullptr,
-      .expression = std::make_unique(std::forward<Args>(args)...),
-    };
+    return ASTNode(
+      previous().location,
+      nullptr,
+      std::move(std::make_unique<T>(std::forward<Args>(args)...)));
   };
 
   // Pratt Parser functions
-  auto get_rule(const Token&) const -> const Rule&;
+  auto get_rule(const Token &) const -> const Rule &;
   auto higher(Precedence) const -> Precedence;
   auto lower(Precedence) const -> Precedence;
 
@@ -112,7 +111,7 @@ class Parser : public ErrorReporter {
   auto parse_name() -> std::string;
   auto parse_package() -> std::string;
   auto parse_typing() -> Typing;
-  auto parse_typed_fields() -> TypedFields;
+  auto parse_typed_fields(TokenType, TokenType) -> TypedFields;
 
   auto declaration() -> Statement;
   auto statement() -> Statement;
@@ -149,7 +148,7 @@ class Parser : public ErrorReporter {
   auto expr_array() -> ASTNode;
   auto expr_constexpr() -> ASTNode;
 
-  public:
+public:
   // parsing function
   auto parse(Iter begin, Iter end) noexcept -> AST;
 };

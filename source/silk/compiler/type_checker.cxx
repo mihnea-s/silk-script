@@ -2,118 +2,130 @@
 
 #include <silk/util/error.h>
 
-auto evaluate(Identifier&) -> Typing {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, Identifier &) -> Typing {
+  return nullptr;
 }
 
-auto evaluate(Unary&) -> Typing {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, Unary &) -> Typing {
+  return nullptr;
 }
 
-auto evaluate(Binary&) -> Typing {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, Binary &) -> Typing {
+  return nullptr;
 }
 
-auto evaluate(BoolLiteral&) -> Typing {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, BoolLiteral &) -> Typing {
+  return nullptr;
 }
 
-auto evaluate(IntLiteral&) -> Typing {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, IntLiteral &) -> Typing {
+  return nullptr;
 }
 
-auto evaluate(RealLiteral&) -> Typing {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, RealLiteral &) -> Typing {
+  return nullptr;
 }
 
-auto evaluate(StringLiteral&) -> Typing {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, CharLiteral &) -> Typing {
+  return nullptr;
 }
 
-auto evaluate(Constant&) -> Typing {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, StringLiteral &) -> Typing {
+  return nullptr;
 }
 
-auto evaluate(Lambda&) -> Typing {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, ArrayLiteral &) -> Typing {
+  return nullptr;
 }
 
-auto evaluate(Assignment&) -> Typing {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, Constant &) -> Typing {
+  return nullptr;
 }
 
-auto evaluate(Call&) -> Typing {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, Lambda &) -> Typing {
+  return nullptr;
 }
 
-auto evaluate(Access&) -> Typing {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, Assignment &) -> Typing {
+  return nullptr;
 }
 
-auto evaluate(ConstExpr&) -> Typing {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, Call &) -> Typing {
+  return nullptr;
 }
 
-auto execute(Empty&) -> void {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, Access &) -> Typing {
+  return nullptr;
 }
 
-auto execute(Package&) -> void {
-  ;
+auto TypeChecker::evaluate(ASTNode &parent, ConstExpr &) -> Typing {
+  return nullptr;
 }
 
-auto execute(ExprStmt&) -> void {
-  ;
+auto TypeChecker::execute(Empty &) -> void {
+  return;
 }
 
-auto execute(Block&) -> void {
-  ;
+auto TypeChecker::execute(Package &) -> void {
+  return;
 }
 
-auto execute(Conditional&) -> void {
-  ;
+auto TypeChecker::execute(ExprStmt &) -> void {
+  return;
 }
 
-auto execute(Loop&) -> void {
-  ;
+auto TypeChecker::execute(Block &) -> void {
+  return;
 }
 
-auto execute(Foreach&) -> void {
-  ;
+auto TypeChecker::execute(Conditional &) -> void {
+  return;
 }
 
-auto execute(Match&) -> void {
-  ;
+auto TypeChecker::execute(Loop &) -> void {
+  return;
 }
 
-auto execute(MatchCase&) -> void {
-  ;
+auto TypeChecker::execute(Foreach &) -> void {
+  return;
 }
 
-auto execute(ControlFlow&) -> void {
-  ;
+auto TypeChecker::execute(Match &) -> void {
+  return;
 }
 
-auto execute(Return&) -> void {
-  ;
+auto TypeChecker::execute(MatchCase &) -> void {
+  return;
 }
 
-auto execute(Variable&) -> void {
-  ;
+auto TypeChecker::execute(ControlFlow &) -> void {
+  return;
 }
 
-auto execute(Function&) -> void {
-  ;
+auto TypeChecker::execute(Return &) -> void {
+  return;
 }
 
-auto execute(Struct&) -> void {
-  ;
+auto TypeChecker::execute(Variable &) -> void {
+  return;
 }
 
-auto TypeChecker::type_check(AST& ast) noexcept -> void {
-  for (auto& stmt : ast) {
+auto TypeChecker::execute(Function &) -> void {
+  return;
+}
+
+auto TypeChecker::execute(Enum &) -> void {
+  return;
+}
+
+auto TypeChecker::execute(Struct &) -> void {
+  return;
+}
+
+auto TypeChecker::type_check(AST &ast) noexcept -> void {
+  for (auto &stmt : ast) {
     try {
-      execute(stmt);
-    } catch (...) { }
+      TypeChecker::execute_statement(stmt);
+    } catch (...) {}
   }
 }

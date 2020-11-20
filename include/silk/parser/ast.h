@@ -89,199 +89,697 @@ using Statement = std::variant<
   std::unique_ptr<Struct>>;
 
 struct ASTNode {
-  Location   location;
-  Typing     typing;
-  Expression expression;
+private:
+  Location   _location;
+  Typing     _typing;
+  Expression _inner;
+
+public:
+  ASTNode(const Location &location, Typing &&typing, Expression &&inner) :
+      _location(location), _typing(typing), _inner(std::move(inner)) {
+  }
+
+  ASTNode(const ASTNode &) = delete;
+  ASTNode(ASTNode &&)      = default;
+
+  auto operator=(const ASTNode &) -> ASTNode & = delete;
+  auto operator=(ASTNode &&) -> ASTNode & = default;
+
+  inline auto location() const -> const Location & {
+    return _location;
+  }
+  inline auto typing() -> Typing & {
+    return _typing;
+  }
+  inline auto inner() -> Expression & {
+    return _inner;
+  }
 };
 
 using AST = std::vector<Statement>;
 
 struct Identifier {
-  enum { REF, VAL } which;
-  std::string identifier;
+public:
+  enum IdentifierType { REF, VAL };
+
+private:
+  IdentifierType _type;
+  std::string    _identifier;
+
+public:
+  Identifier(IdentifierType type, std::string &&identifier) :
+      _type(type), _identifier(identifier) {
+  }
+
+  Identifier(const Identifier &) = delete;
+  Identifier(Identifier &&)      = default;
+
+  inline auto type() const -> const IdentifierType & {
+    return _type;
+  }
+  inline auto identifier() const -> const std::string & {
+    return _identifier;
+  }
 };
 
 struct Unary {
-  TokenType operation;
-  ASTNode   operand;
+private:
+  TokenType _operation;
+  ASTNode   _operand;
+
+public:
+  Unary(TokenType operation, ASTNode &&operand) :
+      _operation(operation), _operand(std::move(operand)) {
+  }
+
+  Unary(const Unary &) = delete;
+  Unary(Unary &&)      = default;
+
+  inline auto operation() const -> const TokenType & {
+    return _operation;
+  }
+  inline auto operand() -> ASTNode & {
+    return _operand;
+  }
 };
 
 struct Binary {
-  TokenType operation;
-  ASTNode   left;
-  ASTNode   right;
+private:
+  TokenType _operation;
+  ASTNode   _left;
+  ASTNode   _right;
+
+public:
+  Binary(TokenType operation, ASTNode &&left, ASTNode &&right) :
+      _operation(operation), _left(std::move(left)), _right(std::move(right)) {
+  }
+
+  Binary(const Binary &) = delete;
+  Binary(Binary &&)      = default;
+
+  inline auto operation() const -> const TokenType & {
+    return _operation;
+  }
+  inline auto left() -> ASTNode & {
+    return _left;
+  }
+  inline auto right() -> ASTNode & {
+    return _right;
+  }
 };
 
 struct BoolLiteral {
-  bool value;
+private:
+  bool _value;
+
+public:
+  BoolLiteral(bool value) : _value(value) {
+  }
+
+  BoolLiteral(const BoolLiteral &) = delete;
+  BoolLiteral(BoolLiteral &&)      = default;
+
+  inline auto value() const -> const bool & {
+    return _value;
+  }
 };
 
 struct IntLiteral {
-  std::int64_t value;
+private:
+  std::int64_t _value;
+
+public:
+  IntLiteral(std::int64_t value) : _value(value) {
+  }
+
+  IntLiteral(const IntLiteral &) = delete;
+  IntLiteral(IntLiteral &&)      = default;
+
+  inline auto value() const -> const std::int64_t & {
+    return _value;
+  }
 };
 
 struct RealLiteral {
-  double value;
+private:
+  double _value;
+
+public:
+  RealLiteral(double value) : _value(value) {
+  }
+
+  RealLiteral(const RealLiteral &) = delete;
+  RealLiteral(RealLiteral &&)      = default;
+
+  inline auto value() const -> const double & {
+    return _value;
+  }
 };
 
 struct CharLiteral {
-  char value;
+private:
+  char32_t _value;
+
+public:
+  CharLiteral(char32_t value) : _value(value) {
+  }
+
+  CharLiteral(const CharLiteral &) = delete;
+  CharLiteral(CharLiteral &&)      = default;
+
+  inline auto value() const -> const char32_t & {
+    return _value;
+  }
 };
 
 struct StringLiteral {
-  std::string value;
+private:
+  std::string _value;
+
+public:
+  StringLiteral(std::string &&value) : _value(value) {
+  }
+
+  StringLiteral(const StringLiteral &) = delete;
+  StringLiteral(StringLiteral &&)      = default;
+
+  inline auto value() const -> const std::string & {
+    return _value;
+  }
 };
 
 struct ArrayLiteral {
-  std::vector<ASTNode> contents;
+private:
+  std::vector<ASTNode> _contents;
+
+public:
+  ArrayLiteral(std::vector<ASTNode> &&contents) :
+      _contents(std::move(contents)) {
+  }
+
+  ArrayLiteral(const ArrayLiteral &) = delete;
+  ArrayLiteral(ArrayLiteral &&)      = default;
+
+  inline auto contents() -> std::vector<ASTNode> & {
+    return _contents;
+  }
 };
 
 struct Constant {
-  enum { PI, TAU, EULER, VOID } which;
+public:
+  enum WhichConstant { PI, TAU, EULER, VOID };
+
+private:
+  WhichConstant _which;
+
+public:
+  Constant(WhichConstant which) : _which(which) {
+  }
+
+  Constant(const Constant &) = delete;
+  Constant(Constant &&)      = default;
+
+  inline auto which() const -> const WhichConstant & {
+    return _which;
+  }
 };
 
 struct Lambda {
-  Typing      return_type;
-  TypedFields parameters;
-  Statement   body;
+private:
+  Typing      _return_type;
+  TypedFields _parameters;
+  Statement   _body;
+
+public:
+  Lambda(Typing return_type, TypedFields &&parameters, Statement &&body) :
+      _return_type(return_type),
+      _parameters(std::move(parameters)),
+      _body(std::move(body)) {
+  }
+
+  Lambda(const Lambda &) = delete;
+  Lambda(Lambda &&)      = default;
+
+  inline auto return_type() -> Typing & {
+    return _return_type;
+  }
+  inline auto parameters() -> TypedFields & {
+    return _parameters;
+  }
+  inline auto body() -> Statement & {
+    return _body;
+  }
 };
 
 struct Assignment {
-  ASTNode target;
-  ASTNode value;
-  enum { ASSIGN, ADD, SUBTRACT } type;
+public:
+  enum AssignType { ASSIGN, ADD, SUBTRACT };
+
+private:
+  AssignType _type;
+  ASTNode    _target;
+  ASTNode    _value;
+
+public:
+  Assignment(AssignType type, ASTNode &&target, ASTNode &&value) :
+      _type(type), _target(std::move(target)), _value(std::move(value)) {
+  }
+
+  Assignment(const Assignment &) = delete;
+  Assignment(Assignment &&)      = default;
+
+  inline auto type() const -> const AssignType & {
+    return _type;
+  }
+  inline auto target() -> ASTNode & {
+    return _target;
+  }
+  inline auto value() -> ASTNode & {
+    return _value;
+  }
 };
 
 struct Call {
-  ASTNode              target;
-  std::vector<ASTNode> args;
+private:
+  ASTNode              _target;
+  std::vector<ASTNode> _args;
+
+public:
+  Call(ASTNode &&target, std::vector<ASTNode> &&args) :
+      _target(std::move(target)), _args(std::move(args)) {
+  }
+
+  Call(const Call &) = delete;
+  Call(Call &&)      = default;
+
+  inline auto target() -> ASTNode & {
+    return _target;
+  }
+  inline auto args() -> std::vector<ASTNode> & {
+    return _args;
+  }
 };
 
 struct Access {
-  ASTNode target;
-  ASTNode property;
+private:
+  ASTNode _target;
+  ASTNode _property;
+
+public:
+  Access(ASTNode &&target, ASTNode &&property) :
+      _target(std::move(target)), _property(std::move(property)) {
+  }
+
+  Access(const Access &) = delete;
+  Access(Access &&)      = default;
+
+  inline auto target() -> ASTNode & {
+    return _target;
+  }
+  inline auto property() -> ASTNode & {
+    return _property;
+  }
 };
 
 struct ConstExpr {
-  ASTNode inner;
+private:
+  ASTNode _inner;
+
+public:
+  ConstExpr(ASTNode &&inner) : _inner(std::move(inner)) {
+  }
+
+  ConstExpr(const ConstExpr &) = delete;
+  ConstExpr(ConstExpr &&)      = default;
+
+  inline auto inner() -> ASTNode & {
+    return _inner;
+  }
 };
 
 // Statements
 
-struct Empty { };
+struct Empty {
+public:
+  Empty() {
+  }
+
+  Empty(const Empty &) = delete;
+  Empty(Empty &&)      = default;
+};
 
 struct Package {
-  std::string package;
-  enum { DECLARE, IMPORT } action;
+public:
+  enum PackageType { DECLARE, IMPORT };
+
+private:
+  std::string _package;
+  PackageType _action;
+
+public:
+  Package(std::string &&package, PackageType action) :
+      _package(package), _action(action){};
+
+  Package(const Package &) = delete;
+  Package(Package &&)      = default;
+
+  inline auto package() const -> const std::string & {
+    return _package;
+  }
+  inline auto action() const -> const PackageType & {
+    return _action;
+  }
 };
 
 struct ExprStmt {
-  ASTNode node;
+private:
+  ASTNode _expr;
+
+public:
+  ExprStmt(ASTNode &&expr) : _expr(std::move(expr)) {
+  }
+
+  ExprStmt(const ExprStmt &) = delete;
+  ExprStmt(ExprStmt &&)      = default;
+
+  auto expr() -> ASTNode & {
+    return _expr;
+  }
 };
 
 struct Block {
-  std::vector<Statement> body;
+private:
+  std::vector<Statement> _statements;
+
+public:
+  Block(std::vector<Statement> &&statements) :
+      _statements(std::move(statements)) {
+  }
+
+  Block(const Block &) = delete;
+  Block(Block &&)      = default;
+
+  auto statements() -> std::vector<Statement> & {
+    return _statements;
+  }
 };
 
 struct Conditional {
-  ASTNode   clause;
-  Statement conseq;
-  Statement altern;
+private:
+  ASTNode   _clause;
+  Statement _conseq;
+  Statement _altern;
+
+public:
+  Conditional(ASTNode &&clause, Statement &&conseq, Statement &&altern) :
+      _clause(std::move(clause)),
+      _conseq(std::move(conseq)),
+      _altern(std::move(altern)) {
+  }
+
+  Conditional(const Conditional &) = delete;
+  Conditional(Conditional &&)      = default;
+
+  inline auto clause() -> ASTNode & {
+    return _clause;
+  }
+  inline auto conseq() -> Statement & {
+    return _conseq;
+  }
+  inline auto altern() -> Statement & {
+    return _altern;
+  }
 };
 
 struct Loop {
-  ASTNode   clause;
-  Statement body;
+private:
+  ASTNode   _clause;
+  Statement _body;
+
+public:
+  Loop(ASTNode &&clause, Statement &&body) :
+      _clause(std::move(clause)), _body(std::move(body)) {
+  }
+
+  Loop(const Loop &) = delete;
+  Loop(Loop &&)      = default;
+
+  inline auto clause() -> ASTNode & {
+    return _clause;
+  }
+  inline auto body() -> Statement & {
+    return _body;
+  }
 };
 
 struct Foreach {
-  ASTNode   binding;
-  ASTNode   range;
-  Statement body;
+private:
+  ASTNode   _binding;
+  ASTNode   _range;
+  Statement _body;
+
+public:
+  Foreach(ASTNode &&binding, ASTNode &&range, Statement &&body) :
+      _binding(std::move(binding)),
+      _range(std::move(range)),
+      _body(std::move(body)) {
+  }
+
+  Foreach(const Foreach &) = delete;
+  Foreach(Foreach &&)      = default;
+
+  inline auto binding() -> ASTNode & {
+    return _binding;
+  }
+  inline auto range() -> ASTNode & {
+    return _range;
+  }
+  inline auto body() -> Statement & {
+    return _body;
+  }
 };
 
 struct Match {
-  ASTNode                target;
-  std::vector<Statement> cases;
+private:
+  ASTNode                _target;
+  std::vector<Statement> _cases;
+
+public:
+  Match(ASTNode &&target, std::vector<Statement> &&cases) :
+      _target(std::move(target)), _cases(std::move(cases)) {
+  }
+
+  Match(const Match &) = delete;
+  Match(Match &&)      = default;
+
+  inline auto target() -> ASTNode & {
+    return _target;
+  }
+  inline auto cases() -> std::vector<Statement> & {
+    return _cases;
+  }
 };
 
 struct MatchCase {
-  // ASTNodePtr pattern;
-  Statement body;
+private:
+  Statement _body;
+
+public:
+  MatchCase(Statement &&body) : _body(std::move(body)) {
+  }
+
+  MatchCase(const MatchCase &) = delete;
+  MatchCase(MatchCase &&)      = default;
+
+  inline auto body() -> Statement & {
+    return _body;
+  }
 };
 
 struct ControlFlow {
-  enum { BREAK, CONTINUE } type;
+public:
+  enum ControlFlowType { BREAK, CONTINUE };
+
+private:
+  ControlFlowType _type;
+
+public:
+  ControlFlow(ControlFlowType type) : _type(type) {
+  }
+
+  ControlFlow(const ControlFlow &) = delete;
+  ControlFlow(ControlFlow &&)      = default;
+
+  inline auto type() const -> const ControlFlowType & {
+    return _type;
+  }
 };
 
 struct Return {
-  ASTNode value;
+private:
+  ASTNode _value;
+
+public:
+  Return(ASTNode &&value) : _value(std::move(value)) {
+  }
+
+  Return(const Return &) = delete;
+  Return(Return &&)      = default;
+
+  inline auto value() -> ASTNode & {
+    return _value;
+  }
 };
 
 struct Variable {
-  std::string name;
-  Typing      typing;
-  ASTNode     init;
-  bool        immut;
+private:
+  std::string _name;
+  Typing      _typing;
+  ASTNode     _init;
+  bool        _immut;
+
+public:
+  Variable(std::string &&name, Typing typing, ASTNode &&init, bool immut) :
+      _name(std::move(name)),
+      _typing(typing),
+      _init(std::move(init)),
+      _immut(immut) {
+  }
+
+  Variable(const Variable &) = delete;
+  Variable(Variable &&)      = default;
+
+  inline auto name() const -> const std::string & {
+    return _name;
+  };
+  inline auto typing() const -> const Typing & {
+    return _typing;
+  }
+  inline auto init() -> ASTNode & {
+    return _init;
+  }
+  inline auto immut() const -> const bool & {
+    return _immut;
+  }
 };
 
 struct Function {
-  std::string name;
-  Lambda      lambda;
+private:
+  std::string _name;
+  Lambda      _lambda;
+
+public:
+  Function(std::string &&name, Lambda &&lambda) :
+      _name(std::move(name)), _lambda(std::move(lambda)) {
+  }
+
+  Function(const Function &) = delete;
+  Function(Function &&)      = default;
+
+  inline auto name() const -> const std::string & {
+    return _name;
+  }
+  inline auto lambda() -> Lambda & {
+    return _lambda;
+  }
 };
 
 struct Enum {
-  std::string name;
-  TypedFields variants;
+private:
+  std::string _name;
+  TypedFields _variants;
+
+public:
+  Enum(std::string &&name, TypedFields &&variants) :
+      _name(std::move(name)), _variants(std::move(variants)) {
+  }
+
+  Enum(const Enum &) = delete;
+  Enum(Enum &&)      = default;
+
+  inline auto name() const -> const std::string & {
+    return _name;
+  }
+  inline auto variants() -> TypedFields & {
+    return _variants;
+  }
 };
 
 struct Struct {
-  std::string           name;
-  TypedFields           fields;
-  std::vector<Function> methods;
+private:
+  std::string           _name;
+  TypedFields           _fields;
+  std::vector<Function> _methods;
+
+public:
+  Struct(
+    std::string &&name, TypedFields &&fields, std::vector<Function> &&methods) :
+      _name(std::move(name)),
+      _fields(std::move(fields)),
+      _methods(std::move(methods)) {
+  }
+
+  Struct(const Struct &) = delete;
+  Struct(Struct &&)      = default;
+
+  inline auto name() const -> const std::string & {
+    return _name;
+  }
+  inline auto fields() -> TypedFields & {
+    return _fields;
+  }
+  inline auto methods() -> std::vector<Function> & {
+    return _methods;
+  }
 };
 
 // Visitor
 
 template <class E, class S>
 class ASTHandler {
-  protected:
-  virtual E evaluate(Identifier&)    = 0;
-  virtual E evaluate(Unary&)         = 0;
-  virtual E evaluate(Binary&)        = 0;
-  virtual E evaluate(BoolLiteral&)   = 0;
-  virtual E evaluate(IntLiteral&)    = 0;
-  virtual E evaluate(RealLiteral&)   = 0;
-  virtual E evaluate(StringLiteral&) = 0;
-  virtual E evaluate(ArrayLiteral&)  = 0;
-  virtual E evaluate(Constant&)      = 0;
-  virtual E evaluate(Lambda&)        = 0;
-  virtual E evaluate(Assignment&)    = 0;
-  virtual E evaluate(Call&)          = 0;
-  virtual E evaluate(Access&)        = 0;
-  virtual E evaluate(ConstExpr&)     = 0;
+protected:
+  virtual E evaluate(ASTNode &, Identifier &)    = 0;
+  virtual E evaluate(ASTNode &, Unary &)         = 0;
+  virtual E evaluate(ASTNode &, Binary &)        = 0;
+  virtual E evaluate(ASTNode &, BoolLiteral &)   = 0;
+  virtual E evaluate(ASTNode &, IntLiteral &)    = 0;
+  virtual E evaluate(ASTNode &, RealLiteral &)   = 0;
+  virtual E evaluate(ASTNode &, CharLiteral &)   = 0;
+  virtual E evaluate(ASTNode &, StringLiteral &) = 0;
+  virtual E evaluate(ASTNode &, ArrayLiteral &)  = 0;
+  virtual E evaluate(ASTNode &, Constant &)      = 0;
+  virtual E evaluate(ASTNode &, Lambda &)        = 0;
+  virtual E evaluate(ASTNode &, Assignment &)    = 0;
+  virtual E evaluate(ASTNode &, Call &)          = 0;
+  virtual E evaluate(ASTNode &, Access &)        = 0;
+  virtual E evaluate(ASTNode &, ConstExpr &)     = 0;
 
-  virtual S execute(Empty&)       = 0;
-  virtual S execute(Package&)     = 0;
-  virtual S execute(ExprStmt&)    = 0;
-  virtual S execute(Block&)       = 0;
-  virtual S execute(Conditional&) = 0;
-  virtual S execute(Loop&)        = 0;
-  virtual S execute(Foreach&)     = 0;
-  virtual S execute(Match&)       = 0;
-  virtual S execute(MatchCase&)   = 0;
-  virtual S execute(ControlFlow&) = 0;
-  virtual S execute(Return&)      = 0;
-  virtual S execute(Variable&)    = 0;
-  virtual S execute(Function&)    = 0;
-  virtual S execute(Struct&)      = 0;
+  virtual S execute(Empty &)       = 0;
+  virtual S execute(Package &)     = 0;
+  virtual S execute(ExprStmt &)    = 0;
+  virtual S execute(Block &)       = 0;
+  virtual S execute(Conditional &) = 0;
+  virtual S execute(Loop &)        = 0;
+  virtual S execute(Foreach &)     = 0;
+  virtual S execute(Match &)       = 0;
+  virtual S execute(MatchCase &)   = 0;
+  virtual S execute(ControlFlow &) = 0;
+  virtual S execute(Return &)      = 0;
+  virtual S execute(Variable &)    = 0;
+  virtual S execute(Function &)    = 0;
+  virtual S execute(Enum &)        = 0;
+  virtual S execute(Struct &)      = 0;
 
-  public:
-  E evaluate(Expression& e) {
-    return std::visit([&](auto&& expr) { return this->evaluate(*expr); }, e);
+public:
+  virtual ~ASTHandler() {
   }
 
-  S execute(Statement& s) {
-    return std::visit([&](auto&& stmt) { return this->execute(*stmt); }, s);
+  E evaluate_expression(ASTNode &n) {
+    return std::visit(
+      [&](auto &&expr) { return this->evaluate(n, *expr); }, n.inner());
+  }
+
+  S execute_statement(Statement &s) {
+    return std::visit([&](auto &&stmt) { return this->execute(*stmt); }, s);
   }
 };

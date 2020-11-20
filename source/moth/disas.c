@@ -134,7 +134,6 @@ static void instruction(DissasmInfo* info) {
 
     case VM_NEG: return single(info, "NEG");
     case VM_NOT: return single(info, "NOT");
-    case VM_TYP: return single(info, "TYP");
 
     case VM_ADD: return single(info, "ADD");
     case VM_SUB: return single(info, "SUB");

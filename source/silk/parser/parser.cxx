@@ -264,16 +264,16 @@ const std::unordered_map<TokenType, Parser::Rule> Parser::rules = {
   },
 };
 
-inline auto Parser::advance() -> const Token& {
+inline auto Parser::advance() -> const Token & {
   _tok++;
   return previous();
 }
 
-inline auto Parser::previous() const -> const Token& {
+inline auto Parser::previous() const -> const Token & {
   return *(_tok - 1);
 }
 
-inline auto Parser::current() const -> const Token& {
+inline auto Parser::current() const -> const Token & {
   return *_tok;
 }
 
@@ -288,14 +288,14 @@ inline auto Parser::error_location() const
 }
 
 inline auto Parser::must_match(TokenType type, std::string msg) const -> void {
-  if (!can_match(type)) { throw report(error_location(), msg); }
+  if (!match(type)) { throw report(error_location(), msg); }
 }
 
 inline auto Parser::must_consume(TokenType type, std::string msg) -> void {
-  if (!can_consume(type)) { throw report(error_location(), msg); }
+  if (!consume(type)) { throw report(error_location(), msg); }
 }
 
-auto Parser::get_rule(const Token& tok) const -> const Rule& {
+auto Parser::get_rule(const Token &tok) const -> const Rule & {
   return rules.find(tok.type) == rules.end() ? no_rule : rules.at(tok.type);
 }
 
@@ -320,14 +320,14 @@ auto Parser::precendece(Precedence prec) -> ASTNode {
 
   for (auto rule = get_rule(current()); !eof() && prec <= rule.prec;
        rule      = get_rule(current())) {
-    prefix = (this->*rule.infix)(std::move(prefix));
+    prefix = std::move((this->*rule.infix)(std::move(prefix)));
   }
 
   return std::move(prefix);
 }
 
 auto Parser::next_assign() -> bool {
-  return can_match(
+  return match(
     TokenType::SYM_EQUAL, TokenType::SYM_EQUALEQUAL, TokenType::SYM_MINUSEQUAL);
 }
 
@@ -346,7 +346,7 @@ auto Parser::parse_typing() -> Typing {
   // must_match(TokenType::identifier, "expected a type");
   // return advance().lexeme();
 
-  if (!can_consume(TokenType::SYM_COLONCOLON)) {
+  if (!consume(TokenType::SYM_COLONCOLON)) {
     // no typing
     return nullptr;
   }
@@ -355,15 +355,12 @@ auto Parser::parse_typing() -> Typing {
   return nullptr;
 }
 
-auto Parser::parse_typed_fields() -> TypedFields {
-  auto fields = TypedFields {};
+auto Parser::parse_typed_fields(TokenType end, TokenType delim) -> TypedFields {
+  auto fields = TypedFields{};
 
-  while (!can_consume(TokenType::SYM_RROUND)) {
+  while (!consume(end)) {
     fields.emplace_back(parse_name(), parse_typing());
-
-    if (!can_match(TokenType::SYM_RROUND)) {
-      must_consume(TokenType::SYM_COMMA, "expected a comma");
-    }
+    if (!match(end)) must_consume(delim, "expected a delimiter");
   }
 
   return fields;
@@ -392,7 +389,7 @@ auto Parser::expression() -> ASTNode {
 }
 
 auto Parser::decl_package() -> Statement {
-  const auto action = [&] {
+  auto action = [&] {
     switch (advance().type) {
       case TokenType::KW_PKG: return Package::DECLARE;
       case TokenType::KW_USE: return Package::IMPORT;
@@ -400,49 +397,48 @@ auto Parser::decl_package() -> Statement {
     }
   }();
 
-  const auto package = parse_package();
+  auto package = parse_package();
 
-  return std::make_unique<Package>(package, action);
+  return std::make_unique<Package>(std::move(package), action);
 }
 
 auto Parser::decl_variable() -> Statement {
-  const auto immutable = [&] {
+  auto immutable = [&] {
     switch (advance().type) {
       case TokenType::KW_LET: return true;
       case TokenType::KW_DEF: return false;
       default: throw report(previous().location, "expected let or def");
     }
-  };
+  }();
 
-  const auto name   = parse_name();
-  const auto typing = parse_typing();
+  auto name   = parse_name();
+  auto typing = parse_typing();
 
   must_consume(TokenType::SYM_EQUAL, "expected `=` after variable declaration");
 
-  const auto init = expression();
+  auto init = expression();
 
-  return std::make_unique<Variable>(name, typing, std::move(init), immutable);
+  return std::make_unique<Variable>(
+    std::move(name), typing, std::move(init), immutable);
 }
 
 auto Parser::decl_function() -> Statement {
   must_consume(TokenType::KW_FUN, "expected `fun`");
 
-  const auto name = parse_name();
+  auto name = parse_name();
 
-  const auto params = [&] {
-    if (can_consume(TokenType::SYM_LROUND)) {
-      const auto params = parse_typed_fields();
-      must_consume(TokenType::SYM_RROUND, "expected `)`");
-      return params;
+  auto params = [&] {
+    if (consume(TokenType::SYM_LROUND)) {
+      return parse_typed_fields(TokenType::SYM_RROUND, TokenType::SYM_COMMA);
     }
 
-    return TypedFields {};
+    return TypedFields{};
   }();
 
-  const auto return_type = parse_typing();
+  auto return_type = parse_typing();
 
   auto body = [&]() -> Statement {
-    if (can_match(TokenType::SYM_EQUAL)) {
+    if (match(TokenType::SYM_EQUAL)) {
       return std::make_unique<Return>(expression());
     }
 
@@ -451,31 +447,30 @@ auto Parser::decl_function() -> Statement {
   }();
 
   return std::make_unique<Function>(
-    name,
-    Lambda {
-      .return_type = return_type,
-      .parameters  = std::move(params),
-      .body        = std::move(body),
+    std::move(name),
+    Lambda{
+      return_type,
+      std::move(params),
+      std::move(body),
     });
 }
 
 auto Parser::decl_enum() -> Statement {
   must_consume(TokenType::KW_ENUM, "expected `enum`");
 
-  const auto name = parse_name();
+  auto name = parse_name();
 
   must_consume(TokenType::SYM_LBRACE, "expected `{`");
 
-  const auto variants = parse_typed_fields();
-
-  must_consume(TokenType::SYM_RBRACE, "expected `}`");
+  auto variants =
+    parse_typed_fields(TokenType::SYM_RBRACE, TokenType::SYM_SEMICOLON);
 
   return std::make_unique<Enum>(std::move(name), std::move(variants));
 }
 
 auto Parser::decl_struct() -> Statement {
   // TODO
-  return std::make_unique<Struct>();
+  return std::make_unique<Empty>();
 }
 
 auto Parser::statement() -> Statement {
@@ -506,10 +501,10 @@ auto Parser::stmt_exprstmt() -> Statement {
 }
 
 auto Parser::stmt_block() -> Statement {
-  auto body = std::vector<Statement> {};
+  auto body = std::vector<Statement>{};
 
   must_consume(TokenType::SYM_LBRACE, "expected `{`");
-  while (!can_consume(TokenType::SYM_RBRACE)) {
+  while (!consume(TokenType::SYM_RBRACE)) {
     body.push_back(declaration());
   }
 
@@ -524,7 +519,7 @@ auto Parser::stmt_conditional() -> Statement {
 
   auto conseq = statement();
   auto altern = [&]() -> Statement {
-    if (can_consume(TokenType::KW_ELSE)) {
+    if (consume(TokenType::KW_ELSE)) {
       return statement();
     } else {
       return std::make_unique<Empty>();
@@ -539,7 +534,7 @@ auto Parser::stmt_loop() -> Statement {
   must_consume(TokenType::KW_FOR, "expected `for`");
 
   auto clause = [&]() -> ASTNode {
-    if (can_consume(TokenType::SYM_LROUND)) {
+    if (consume(TokenType::SYM_LROUND)) {
       auto clause = expression();
       must_consume(TokenType::SYM_RROUND, "expected )");
       return std::move(clause);
@@ -559,10 +554,10 @@ auto Parser::stmt_match() -> Statement {
   auto target = expression();
   must_consume(TokenType::SYM_RROUND, "expected )");
 
-  auto cases = std::vector<Statement> {};
+  auto cases = std::vector<Statement>{};
 
   must_consume(TokenType::SYM_LBRACE, "expected {");
-  while (!can_consume(TokenType::SYM_RBRACE)) {
+  while (!consume(TokenType::SYM_RBRACE)) {
     cases.push_back(stmt_match_case());
   }
 
@@ -588,7 +583,7 @@ auto Parser::stmt_return() -> Statement {
   must_consume(TokenType::KW_RETURN, "expected `return`");
 
   auto return_value = [&] {
-    if (can_match(TokenType::SYM_SEMICOLON)) {
+    if (match(TokenType::SYM_SEMICOLON)) {
       return make_node<Constant>(Constant::VOID);
     }
 
@@ -601,8 +596,9 @@ auto Parser::stmt_return() -> Statement {
 
 auto Parser::expr_identifier() -> ASTNode {
   must_consume(TokenType::IDENTIFIER, "expected identifier");
+  const auto name = previous().lexeme;
   const auto type = next_assign() ? Identifier::REF : Identifier::VAL;
-  return make_node<Identifier>(previous().lexeme, type);
+  return make_node<Identifier>(type, name);
 }
 
 auto Parser::expr_unary() -> ASTNode {
@@ -611,7 +607,7 @@ auto Parser::expr_unary() -> ASTNode {
   return make_node<Unary>(tok.type, std::move(operand));
 }
 
-auto Parser::expr_binary(ASTNode&& left) -> ASTNode {
+auto Parser::expr_binary(ASTNode &&left) -> ASTNode {
   auto tok   = advance();
   auto rule  = get_rule(tok);
   auto right = precendece(higher(rule.prec));
@@ -652,7 +648,7 @@ auto Parser::expr_lambda() -> ASTNode {
   return make_node<Constant>(Constant::VOID);
 }
 
-auto Parser::expr_assignment(ASTNode&& target) -> ASTNode {
+auto Parser::expr_assignment(ASTNode &&target) -> ASTNode {
   const auto type = [&] {
     switch (advance().type) {
       case TokenType::SYM_EQUAL: return Assignment::ASSIGN;
@@ -662,18 +658,18 @@ auto Parser::expr_assignment(ASTNode&& target) -> ASTNode {
     }
   }();
 
-  return make_node<Assignment>(std::move(target), expression(), type);
+  return make_node<Assignment>(type, std::move(target), expression());
 }
 
-auto Parser::expr_call(ASTNode&& left) -> ASTNode {
+auto Parser::expr_call(ASTNode &&left) -> ASTNode {
   must_consume(TokenType::SYM_LROUND, "expected `(`");
 
-  auto args = std::vector<ASTNode> {};
+  auto args = std::vector<ASTNode>{};
 
-  while (!can_consume(TokenType::SYM_RROUND)) {
+  while (!consume(TokenType::SYM_RROUND)) {
     args.push_back(expression());
 
-    if (!can_match(TokenType::SYM_RROUND)) {
+    if (!match(TokenType::SYM_RROUND)) {
       must_consume(TokenType::SYM_COMMA, "expected `,`");
     }
   }
@@ -689,11 +685,11 @@ auto Parser::expr_grouping() -> ASTNode {
 }
 
 auto Parser::expr_array() -> ASTNode {
-  auto contents = std::vector<ASTNode> {};
+  auto contents = std::vector<ASTNode>{};
 
   must_consume(TokenType::SYM_LSQUARE, "expected `]`");
 
-  while (!can_consume(TokenType::SYM_RSQUARE)) {
+  while (!consume(TokenType::SYM_RSQUARE)) {
     contents.push_back(expression());
   }
 
@@ -714,13 +710,13 @@ auto Parser::parse(Iter begin, Iter end) noexcept -> AST {
   this->_tok = begin;
   this->_end = end;
 
-  auto ast = AST {};
+  auto ast = AST{};
 
   while (!eof()) {
     try {
       ast.push_back(std::move(declaration()));
     } catch (...) {
-      while (!eof() && !can_consume(TokenType::SYM_SEMICOLON)) {
+      while (!eof() && !consume(TokenType::SYM_SEMICOLON)) {
         advance();
       }
     }

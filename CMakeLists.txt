@@ -1,15 +1,37 @@
-cmake_minimum_required(VERSION 3.1)
-project(SilkTool C CXX)
+cmake_minimum_required(VERSION 3.15)
+
+include(FetchContent)
+
+project(
+  SilkTool
+  
+  VERSION 0.0.1
+  DESCRIPTION "Silk compiler and virtual machine"
+  LANGUAGES C CXX
+)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
-set(COMPILER       "silk")
-set(VIRTUALMACHINE "moth")
+set(SILK_COMPILER       "silk")
+set(SILK_VIRTUALMACHINE "moth")
 
-# {fmt}
-add_subdirectory(vendor/fmt-6.1.2)
+FetchContent_Declare(
+  Catch2
+  GIT_TAG        "v2.13.1"
+  GIT_REPOSITORY "https://github.com/catchorg/Catch2.git"
+)
 
-add_library(${VIRTUALMACHINE} STATIC
+FetchContent_MakeAvailable(Catch2)
+
+FetchContent_Declare(
+  fmtlib
+  GIT_TAG        "5.3.0"
+  GIT_REPOSITORY "https://github.com/fmtlib/fmt.git"
+)
+  
+FetchContent_MakeAvailable(fmtlib)
+
+add_library(${SILK_VIRTUALMACHINE} STATIC
   "source/moth/mem.c"
 
   "source/moth/env.c"
@@ -32,11 +54,11 @@ if (NOT WIN32)
   set(C_MATH_LIB "m")
 endif()
 
-target_include_directories(${VIRTUALMACHINE} PUBLIC "include")
+target_include_directories(${SILK_VIRTUALMACHINE} PUBLIC "include")
 
-target_link_libraries(${VIRTUALMACHINE} ${C_MATH_LIB})
+target_link_libraries(${SILK_VIRTUALMACHINE} ${C_MATH_LIB})
 
-add_executable(${COMPILER}
+add_executable(${SILK_COMPILER}
   "source/silk/main.cxx"
 
   "source/silk/lexer/token.cxx"
@@ -55,10 +77,10 @@ add_executable(${COMPILER}
   "source/silk/util/error.cxx"
 )
 
-set_target_properties(${COMPILER} PROPERTIES
+set_target_properties(${SILK_COMPILER} PROPERTIES
   CXX_STANDARD 17
 )
 
-target_include_directories(${COMPILER} PUBLIC "include")
+target_include_directories(${SILK_COMPILER} PUBLIC "include")
 
-target_link_libraries(${COMPILER} fmt::fmt ${VIRTUALMACHINE})
+target_link_libraries(${SILK_COMPILER} ${SILK_VIRTUALMACHINE} fmt::fmt)
