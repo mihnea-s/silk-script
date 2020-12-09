@@ -19,17 +19,17 @@ typedef enum {
 } VMStatus;
 
 typedef struct {
-  Program*         prg;
-  uint8_t*         ip;
+  Program *        prg;
+  uint8_t *        ip;
   Stack            stk;
   VMStatus         st;
   Environment      env;
   GarbageCollector gc;
 } VM;
 
-void init_vm(VM*);
-void run(VM*, Program*);
-void free_vm(VM*);
+void init_vm(VM *);
+void vm_run(VM *, Program *);
+void free_vm(VM *);
 
 #ifdef __cplusplus
 }

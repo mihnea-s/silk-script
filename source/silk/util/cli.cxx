@@ -9,19 +9,19 @@
 
 #include <silk/util/error.h>
 
-auto CLIFlags::is_flag(const char* arg) const -> bool {
+auto CLIFlags::is_flag(const char *arg) const -> bool {
   return strncmp(arg, "-", 1) == 0;
 }
 
-auto CLIFlags::is_flag(const char* arg, Flag flag) const -> bool {
-  const auto [beg, end]       = std::pair {arg, arg + std::strlen(arg)};
+auto CLIFlags::is_flag(const char *arg, Flag flag) const -> bool {
+  const auto [beg, end]       = std::pair{arg, arg + std::strlen(arg)};
   const auto [alias1, alias2] = flag_aliases(flag);
 
   return std::equal(beg, end, std::begin(alias1), std::end(alias1)) ||
          std::equal(beg, end, std::begin(alias2), std::end(alias2));
 }
 
-auto CLIFlags::files() const -> const std::vector<std::string>& {
+auto CLIFlags::files() const -> const std::vector<std::string> & {
   return _files;
 }
 
@@ -29,9 +29,9 @@ auto CLIFlags::is_set(Flag flag) const -> bool {
   return _bits.test((size_t)flag);
 }
 
-auto CLIFlags::parse(const int argc, const char** argv) -> void {
-  const char** arg = argv + 1;
-  const char** end = argv + argc;
+auto CLIFlags::parse(const int argc, const char **argv) -> void {
+  const char **arg = argv + 1;
+  const char **end = argv + argc;
 
   for (; arg < end; arg++) {
     if (!is_flag(*arg)) {
@@ -56,7 +56,7 @@ auto CLIFlags::parse(const int argc, const char** argv) -> void {
 }
 
 auto CLIFlags::help_string() noexcept -> std::string {
-  std::ostringstream oss {};
+  auto oss = std::ostringstream{};
 
   oss << fmt_function(BLUE BOLD "(?) Help" RESET ": silk usage:\n");
 
@@ -81,17 +81,17 @@ constexpr auto CLIFlags::flag_aliases(Flag flag)
     case Flag::RUN: return {"-r", "--run"};
     case Flag::DEBUG: return {"-d", "--debug"};
     case Flag::INTERACTIVE: return {"-i", "--interactive"};
-    default: return {"?", "?"};
+    case Flag::LAST: return {"?", "?"};
   }
 }
 
 constexpr auto CLIFlags::flag_usage(Flag flag) -> std::string_view {
   switch (flag) {
     case Flag::HELP: return "shows the help page";
-    case Flag::COMPILE: return "compile the files to moth vm";
-    case Flag::RUN: return "compile and run the files (default behaviour)";
-    case Flag::DEBUG: return "interpret the files with the debug tool";
+    case Flag::COMPILE: return "compile the source to a moth executable";
+    case Flag::DEBUG: return "debug the files with the debug tool";
     case Flag::INTERACTIVE: return "open a repl session";
-    default: return "no clue bro";
+    case Flag::RUN: return "compile and run the source (default behaviour)";
+    case Flag::LAST: return "error! this should never happen!";
   }
 }

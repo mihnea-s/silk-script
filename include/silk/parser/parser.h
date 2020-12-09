@@ -1,21 +1,23 @@
 #pragma once
 
 #include <cstdint>
+#include <istream>
 #include <map>
 #include <memory>
 #include <utility>
 #include <vector>
 
-#include <silk/lexer/token.h>
 #include <silk/parser/ast.h>
+#include <silk/parser/token.h>
 #include <silk/util/error.h>
 
+/// The parser is written like this.
 class Parser : public ErrorReporter {
 private:
-  using Iter = std::vector<Token>::const_iterator;
+  TokenScanner _scanner;
 
-  Iter _tok;
-  Iter _end;
+  Token _prev;
+  Token _next;
 
   enum class Precedence {
     ANY,        // lowest
@@ -41,32 +43,23 @@ private:
     Precedence prec    = Precedence::ANY;
   };
 
-  static const Rule no_rule;
-
-  static const std::unordered_map<TokenType, Rule> rules;
-
-  // move forward and return previous token
-  inline auto advance() -> const Token &;
-
-  // token access
-  inline auto previous() const -> const Token &;
-  inline auto current() const -> const Token &;
+  static const std::unordered_map<TokenKind, Rule> rules;
 
   // check end of token stream
   inline auto eof() const -> bool;
 
-  // error helper
-  inline auto error_location() const -> std::pair<std::uint64_t, std::uint64_t>;
+  // move forward and return previous token
+  inline auto advance() -> Token &;
 
   // match functions return true if the next
   // token is equal to one of their arguments
   // false otherwise
   template <class... Args>
   inline auto match(Args... args) const -> bool {
-    if (eof()) { return false; }
+    if (eof()) return false;
 
-    for (auto type : std::vector{args...}) {
-      if ((*_tok).type == type) { return true; }
+    for (auto kind : std::vector{args...}) {
+      if (_next.kind == kind) return true;
     }
 
     return false;
@@ -86,32 +79,33 @@ private:
   }
 
   // wrapper around match that adds an error if match returned false
-  inline auto must_match(TokenType, std::string) const -> void;
+  inline auto must_match(TokenKind, std::string) const -> void;
 
-  // see should_match & must_match
-  inline auto must_consume(TokenType, std::string) -> void;
+  /// Just like [`must_match`] but throws an error if the
+  /// next token is equal to the argument
+  inline auto must_consume(TokenKind, std::string) -> void;
 
   template <class T, class... Args>
   auto make_node(Args... args) -> ASTNode {
     return ASTNode(
-      previous().location,
+      _prev.location,
       nullptr,
       std::move(std::make_unique<T>(std::forward<Args>(args)...)));
   };
 
   // Pratt Parser functions
-  auto get_rule(const Token &) const -> const Rule &;
+  auto precendece(Precedence) -> ASTNode;
   auto higher(Precedence) const -> Precedence;
   auto lower(Precedence) const -> Precedence;
-
-  auto precendece(Precedence) -> ASTNode;
+  auto get_rule(const Token &) const
+    -> std::optional<std::reference_wrapper<const Rule>>;
 
   auto next_assign() -> bool;
 
   auto parse_name() -> std::string;
   auto parse_package() -> std::string;
   auto parse_typing() -> Typing;
-  auto parse_typed_fields(TokenType, TokenType) -> TypedFields;
+  auto parse_typed_fields(TokenKind, TokenKind) -> TypedFields;
 
   auto declaration() -> Statement;
   auto statement() -> Statement;
@@ -119,13 +113,15 @@ private:
 
   // declarations
   auto decl_package() -> Statement;
-  auto decl_variable() -> Statement;
+  auto decl_constant() -> Statement;
   auto decl_function() -> Statement;
   auto decl_enum() -> Statement;
   auto decl_struct() -> Statement;
+  auto decl_main() -> Statement;
 
   // statements
   auto stmt_empty() -> Statement;
+  auto stmt_variable() -> Statement;
   auto stmt_exprstmt() -> Statement;
   auto stmt_block() -> Statement;
   auto stmt_conditional() -> Statement;
@@ -139,16 +135,24 @@ private:
   auto expr_identifier() -> ASTNode;
   auto expr_unary() -> ASTNode;
   auto expr_binary(ASTNode &&) -> ASTNode;
-  auto expr_const() -> ASTNode;
   auto expr_literal() -> ASTNode;
   auto expr_lambda() -> ASTNode;
   auto expr_assignment(ASTNode &&) -> ASTNode;
   auto expr_call(ASTNode &&) -> ASTNode;
   auto expr_grouping() -> ASTNode;
   auto expr_array() -> ASTNode;
-  auto expr_constexpr() -> ASTNode;
+  auto expr_vector() -> ASTNode;
 
 public:
-  // parsing function
-  auto parse(Iter begin, Iter end) noexcept -> AST;
+  Parser(std::istream &source) : _scanner({source}) {
+    // Initialize tokens
+    this->_prev.kind = TokenKind::TOK_ERROR;
+    this->_next      = _scanner.scan();
+  }
+
+  /// Parse the full source file as a list of declarations
+  auto parse_source() noexcept -> AST;
+
+  /// Parse a single declaration or a single expression
+  auto parse_line() noexcept -> AST;
 };

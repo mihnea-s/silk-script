@@ -4,13 +4,14 @@
 ## Introduction
 
 Silk Script is a small little inefficient language written as an
-exercise for myself. It is written in *mostly* modern C++, it makes liberal use
-of `std::variant` and `std::visit`.
+exercise for myself. It is written in modern C++, it makes use
+of C++17 features like `std::variant` and `std::visit`.
 
 <!-- omit in toc -->
 ## Table of Contents
 
 - [Introduction](#introduction)
+- [Roadmap](#roadmap)
 - [Command line interface](#command-line-interface)
 - [The Virtual Machine (Moth)](#the-virtual-machine-moth)
   - [Codebase Terminology](#codebase-terminology)
@@ -27,17 +28,23 @@ of `std::variant` and `std::visit`.
     - [Library `'std/data'`](#library-stddata)
 - [License](#license)
 
+## Roadmap
+
+- [ ] Generational VM
+- [ ] Strong, static typing
+
 ## Command line interface
 
-The silk tool can compile code to silk VM bytecode or interpret it on the fly
-with it's own interpreter.
+The silk tool can run silk code or compile it to a silk VM 
+bytecode executable.
 
 ```
 (?) Help: silk usage:
-  -h, --help  ->  shows the help page
-  -c, --compile ->  compile the files to a silk vm executable
-  -d, --debug ->  interpret the files with the debug tool
-  -i, --interactive ->  open a repl session
+    -h, --help  ->  shows the help page
+    -c, --compile  ->  compile the files to moth vm
+    -d, --debug  ->  interpret the files with the debug tool
+    -i, --interactive  ->  open a repl session
+    -r, --run  ->  compile and run the files (default behaviour)
 ```
 
 ## The Virtual Machine (Moth)
@@ -46,18 +53,21 @@ Moth VM is still a work in progress.
 
 ### Codebase Terminology
 
-  - size -> refers to actual size in BYTES
-  - length -> refers to the number of elements INITIALIZED
-  - capacity -> refers to the number of elements ALLOCATED
+  - size -> refers to actual size in **BYTES**
+  - length -> refers to the number of elements **INITIALIZED**
+  - capacity -> refers to the number of elements **ALLOCATED**
 
 ## Documentation
+
+<!-- omit in toc -->
+## ! Warning the latest refactor broke a bunch of stuff and nothing really works anymore
 
 ### Variables
 
 ```py
-let x = 1;      # inferred type, initialized to 1
-let y: int = 2; # static type, initialized to 2
-let z: dyn = 3; # dynamic type, initialized to 3
+let x = 1;        # inferred type, initialized to 1
+let y :: int = 2; # static type, initialized to 2
+let z :: dyn = 3; # dynamic type, initialized to 3
 ```
 
 Variables in silk are lexically scoped, meaning that they are

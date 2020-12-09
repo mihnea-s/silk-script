@@ -4,24 +4,30 @@
 #include <moth/object.h>
 #include <moth/value.h>
 
+// The initial capacity of the GC's registry
 #define GC_INIT_CAP 10
 
-void init_gc(GarbageCollector* gc, Stack* stk) {
+void init_gc(GarbageCollector *gc, Stack *stk) {
   gc->len  = 0;
   gc->cap  = GC_INIT_CAP;
   gc->stk  = stk;
-  gc->objs = memory(NULL, 0, sizeof(Object*) * GC_INIT_CAP);
+  gc->objs = memory(NULL, 0, sizeof(Object *) * GC_INIT_CAP);
 }
 
-void gc_collect(GarbageCollector* gc) {
-  for (Value* v = gc->stk->varr; v < gc->stk->vtop; v++) {
+void gc_collect(GarbageCollector *gc) {
+  // Mark all values on the VM's stack's value array
+  for (Value *v = gc->stk->varr; v < gc->stk->vtop; v++) {
     if (v->type != T_OBJ) continue;
 
-    Object* obj    = v->as.object;
+    Object *obj    = v->as.object;
     obj->reachable = true;
+
+    // TODO: mark member objects (i.e. values in a list)
+    
   }
 
-  for (Object** obj = gc->objs; obj < gc->objs + gc->len;) {
+  // Free unreachable objects on the GC's registry
+  for (Object **obj = gc->objs; obj < gc->objs + gc->len;) {
     if (!(*obj)->reachable) {
       free_object(*obj);
       gc->len--;
@@ -33,29 +39,33 @@ void gc_collect(GarbageCollector* gc) {
   }
 }
 
-void gc_register(GarbageCollector* gc, Object* obj) {
+void gc_register(GarbageCollector *gc, Object *obj) {
+
+  // Collect if the GC has reached max registry size
+  if (gc->len == gc->cap) gc_collect(gc);
+
+  // Grow capacity if the situation doesn't improve
   if (gc->len == gc->cap) {
-    gc_collect(gc);
+    size_t new_cap = GROW_CAP(gc->cap);
 
-    if (gc->len == gc->cap) {
-      size_t new_cap = GROW_CAP(gc->cap);
+    size_t new_size = sizeof(Object *) * new_cap;
+    size_t old_size = sizeof(Object *) * gc->cap;
 
-      size_t new_size = sizeof(Object*) * new_cap;
-      size_t old_size = sizeof(Object*) * gc->cap;
-
-      gc->cap  = new_cap;
-      gc->objs = memory(gc->objs, old_size, new_size);
-    }
+    gc->cap  = new_cap;
+    gc->objs = memory(gc->objs, old_size, new_size);
   }
 
+  // Register object for cleaning in the registry
   gc->objs[gc->len] = obj;
   gc->len++;
 }
 
-void free_gc(GarbageCollector* gc) {
-  for (Object** obj = gc->objs; obj < gc->objs + gc->len; obj++) {
+void free_gc(GarbageCollector *gc) {
+  // Free all objects, we are done for today
+  for (Object **obj = gc->objs; obj < gc->objs + gc->len; obj++) {
     free_object(*obj);
   }
 
-  release(gc->objs, sizeof(Object*) * gc->cap);
+  // ... and finally the object registry itself
+  release(gc->objs, sizeof(Object *) * gc->cap);
 }

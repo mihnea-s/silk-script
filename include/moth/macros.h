@@ -20,7 +20,7 @@ extern "C" {
 
 #define JUMP(OFFSET) (vm->ip += OFFSET)
 
-#define SETERR(ERROR_CODE) _->st = ERROR_CODE;
+#define SETERR(ERROR_CODE) vm->st = ERROR_CODE;
 
 #define ERROR(ERROR_CODE)                                                      \
   do {                                                                         \
@@ -28,7 +28,7 @@ extern "C" {
     return;                                                                    \
   } while (false)
 
-#define FINISH() ERROR(STATUS_OK)
+#define FINISH() return
 
 // #define OFST() (uint32_t)(vm->ip - vm->prg->ins)
 // #define RET()  (vm->ip = vm->prg->ins + stk_return(&vm->stk))
@@ -52,7 +52,7 @@ extern "C" {
 
 #define LOAD_SYMBOL(INDEX)                                                     \
   do {                                                                         \
-    Entry* entry = env_get(&vm->env, vm->prg->stb.arr[INDEX]);                 \
+    Entry *entry = env_get(&vm->env, vm->prg->stb.arr[INDEX]);                 \
     if (!entry) {                                                              \
       ERROR(STATUS_UNDEFN);                                                    \
     } else {                                                                   \
@@ -71,7 +71,7 @@ extern "C" {
 // === UTILITY ================================================================
 // ============================================================================
 
-#define TUP(A, B) (A * B)
+#define TUP(A, B) ((A * 1223) ^ B)
 
 #define NOTHING(...)
 
@@ -85,7 +85,7 @@ extern "C" {
 #endif
 
 #define VAL_GET_STR(VALUE)                                                     \
-  IS_STR(VALUE) ? VALUE.as.string : ((ObjectString*)VALUE.as.object)->data
+  IS_STR(VALUE) ? VALUE.as.string : ((ObjectString *)VALUE.as.object)->data
 
 #define CASE(C, A)                                                             \
   case C:                                                                      \
@@ -95,7 +95,7 @@ extern "C" {
 #ifndef NDEBUG
   #define PRINT_STRACE                                                         \
     printf("[");                                                               \
-    for (Value* slt = stk_frame(&vm->stk)->bp; slt < vm->stk.vtop; slt++) {    \
+    for (Value *slt = stk_frame(&vm->stk)->bp; slt < vm->stk.vtop; slt++) {    \
       print_value(*slt);                                                       \
       printf(", ");                                                            \
     }                                                                          \

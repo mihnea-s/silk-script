@@ -14,6 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
 set(SILK_COMPILER       "silk")
 set(SILK_VIRTUALMACHINE "moth")
+set(SILK_DOCUMENTATION  "docs")
 
 FetchContent_Declare(
   Catch2
@@ -61,9 +62,7 @@ target_link_libraries(${SILK_VIRTUALMACHINE} ${C_MATH_LIB})
 add_executable(${SILK_COMPILER}
   "source/silk/main.cxx"
 
-  "source/silk/lexer/token.cxx"
-  "source/silk/lexer/lexer.cxx"
-  
+  "source/silk/parser/token.cxx"
   "source/silk/parser/ast.cxx"
   "source/silk/parser/parser.cxx"
   
@@ -84,3 +83,22 @@ set_target_properties(${SILK_COMPILER} PROPERTIES
 target_include_directories(${SILK_COMPILER} PUBLIC "include")
 
 target_link_libraries(${SILK_COMPILER} ${SILK_VIRTUALMACHINE} fmt::fmt)
+
+find_program(STANDARDESE_TOOL standardese)
+
+if(NOT STANDARDESE_TOOL)
+  message("-- Standardese not found, skipping documentation")
+else()
+  message("-- Standardese found, will build documentation")
+
+  add_custom_target(
+    ${SILK_DOCUMENTATION}
+    COMMAND ${STANDARDESE_TOOL}
+      --config ${CMAKE_CURRENT_SOURCE_DIR}/standardese.cfg
+      --output.prefix=${CMAKE_CURRENT_BINARY_DIR}/documentation/
+      "include/silk/parser/"
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Generating documentation using standardese..."
+    VERBATIM
+  )
+endif()

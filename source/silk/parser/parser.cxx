@@ -1,3 +1,4 @@
+#include <optional>
 #include <silk/parser/parser.h>
 
 #include <cstdint>
@@ -5,17 +6,15 @@
 #include <memory>
 #include <vector>
 
-#include <silk/lexer/token.h>
 #include <silk/parser/ast.h>
+#include <silk/parser/token.h>
 #include <silk/util/error.h>
 
-const Parser::Rule Parser::no_rule = {};
-
-const std::unordered_map<TokenType, Parser::Rule> Parser::rules = {
+const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
   // GROUPING -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=
 
   {
-    TokenType::SYM_LROUND,
+    TokenKind::SYM_LROUND,
     {
       .prefix = &Parser::expr_grouping,
       .infix  = &Parser::expr_call,
@@ -24,9 +23,16 @@ const std::unordered_map<TokenType, Parser::Rule> Parser::rules = {
   },
 
   {
-    TokenType::SYM_LSQUARE,
+    TokenKind::SYM_LSQUARE,
     {
       .prefix = &Parser::expr_array,
+    },
+  },
+
+  {
+    TokenKind::SYM_LT,
+    {
+      .prefix = &Parser::expr_vector,
     },
   },
 
@@ -35,14 +41,14 @@ const std::unordered_map<TokenType, Parser::Rule> Parser::rules = {
   // LOGICAL OPERATIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
   {
-    TokenType::SYM_BANG,
+    TokenKind::SYM_BANG,
     {
       .prefix = &Parser::expr_unary,
     },
   },
 
   {
-    TokenType::SYM_EQUALEQUAL,
+    TokenKind::SYM_EQUALEQUAL,
     {
       .infix = &Parser::expr_binary,
       .prec  = Precedence::EQUALITY,
@@ -50,7 +56,7 @@ const std::unordered_map<TokenType, Parser::Rule> Parser::rules = {
   },
 
   {
-    TokenType::SYM_BANGEQUAL,
+    TokenKind::SYM_BANGEQUAL,
     {
       .infix = &Parser::expr_binary,
       .prec  = Precedence::EQUALITY,
@@ -58,29 +64,14 @@ const std::unordered_map<TokenType, Parser::Rule> Parser::rules = {
   },
 
   {
-    TokenType::SYM_GT,
+    TokenKind::SYM_GT,
     {
       .infix = &Parser::expr_binary,
       .prec  = Precedence::COMPARISON,
     },
   },
   {
-    TokenType::SYM_GTEQUAL,
-    {
-      .infix = &Parser::expr_binary,
-      .prec  = Precedence::COMPARISON,
-    },
-  },
-
-  {
-    TokenType::SYM_LT,
-    {
-      .infix = &Parser::expr_binary,
-      .prec  = Precedence::COMPARISON,
-    },
-  },
-  {
-    TokenType::SYM_LTEQUAL,
+    TokenKind::SYM_GTEQUAL,
     {
       .infix = &Parser::expr_binary,
       .prec  = Precedence::COMPARISON,
@@ -88,7 +79,22 @@ const std::unordered_map<TokenType, Parser::Rule> Parser::rules = {
   },
 
   {
-    TokenType::SYM_AMPAMP,
+    TokenKind::SYM_LT,
+    {
+      .infix = &Parser::expr_binary,
+      .prec  = Precedence::COMPARISON,
+    },
+  },
+  {
+    TokenKind::SYM_LTEQUAL,
+    {
+      .infix = &Parser::expr_binary,
+      .prec  = Precedence::COMPARISON,
+    },
+  },
+
+  {
+    TokenKind::SYM_AMPAMP,
     {
       .infix = &Parser::expr_binary,
       .prec  = Precedence::AND,
@@ -96,7 +102,7 @@ const std::unordered_map<TokenType, Parser::Rule> Parser::rules = {
   },
 
   {
-    TokenType::SYM_PIPEPIPE,
+    TokenKind::SYM_PIPEPIPE,
     {
       .infix = &Parser::expr_binary,
       .prec  = Precedence::OR,
@@ -108,7 +114,7 @@ const std::unordered_map<TokenType, Parser::Rule> Parser::rules = {
   // ARITHMETIC OPERATIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
   {
-    TokenType::SYM_MINUS,
+    TokenKind::SYM_MINUS,
     {
       .prefix = &Parser::expr_unary,
       .infix  = &Parser::expr_binary,
@@ -116,42 +122,42 @@ const std::unordered_map<TokenType, Parser::Rule> Parser::rules = {
     },
   },
   {
-    TokenType::SYM_PLUS,
+    TokenKind::SYM_PLUS,
     {
       .infix = &Parser::expr_binary,
       .prec  = Precedence::TERM,
     },
   },
   {
-    TokenType::SYM_STAR,
+    TokenKind::SYM_STAR,
     {
       .infix = &Parser::expr_binary,
       .prec  = Precedence::FACTOR,
     },
   },
   {
-    TokenType::SYM_SLASH,
+    TokenKind::SYM_SLASH,
     {
       .infix = &Parser::expr_binary,
       .prec  = Precedence::FACTOR,
     },
   },
   {
-    TokenType::SYM_STARSTAR,
+    TokenKind::SYM_STARSTAR,
     {
       .infix = &Parser::expr_binary,
       .prec  = Precedence::POWER,
     },
   },
   {
-    TokenType::SYM_SLASHSLASH,
+    TokenKind::SYM_SLASHSLASH,
     {
       .infix = &Parser::expr_binary,
       .prec  = Precedence::FACTOR,
     },
   },
   {
-    TokenType::SYM_PERCENT,
+    TokenKind::SYM_PERCENT,
     {
       .infix = &Parser::expr_binary,
       .prec  = Precedence::FACTOR,
@@ -163,86 +169,86 @@ const std::unordered_map<TokenType, Parser::Rule> Parser::rules = {
   // LITERALS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
   {
-    TokenType::IDENTIFIER,
+    TokenKind::IDENTIFIER,
     {
       .prefix = &Parser::expr_identifier,
     },
   },
 
   {
-    TokenType::LITERAL_INTEGER,
+    TokenKind::LITERAL_INTEGER,
     {
       .prefix = &Parser::expr_literal,
     },
   },
 
   {
-    TokenType::LITERAL_DOUBLE,
+    TokenKind::LITERAL_DOUBLE,
     {
       .prefix = &Parser::expr_literal,
     },
   },
 
   {
-    TokenType::LITERAL_CHAR,
+    TokenKind::LITERAL_CHAR,
     {
       .prefix = &Parser::expr_literal,
     },
   },
 
   {
-    TokenType::LITERAL_STRING,
+    TokenKind::LITERAL_STRING,
     {
       .prefix = &Parser::expr_literal,
     },
   },
 
   {
-    TokenType::CNST_TRUE,
+    TokenKind::BOOL_TRUE,
     {
-      .prefix = &Parser::expr_const,
+      .prefix = &Parser::expr_literal,
     },
   },
 
   {
-    TokenType::CNST_FALSE,
+    TokenKind::BOOL_FALSE,
     {
-      .prefix = &Parser::expr_const,
+      .prefix = &Parser::expr_literal,
     },
   },
 
   {
-    TokenType::CNST_VOID,
+    TokenKind::KEY_VOID,
     {
-      .prefix = &Parser::expr_const,
+      .prefix = &Parser::expr_literal,
     },
   },
 
   {
-    TokenType::CNST_PI,
+    TokenKind::KEY_PI,
     {
-      .prefix = &Parser::expr_const,
+      .prefix = &Parser::expr_literal,
     },
   },
 
   {
-    TokenType::CNST_TAU,
+    TokenKind::KEY_TAU,
     {
-      .prefix = &Parser::expr_const,
+      .prefix = &Parser::expr_literal,
     },
   },
 
   {
-    TokenType::CNST_EUL,
+    TokenKind::KEY_EUL,
     {
-      .prefix = &Parser::expr_const,
+      .prefix = &Parser::expr_literal,
     },
   },
 
   // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-
 
   {
-    TokenType::SYM_EQUAL,
+    TokenKind::SYM_EQUAL,
     {
       .infix = &Parser::expr_assignment,
       .prec  = Precedence::ASSIGNMENT,
@@ -250,53 +256,36 @@ const std::unordered_map<TokenType, Parser::Rule> Parser::rules = {
   },
 
   {
-    TokenType::KW_CONST,
-    {
-      .prefix = &Parser::expr_const,
-    },
-  },
-
-  {
-    TokenType::KW_FUN,
+    TokenKind::KW_FUN,
     {
       .prefix = &Parser::expr_lambda,
     },
   },
 };
 
-inline auto Parser::advance() -> const Token & {
-  _tok++;
-  return previous();
-}
-
-inline auto Parser::previous() const -> const Token & {
-  return *(_tok - 1);
-}
-
-inline auto Parser::current() const -> const Token & {
-  return *_tok;
-}
-
 inline auto Parser::eof() const -> bool {
-  return _tok == _end;
+  return _next.kind == TokenKind::TOK_END;
 }
 
-inline auto Parser::error_location() const
-  -> std::pair<std::uint64_t, std::uint64_t> {
-  if (eof()) return previous().location;
-  return current().location;
+inline auto Parser::advance() -> Token & {
+  _prev = _next;
+  _next = _scanner.scan();
+
+  return _prev;
 }
 
-inline auto Parser::must_match(TokenType type, std::string msg) const -> void {
-  if (!match(type)) { throw report(error_location(), msg); }
+inline auto Parser::must_match(TokenKind kind, std::string msg) const -> void {
+  if (!match(kind)) { throw report(_prev.location, msg); }
 }
 
-inline auto Parser::must_consume(TokenType type, std::string msg) -> void {
-  if (!consume(type)) { throw report(error_location(), msg); }
+inline auto Parser::must_consume(TokenKind kind, std::string msg) -> void {
+  if (!consume(kind)) { throw report(_prev.location, msg); }
 }
 
-auto Parser::get_rule(const Token &tok) const -> const Rule & {
-  return rules.find(tok.type) == rules.end() ? no_rule : rules.at(tok.type);
+auto Parser::get_rule(const Token &tok) const
+  -> std::optional<std::reference_wrapper<const Rule>> {
+  if (rules.find(tok.kind) == rules.end()) return {};
+  return rules.at(tok.kind);
 }
 
 auto Parser::higher(Precedence prec) const -> Precedence {
@@ -310,17 +299,17 @@ auto Parser::lower(Precedence prec) const -> Precedence {
 }
 
 auto Parser::precendece(Precedence prec) -> ASTNode {
-  auto rule = get_rule(current());
+  auto rule = get_rule(_next);
 
-  if (!rule.prefix) {
-    throw report(error_location(), "rule not found for: {}", current().lexeme);
-  }
+  if (!rule) throw report(_next.location, "rule not found");
 
-  auto prefix = (this->*rule.prefix)();
+  auto prefix_fn = rule->get().prefix;
+  auto prefix    = (this->*prefix_fn)();
 
-  for (auto rule = get_rule(current()); !eof() && prec <= rule.prec;
-       rule      = get_rule(current())) {
-    prefix = std::move((this->*rule.infix)(std::move(prefix)));
+  for (auto rule = get_rule(_next);
+       rule && rule->get().infix && prec <= rule->get().prec;
+       rule = get_rule(_next)) {
+    prefix = std::move((this->*(rule->get().infix))(std::move(prefix)));
   }
 
   return std::move(prefix);
@@ -328,25 +317,22 @@ auto Parser::precendece(Precedence prec) -> ASTNode {
 
 auto Parser::next_assign() -> bool {
   return match(
-    TokenType::SYM_EQUAL, TokenType::SYM_EQUALEQUAL, TokenType::SYM_MINUSEQUAL);
+    TokenKind::SYM_EQUAL, TokenKind::SYM_EQUALEQUAL, TokenKind::SYM_MINUSEQUAL);
 }
 
 auto Parser::parse_name() -> std::string {
-  must_match(TokenType::IDENTIFIER, "expected a name");
+  must_match(TokenKind::IDENTIFIER, "expected a name");
   return advance().lexeme;
 }
 
 auto Parser::parse_package() -> std::string {
-  must_match(TokenType::LITERAL_STRING, "expected a package name");
+  must_match(TokenKind::LITERAL_STRING, "expected a package name");
   return advance().lexeme;
 }
 
 auto Parser::parse_typing() -> Typing {
   // TODO
-  // must_match(TokenType::identifier, "expected a type");
-  // return advance().lexeme();
-
-  if (!consume(TokenType::SYM_COLONCOLON)) {
+  if (!consume(TokenKind::SYM_COLONCOLON)) {
     // no typing
     return nullptr;
   }
@@ -355,7 +341,7 @@ auto Parser::parse_typing() -> Typing {
   return nullptr;
 }
 
-auto Parser::parse_typed_fields(TokenType end, TokenType delim) -> TypedFields {
+auto Parser::parse_typed_fields(TokenKind end, TokenKind delim) -> TypedFields {
   auto fields = TypedFields{};
 
   while (!consume(end)) {
@@ -367,33 +353,24 @@ auto Parser::parse_typed_fields(TokenType end, TokenType delim) -> TypedFields {
 }
 
 auto Parser::declaration() -> Statement {
-  switch (current().type) {
-
-    case TokenType::KW_PKG: [[fallthrough]];
-    case TokenType::KW_USE: return decl_package();
-
-    case TokenType::KW_DEF: [[fallthrough]];
-    case TokenType::KW_LET: return decl_variable();
-
-    case TokenType::KW_MAIN: [[fallthrough]];
-    case TokenType::KW_FUN: return decl_function();
-    case TokenType::KW_STRUCT: return decl_struct();
-
-    default: return statement();
+  switch (_next.kind) {
+    case TokenKind::KW_PKG: [[fallthrough]];
+    case TokenKind::KW_USE: return decl_package();
+    case TokenKind::KW_CONST: return decl_constant();
+    case TokenKind::KW_FUN: return decl_function();
+    case TokenKind::KW_ENUM: return decl_enum();
+    case TokenKind::KW_STRUCT: return decl_struct();
+    case TokenKind::KW_MAIN: return decl_main();
+    default: throw report(_prev.location, "expected declaration");
   }
-}
-
-auto Parser::expression() -> ASTNode {
-  if (eof()) throw report(error_location(), "expected expression");
-  return precendece(Precedence::ASSIGNMENT);
 }
 
 auto Parser::decl_package() -> Statement {
   auto action = [&] {
-    switch (advance().type) {
-      case TokenType::KW_PKG: return Package::DECLARE;
-      case TokenType::KW_USE: return Package::IMPORT;
-      default: throw report(error_location(), "expecting `pkg` or `use`");
+    switch (advance().kind) {
+      case TokenKind::KW_PKG: return Package::DECLARE;
+      case TokenKind::KW_USE: return Package::IMPORT;
+      default: throw report(_prev.location, "expecting `pkg` or `use`");
     }
   }();
 
@@ -402,19 +379,133 @@ auto Parser::decl_package() -> Statement {
   return std::make_unique<Package>(std::move(package), action);
 }
 
-auto Parser::decl_variable() -> Statement {
+auto Parser::decl_constant() -> Statement {
+  must_consume(TokenKind::KW_CONST, "expected `const`");
+
+  auto name   = parse_name();
+  auto typing = parse_typing();
+
+  must_consume(TokenKind::SYM_EQUAL, "expected `=` after variable declaration");
+
+  auto init = expression();
+
+  return std::make_unique<Constant>(std::move(name), typing, std::move(init));
+}
+
+auto Parser::decl_function() -> Statement {
+  must_consume(TokenKind::KW_FUN, "expected `fun`");
+
+  auto name = parse_name();
+
+  auto params =
+    consume(TokenKind::SYM_LROUND)
+      ? parse_typed_fields(TokenKind::SYM_RROUND, TokenKind::SYM_COMMA)
+      : TypedFields{};
+
+  auto return_type = parse_typing();
+
+  auto body = consume(TokenKind::SYM_EQUAL)
+                ? std::make_unique<Return>(expression())
+                : stmt_block();
+
+  return std::make_unique<Function>(
+    std::move(name),
+    make_node<Lambda>(return_type, std::move(params), std::move(body)));
+}
+
+auto Parser::decl_enum() -> Statement {
+  must_consume(TokenKind::KW_ENUM, "expected `enum`");
+
+  auto name = parse_name();
+
+  must_consume(TokenKind::SYM_LBRACE, "expected `{`");
+
+  auto variants =
+    parse_typed_fields(TokenKind::SYM_RBRACE, TokenKind::SYM_SEMICOLON);
+
+  return std::make_unique<Enum>(std::move(name), std::move(variants));
+}
+
+auto Parser::decl_struct() -> Statement {
+  must_consume(TokenKind::KW_STRUCT, "expected `struct`");
+
+  auto name = parse_name();
+
+  must_consume(TokenKind::SYM_LBRACE, "expected `{`");
+
+  auto fields = TypedFields{};
+
+  while (!match(TokenKind::SYM_RBRACE, TokenKind::KW_FUN)) {
+    auto name   = parse_name();
+    auto typing = parse_typing();
+    fields.push_back({name, typing});
+
+    if (!match(TokenKind::SYM_RBRACE, TokenKind::KW_FUN)) {
+      must_consume(TokenKind::SYM_SEMICOLON, "expected `;`");
+    }
+  }
+
+  auto methods = std::vector<Statement>{};
+
+  while (!consume(TokenKind::SYM_RBRACE)) {
+    methods.push_back(decl_function());
+  }
+
+  return std::make_unique<Struct>(
+    std::move(name), std::move(fields), std::move(methods));
+}
+
+auto Parser::decl_main() -> Statement {
+  must_consume(TokenKind::KW_MAIN, "expected `main`");
+
+  auto body = std::vector<Statement>{};
+
+  must_consume(TokenKind::SYM_LBRACE, "expected `{`");
+  while (!consume(TokenKind::SYM_RBRACE)) {
+    body.push_back(statement());
+  }
+
+  return std::make_unique<Main>(std::move(body));
+}
+
+auto Parser::statement() -> Statement {
+  switch (_next.kind) {
+    case TokenKind::KW_DEF: [[fallthrough]];
+    case TokenKind::KW_LET: return stmt_variable();
+
+    case TokenKind::KW_IF: return stmt_conditional();
+    case TokenKind::KW_FOR: return stmt_loop();
+    case TokenKind::KW_MATCH: return stmt_match();
+
+    case TokenKind::SYM_SEMICOLON: return stmt_empty();
+    case TokenKind::SYM_LBRACE: return stmt_block();
+
+    case TokenKind::KW_CONTINUE: [[fallthrough]];
+    case TokenKind::KW_BREAK: return stmt_control_flow();
+    case TokenKind::KW_RETURN: return stmt_return();
+
+    default: return stmt_exprstmt();
+  }
+}
+
+auto Parser::stmt_empty() -> Statement {
+  must_consume(TokenKind::SYM_SEMICOLON, "expected `;`");
+  return std::make_unique<Empty>();
+}
+
+auto Parser::stmt_variable() -> Statement {
   auto immutable = [&] {
-    switch (advance().type) {
-      case TokenType::KW_LET: return true;
-      case TokenType::KW_DEF: return false;
-      default: throw report(previous().location, "expected let or def");
+    switch (advance().kind) {
+      case TokenKind::KW_LET: return true;
+      case TokenKind::KW_DEF: return false;
+      default: throw report(_prev.location, "expected let or def");
     }
   }();
 
   auto name   = parse_name();
   auto typing = parse_typing();
 
-  must_consume(TokenType::SYM_EQUAL, "expected `=` after variable declaration");
+  must_consume(TokenKind::SYM_EQUAL, "expected `=` after variable declaration");
 
   auto init = expression();
 
@@ -422,142 +513,57 @@ auto Parser::decl_variable() -> Statement {
     std::move(name), typing, std::move(init), immutable);
 }
 
-auto Parser::decl_function() -> Statement {
-  must_consume(TokenType::KW_FUN, "expected `fun`");
-
-  auto name = parse_name();
-
-  auto params = [&] {
-    if (consume(TokenType::SYM_LROUND)) {
-      return parse_typed_fields(TokenType::SYM_RROUND, TokenType::SYM_COMMA);
-    }
-
-    return TypedFields{};
-  }();
-
-  auto return_type = parse_typing();
-
-  auto body = [&]() -> Statement {
-    if (match(TokenType::SYM_EQUAL)) {
-      return std::make_unique<Return>(expression());
-    }
-
-    must_match(TokenType::SYM_LBRACE, "expected `{`");
-    return stmt_block();
-  }();
-
-  return std::make_unique<Function>(
-    std::move(name),
-    Lambda{
-      return_type,
-      std::move(params),
-      std::move(body),
-    });
-}
-
-auto Parser::decl_enum() -> Statement {
-  must_consume(TokenType::KW_ENUM, "expected `enum`");
-
-  auto name = parse_name();
-
-  must_consume(TokenType::SYM_LBRACE, "expected `{`");
-
-  auto variants =
-    parse_typed_fields(TokenType::SYM_RBRACE, TokenType::SYM_SEMICOLON);
-
-  return std::make_unique<Enum>(std::move(name), std::move(variants));
-}
-
-auto Parser::decl_struct() -> Statement {
-  // TODO
-  return std::make_unique<Empty>();
-}
-
-auto Parser::statement() -> Statement {
-  switch (current().type) {
-    case TokenType::SYM_SEMICOLON: return stmt_empty();
-    case TokenType::SYM_LBRACE: return stmt_block();
-    case TokenType::KW_IF: return stmt_conditional();
-    case TokenType::KW_FOR: return stmt_loop();
-    case TokenType::KW_MATCH: return stmt_match();
-
-    case TokenType::KW_CONTINUE: [[fallthrough]];
-    case TokenType::KW_BREAK: return stmt_control_flow();
-    case TokenType::KW_RETURN: return stmt_return();
-
-    default: return stmt_exprstmt();
-  }
-}
-
-auto Parser::stmt_empty() -> Statement {
-  must_consume(TokenType::SYM_SEMICOLON, "expected `;`");
-  return std::make_unique<Empty>();
-}
-
 auto Parser::stmt_exprstmt() -> Statement {
   auto stmt = std::make_unique<ExprStmt>(expression());
-  must_consume(TokenType::SYM_SEMICOLON, "expected `;`");
+  must_consume(TokenKind::SYM_SEMICOLON, "expected `;`");
   return stmt;
 }
 
 auto Parser::stmt_block() -> Statement {
   auto body = std::vector<Statement>{};
 
-  must_consume(TokenType::SYM_LBRACE, "expected `{`");
-  while (!consume(TokenType::SYM_RBRACE)) {
-    body.push_back(declaration());
+  must_consume(TokenKind::SYM_LBRACE, "expected `{`");
+  while (!consume(TokenKind::SYM_RBRACE)) {
+    body.push_back(statement());
   }
 
   return std::make_unique<Block>(std::move(body));
 }
 
 auto Parser::stmt_conditional() -> Statement {
-  must_consume(TokenType::KW_IF, "expected if");
-  must_consume(TokenType::SYM_LROUND, "expected (");
-  auto clause = expression();
-  must_consume(TokenType::SYM_RROUND, "expected )");
+  must_consume(TokenKind::KW_IF, "expected if");
 
-  auto conseq = statement();
-  auto altern = [&]() -> Statement {
-    if (consume(TokenType::KW_ELSE)) {
-      return statement();
-    } else {
-      return std::make_unique<Empty>();
-    }
-  }();
+  auto clause = expression();
+  auto conseq = stmt_block();
+  auto altern = consume(TokenKind::KW_ELSE) //
+                  ? stmt_block()
+                  : std::make_unique<Empty>();
 
   return std::make_unique<Conditional>(
     std::move(clause), std::move(conseq), std::move(altern));
 }
 
 auto Parser::stmt_loop() -> Statement {
-  must_consume(TokenType::KW_FOR, "expected `for`");
+  must_consume(TokenKind::KW_FOR, "expected `for`");
 
-  auto clause = [&]() -> ASTNode {
-    if (consume(TokenType::SYM_LROUND)) {
-      auto clause = expression();
-      must_consume(TokenType::SYM_RROUND, "expected )");
-      return std::move(clause);
-    } else {
-      return make_node<BoolLiteral>(true);
-    }
-  }();
+  auto clause = match(TokenKind::SYM_LBRACE) //
+                  ? make_node<BoolLiteral>(true)
+                  : expression();
 
-  auto body = statement();
+  auto body = stmt_block();
 
   return std::make_unique<Loop>(std::move(clause), std::move(body));
 }
 
 auto Parser::stmt_match() -> Statement {
-  must_match(TokenType::KW_MATCH, "expected match");
-  must_consume(TokenType::SYM_LROUND, "expected (");
+  must_match(TokenKind::KW_MATCH, "expected match");
+
   auto target = expression();
-  must_consume(TokenType::SYM_RROUND, "expected )");
+  auto cases  = std::vector<Statement>{};
 
-  auto cases = std::vector<Statement>{};
+  must_consume(TokenKind::SYM_LBRACE, "expected {");
 
-  must_consume(TokenType::SYM_LBRACE, "expected {");
-  while (!consume(TokenType::SYM_RBRACE)) {
+  while (!consume(TokenKind::SYM_RBRACE)) {
     cases.push_back(stmt_match_case());
   }
 
@@ -565,38 +571,48 @@ auto Parser::stmt_match() -> Statement {
 }
 
 auto Parser::stmt_match_case() -> Statement {
-  // TODO
-  return std::make_unique<Empty>();
+  auto expr = expression();
+
+  must_match(TokenKind::SYM_ARROW, "expected `->`");
+
+  auto body = stmt_block();
+
+  return std::make_unique<MatchCase>(std::move(expr), std::move(body));
 }
 
 auto Parser::stmt_control_flow() -> Statement {
-  switch (advance().type) {
-    case TokenType::KW_BREAK:
+  switch (advance().kind) {
+    case TokenKind::KW_BREAK:
       return std::make_unique<ControlFlow>(ControlFlow::BREAK);
-    case TokenType::KW_CONTINUE:
+    case TokenKind::KW_CONTINUE:
       return std::make_unique<ControlFlow>(ControlFlow::CONTINUE);
-    default: throw report(error_location(), "expected `break` or `continue`");
+    default: throw report(_prev.location, "expected `break` or `continue`");
   }
 }
 
 auto Parser::stmt_return() -> Statement {
-  must_consume(TokenType::KW_RETURN, "expected `return`");
+  must_consume(TokenKind::KW_RETURN, "expected `return`");
 
   auto return_value = [&] {
-    if (match(TokenType::SYM_SEMICOLON)) {
-      return make_node<Constant>(Constant::VOID);
+    if (match(TokenKind::SYM_SEMICOLON)) {
+      return make_node<KeyLiteral>(KeyLiteral::VOID);
     }
 
     return expression();
   }();
 
-  must_consume(TokenType::SYM_SEMICOLON, "expected `;`");
+  must_consume(TokenKind::SYM_SEMICOLON, "expected `;`");
   return std::make_unique<Return>(std::move(return_value));
 }
 
+auto Parser::expression() -> ASTNode {
+  if (eof()) throw report(_prev.location, "expected expression");
+  return precendece(Precedence::ASSIGNMENT);
+}
+
 auto Parser::expr_identifier() -> ASTNode {
-  must_consume(TokenType::IDENTIFIER, "expected identifier");
-  const auto name = previous().lexeme;
+  must_consume(TokenKind::IDENTIFIER, "expected identifier");
+  const auto name = _prev.lexeme;
   const auto type = next_assign() ? Identifier::REF : Identifier::VAL;
   return make_node<Identifier>(type, name);
 }
@@ -604,57 +620,51 @@ auto Parser::expr_identifier() -> ASTNode {
 auto Parser::expr_unary() -> ASTNode {
   auto tok     = advance();
   auto operand = precendece(Precedence::UNARY);
-  return make_node<Unary>(tok.type, std::move(operand));
+  return make_node<Unary>(tok.kind, std::move(operand));
 }
 
 auto Parser::expr_binary(ASTNode &&left) -> ASTNode {
   auto tok   = advance();
   auto rule  = get_rule(tok);
-  auto right = precendece(higher(rule.prec));
+  auto right = precendece(higher(rule->get().prec));
 
-  return make_node<Binary>(tok.type, std::move(left), std::move(right));
-}
-
-auto Parser::expr_const() -> ASTNode {
-  switch (advance().type) {
-    case TokenType::CNST_TRUE: return make_node<BoolLiteral>(true);
-    case TokenType::CNST_FALSE: return make_node<BoolLiteral>(false);
-    case TokenType::CNST_VOID: return make_node<Constant>(Constant::VOID);
-    case TokenType::CNST_PI: return make_node<Constant>(Constant::PI);
-    case TokenType::CNST_TAU: return make_node<Constant>(Constant::TAU);
-    case TokenType::CNST_EUL: return make_node<Constant>(Constant::EULER);
-    default: throw report(error_location(), "expected constant or literal");
-  }
+  return make_node<Binary>(tok.kind, std::move(left), std::move(right));
 }
 
 auto Parser::expr_literal() -> ASTNode {
-  switch (advance().type) {
-    case TokenType::LITERAL_INTEGER:
-      return make_node<IntLiteral>(std::atoi(previous().lexeme.c_str()));
-    case TokenType::LITERAL_DOUBLE:
-      return make_node<RealLiteral>(std::atof(previous().lexeme.c_str()));
-    case TokenType::LITERAL_CHAR:
-      return make_node<CharLiteral>(previous().lexeme.at(0));
-    case TokenType::LITERAL_STRING:
-      return make_node<StringLiteral>(std::move(previous().lexeme));
-    default: throw report(error_location(), "expected constant or literal");
+  switch (advance().kind) {
+    case TokenKind::KEY_VOID: return make_node<KeyLiteral>(KeyLiteral::VOID);
+    case TokenKind::KEY_PI: return make_node<KeyLiteral>(KeyLiteral::PI);
+    case TokenKind::KEY_TAU: return make_node<KeyLiteral>(KeyLiteral::TAU);
+    case TokenKind::KEY_EUL: return make_node<KeyLiteral>(KeyLiteral::EULER);
+    case TokenKind::BOOL_TRUE: return make_node<BoolLiteral>(true);
+    case TokenKind::BOOL_FALSE: return make_node<BoolLiteral>(false);
+    case TokenKind::LITERAL_INTEGER:
+      return make_node<IntLiteral>(std::atoi(_prev.lexeme.c_str()));
+    case TokenKind::LITERAL_DOUBLE:
+      return make_node<RealLiteral>(std::atof(_prev.lexeme.c_str()));
+    case TokenKind::LITERAL_CHAR:
+      return make_node<CharLiteral>(_prev.lexeme.at(0));
+    case TokenKind::LITERAL_STRING:
+      return make_node<StringLiteral>(std::move(_prev.lexeme));
+    default: throw report(_prev.location, "expected constant or literal");
   }
 }
 
 auto Parser::expr_lambda() -> ASTNode {
-  must_consume(TokenType::KW_FUN, "expected `fun`");
+  must_consume(TokenKind::KW_FUN, "expected `fun`");
 
   // TODO
-  return make_node<Constant>(Constant::VOID);
+  return make_node<KeyLiteral>(KeyLiteral::VOID);
 }
 
 auto Parser::expr_assignment(ASTNode &&target) -> ASTNode {
   const auto type = [&] {
-    switch (advance().type) {
-      case TokenType::SYM_EQUAL: return Assignment::ASSIGN;
-      case TokenType::SYM_PLUSEQUAL: return Assignment::ADD;
-      case TokenType::SYM_MINUSEQUAL: return Assignment::SUBTRACT;
-      default: throw report(error_location(), "expected `=`, `+=` or `-=`");
+    switch (advance().kind) {
+      case TokenKind::SYM_EQUAL: return Assignment::ASSIGN;
+      case TokenKind::SYM_PLUSEQUAL: return Assignment::ADD;
+      case TokenKind::SYM_MINUSEQUAL: return Assignment::SUBTRACT;
+      default: throw report(_prev.location, "expected `=`, `+=` or `-=`");
     }
   }();
 
@@ -662,15 +672,15 @@ auto Parser::expr_assignment(ASTNode &&target) -> ASTNode {
 }
 
 auto Parser::expr_call(ASTNode &&left) -> ASTNode {
-  must_consume(TokenType::SYM_LROUND, "expected `(`");
+  must_consume(TokenKind::SYM_LROUND, "expected `(`");
 
   auto args = std::vector<ASTNode>{};
 
-  while (!consume(TokenType::SYM_RROUND)) {
+  while (!consume(TokenKind::SYM_RROUND)) {
     args.push_back(expression());
 
-    if (!match(TokenType::SYM_RROUND)) {
-      must_consume(TokenType::SYM_COMMA, "expected `,`");
+    if (!match(TokenKind::SYM_RROUND)) {
+      must_consume(TokenKind::SYM_COMMA, "expected `,`");
     }
   }
 
@@ -678,48 +688,75 @@ auto Parser::expr_call(ASTNode &&left) -> ASTNode {
 }
 
 auto Parser::expr_grouping() -> ASTNode {
-  must_consume(TokenType::SYM_LROUND, "expected opening parenthesis `)`");
+  must_consume(TokenKind::SYM_LROUND, "expected opening parenthesis `)`");
   auto inner = expression();
-  must_consume(TokenType::SYM_RROUND, "expected closing parenthesis `)`");
+  must_consume(TokenKind::SYM_RROUND, "expected closing parenthesis `)`");
   return std::move(inner);
 }
 
 auto Parser::expr_array() -> ASTNode {
   auto contents = std::vector<ASTNode>{};
 
-  must_consume(TokenType::SYM_LSQUARE, "expected `]`");
+  must_consume(TokenKind::SYM_LSQUARE, "expected `]`");
 
-  while (!consume(TokenType::SYM_RSQUARE)) {
+  while (!consume(TokenKind::SYM_RSQUARE)) {
     contents.push_back(expression());
+
+    if (!match(TokenKind::SYM_RSQUARE)) {
+      must_match(TokenKind::SYM_COMMA, "expected `,`");
+    }
   }
 
   return make_node<ArrayLiteral>(std::move(contents));
 }
 
-auto Parser::expr_constexpr() -> ASTNode {
-  must_consume(TokenType::KW_CONST, "expected `const`");
-  must_consume(TokenType::SYM_LBRACE, "expected `{`");
-  auto inner = expression();
-  must_consume(TokenType::SYM_RBRACE, "expected `}`");
-  return make_node<ConstExpr>(std::move(inner));
+auto Parser::expr_vector() -> ASTNode {
+  auto contents = std::vector<ASTNode>{};
+
+  must_consume(TokenKind::SYM_LT, "expected `<`");
+
+  while (!consume(TokenKind::SYM_GT)) {
+    contents.push_back(expression());
+
+    if (!match(TokenKind::SYM_GT)) {
+      must_consume(TokenKind::SYM_COMMA, "expected `,`");
+    }
+  }
+
+  return make_node<VectorLiteral>(std::move(contents));
 }
 
 // public compile function
 
-auto Parser::parse(Iter begin, Iter end) noexcept -> AST {
-  this->_tok = begin;
-  this->_end = end;
-
+auto Parser::parse_source() noexcept -> AST {
+  // Create an AST to push declarations onto
   auto ast = AST{};
 
   while (!eof()) {
     try {
       ast.push_back(std::move(declaration()));
     } catch (...) {
-      while (!eof() && !consume(TokenType::SYM_SEMICOLON)) {
+      while (!eof() && !consume(TokenKind::SYM_SEMICOLON)) {
         advance();
       }
     }
+  }
+
+  return ast;
+}
+
+auto Parser::parse_line() noexcept -> AST {
+  // Create an AST to push declarations onto
+  auto ast = AST{};
+
+  try {
+    ast.push_back(std::move(declaration()));
+  } catch (...) {
+    clear_errors();
+
+    try {
+      ast.push_back(std::make_unique<ExprStmt>(expression()));
+    } catch (...) {}
   }
 
   return ast;

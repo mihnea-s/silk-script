@@ -1,11 +1,11 @@
 {
     "name": "silk-code",
-    "publisher": "Silk Script",
+    "publisher": "SilkScript",
     "displayName": "Silk Code",
-    "description": "Silk Script language support",
+    "description": "SilkScript language support",
     "license": "MIT",
     "repository": {
-        "url": "https://github.com/mihnea-s/silk-code"
+        "url": "https://github.com/mihnea-s/silk-script"
     },
     "version": "0.1.0",
     "engines": {
@@ -19,7 +19,7 @@
             {
                 "id": "silkscript",
                 "aliases": [
-                    "Silk Script",
+                    "SilkScript",
                     "silkscript"
                 ],
                 "extensions": [
@@ -32,7 +32,7 @@
             {
                 "language": "silkscript",
                 "scopeName": "source.silk",
-                "path": "./syntaxes/silkscript.tmLanguage.json"
+                "path": "./language-syntax.yaml"
             }
         ]
     }

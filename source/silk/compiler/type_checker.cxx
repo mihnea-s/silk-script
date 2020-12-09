@@ -1,3 +1,4 @@
+#include "silk/parser/ast.h"
 #include <silk/compiler/type_checker.h>
 
 #include <silk/util/error.h>
@@ -11,6 +12,10 @@ auto TypeChecker::evaluate(ASTNode &parent, Unary &) -> Typing {
 }
 
 auto TypeChecker::evaluate(ASTNode &parent, Binary &) -> Typing {
+  return nullptr;
+}
+
+auto TypeChecker::evaluate(ASTNode &parent, KeyLiteral &) -> Typing {
   return nullptr;
 }
 
@@ -38,7 +43,7 @@ auto TypeChecker::evaluate(ASTNode &parent, ArrayLiteral &) -> Typing {
   return nullptr;
 }
 
-auto TypeChecker::evaluate(ASTNode &parent, Constant &) -> Typing {
+auto TypeChecker::evaluate(ASTNode &parent, VectorLiteral &) -> Typing {
   return nullptr;
 }
 
@@ -58,15 +63,15 @@ auto TypeChecker::evaluate(ASTNode &parent, Access &) -> Typing {
   return nullptr;
 }
 
-auto TypeChecker::evaluate(ASTNode &parent, ConstExpr &) -> Typing {
-  return nullptr;
-}
-
 auto TypeChecker::execute(Empty &) -> void {
   return;
 }
 
 auto TypeChecker::execute(Package &) -> void {
+  return;
+}
+
+auto TypeChecker::execute(Variable &) -> void {
   return;
 }
 
@@ -106,7 +111,7 @@ auto TypeChecker::execute(Return &) -> void {
   return;
 }
 
-auto TypeChecker::execute(Variable &) -> void {
+auto TypeChecker::execute(Constant &) -> void {
   return;
 }
 
@@ -119,6 +124,10 @@ auto TypeChecker::execute(Enum &) -> void {
 }
 
 auto TypeChecker::execute(Struct &) -> void {
+  return;
+}
+
+auto TypeChecker::execute(Main &) -> void {
   return;
 }
 

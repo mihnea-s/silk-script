@@ -11,7 +11,7 @@
 #include <variant>
 #include <vector>
 
-#include <silk/lexer/token.h>
+#include <silk/parser/token.h>
 #include <silk/util/error.h>
 
 using Typing = std::nullptr_t;
@@ -23,23 +23,24 @@ using TypedFields = std::vector<std::pair<std::string, Typing>>;
 struct Identifier;
 struct Unary;
 struct Binary;
-struct Constant;
+struct KeyLiteral;
 struct BoolLiteral;
 struct IntLiteral;
 struct RealLiteral;
 struct CharLiteral;
 struct StringLiteral;
 struct ArrayLiteral;
+struct VectorLiteral;
 struct Lambda;
 struct Assignment;
 struct Call;
 struct Access;
-struct ConstExpr;
 
 // Statements
 
 struct Empty;
 struct Package;
+struct Variable;
 struct ExprStmt;
 struct Block;
 struct Conditional;
@@ -49,31 +50,33 @@ struct Match;
 struct MatchCase;
 struct ControlFlow;
 struct Return;
-struct Variable;
+struct Constant;
 struct Function;
 struct Enum;
 struct Struct;
+struct Main;
 
 using Expression = std::variant<
   std::unique_ptr<Identifier>,
   std::unique_ptr<Unary>,
   std::unique_ptr<Binary>,
+  std::unique_ptr<KeyLiteral>,
   std::unique_ptr<BoolLiteral>,
   std::unique_ptr<IntLiteral>,
   std::unique_ptr<RealLiteral>,
   std::unique_ptr<CharLiteral>,
   std::unique_ptr<StringLiteral>,
   std::unique_ptr<ArrayLiteral>,
-  std::unique_ptr<Constant>,
+  std::unique_ptr<VectorLiteral>,
   std::unique_ptr<Lambda>,
   std::unique_ptr<Assignment>,
   std::unique_ptr<Call>,
-  std::unique_ptr<Access>,
-  std::unique_ptr<ConstExpr>>;
+  std::unique_ptr<Access>>;
 
 using Statement = std::variant<
   std::unique_ptr<Empty>,
   std::unique_ptr<Package>,
+  std::unique_ptr<Variable>,
   std::unique_ptr<ExprStmt>,
   std::unique_ptr<Block>,
   std::unique_ptr<Conditional>,
@@ -83,10 +86,11 @@ using Statement = std::variant<
   std::unique_ptr<MatchCase>,
   std::unique_ptr<ControlFlow>,
   std::unique_ptr<Return>,
-  std::unique_ptr<Variable>,
+  std::unique_ptr<Constant>,
   std::unique_ptr<Function>,
   std::unique_ptr<Enum>,
-  std::unique_ptr<Struct>>;
+  std::unique_ptr<Struct>,
+  std::unique_ptr<Main>>;
 
 struct ASTNode {
 private:
@@ -144,18 +148,18 @@ public:
 
 struct Unary {
 private:
-  TokenType _operation;
+  TokenKind _operation;
   ASTNode   _operand;
 
 public:
-  Unary(TokenType operation, ASTNode &&operand) :
+  Unary(TokenKind operation, ASTNode &&operand) :
       _operation(operation), _operand(std::move(operand)) {
   }
 
   Unary(const Unary &) = delete;
   Unary(Unary &&)      = default;
 
-  inline auto operation() const -> const TokenType & {
+  inline auto operation() const -> const TokenKind & {
     return _operation;
   }
   inline auto operand() -> ASTNode & {
@@ -165,19 +169,19 @@ public:
 
 struct Binary {
 private:
-  TokenType _operation;
+  TokenKind _operation;
   ASTNode   _left;
   ASTNode   _right;
 
 public:
-  Binary(TokenType operation, ASTNode &&left, ASTNode &&right) :
+  Binary(TokenKind operation, ASTNode &&left, ASTNode &&right) :
       _operation(operation), _left(std::move(left)), _right(std::move(right)) {
   }
 
   Binary(const Binary &) = delete;
   Binary(Binary &&)      = default;
 
-  inline auto operation() const -> const TokenType & {
+  inline auto operation() const -> const TokenKind & {
     return _operation;
   }
   inline auto left() -> ASTNode & {
@@ -185,6 +189,25 @@ public:
   }
   inline auto right() -> ASTNode & {
     return _right;
+  }
+};
+
+struct KeyLiteral {
+public:
+  enum KeyType { VOID, PI, TAU, EULER };
+
+private:
+  KeyType _type;
+
+public:
+  KeyLiteral(KeyType type) : _type(type) {
+  }
+
+  KeyLiteral(const KeyLiteral &) = delete;
+  KeyLiteral(KeyLiteral &&)      = default;
+
+  inline auto type() const -> const KeyType & {
+    return _type;
   }
 };
 
@@ -285,22 +308,20 @@ public:
   }
 };
 
-struct Constant {
-public:
-  enum WhichConstant { PI, TAU, EULER, VOID };
-
+struct VectorLiteral {
 private:
-  WhichConstant _which;
+  std::vector<ASTNode> _contents;
 
 public:
-  Constant(WhichConstant which) : _which(which) {
+  VectorLiteral(std::vector<ASTNode> &&contents) :
+      _contents(std::move(contents)) {
   }
 
-  Constant(const Constant &) = delete;
-  Constant(Constant &&)      = default;
+  VectorLiteral(const VectorLiteral &) = delete;
+  VectorLiteral(VectorLiteral &&)      = default;
 
-  inline auto which() const -> const WhichConstant & {
-    return _which;
+  inline auto contents() -> std::vector<ASTNode> & {
+    return _contents;
   }
 };
 
@@ -401,22 +422,6 @@ public:
   }
 };
 
-struct ConstExpr {
-private:
-  ASTNode _inner;
-
-public:
-  ConstExpr(ASTNode &&inner) : _inner(std::move(inner)) {
-  }
-
-  ConstExpr(const ConstExpr &) = delete;
-  ConstExpr(ConstExpr &&)      = default;
-
-  inline auto inner() -> ASTNode & {
-    return _inner;
-  }
-};
-
 // Statements
 
 struct Empty {
@@ -448,6 +453,38 @@ public:
   }
   inline auto action() const -> const PackageType & {
     return _action;
+  }
+};
+
+struct Variable {
+private:
+  std::string _name;
+  Typing      _typing;
+  ASTNode     _init;
+  bool        _immut;
+
+public:
+  Variable(std::string &&name, Typing typing, ASTNode &&init, bool immut) :
+      _name(std::move(name)),
+      _typing(typing),
+      _init(std::move(init)),
+      _immut(immut) {
+  }
+
+  Variable(const Variable &) = delete;
+  Variable(Variable &&)      = default;
+
+  inline auto name() const -> const std::string & {
+    return _name;
+  };
+  inline auto typing() -> Typing & {
+    return _typing;
+  }
+  inline auto init() -> ASTNode & {
+    return _init;
+  }
+  inline auto immut() const -> const bool & {
+    return _immut;
   }
 };
 
@@ -582,15 +619,20 @@ public:
 
 struct MatchCase {
 private:
-  Statement _body;
+  Expression _expr;
+  Statement  _body;
 
 public:
-  MatchCase(Statement &&body) : _body(std::move(body)) {
+  MatchCase(Expression &&expr, Statement &&body) :
+      _expr(std::move(expr)), _body(std::move(body)) {
   }
 
   MatchCase(const MatchCase &) = delete;
   MatchCase(MatchCase &&)      = default;
 
+  inline auto expr() -> Expression & {
+    return _expr;
+  }
   inline auto body() -> Statement & {
     return _body;
   }
@@ -631,45 +673,38 @@ public:
   }
 };
 
-struct Variable {
+struct Constant {
 private:
   std::string _name;
   Typing      _typing;
-  ASTNode     _init;
-  bool        _immut;
+  ASTNode     _value;
 
 public:
-  Variable(std::string &&name, Typing typing, ASTNode &&init, bool immut) :
-      _name(std::move(name)),
-      _typing(typing),
-      _init(std::move(init)),
-      _immut(immut) {
+  Constant(std::string &&name, Typing typing, ASTNode &&value) :
+      _name(std::move(name)), _typing(typing), _value(std::move(value)) {
   }
 
-  Variable(const Variable &) = delete;
-  Variable(Variable &&)      = default;
+  Constant(const Constant &) = delete;
+  Constant(Constant &&)      = default;
 
   inline auto name() const -> const std::string & {
     return _name;
-  };
-  inline auto typing() const -> const Typing & {
+  }
+  inline auto typing() -> Typing & {
     return _typing;
   }
-  inline auto init() -> ASTNode & {
-    return _init;
-  }
-  inline auto immut() const -> const bool & {
-    return _immut;
+  inline auto value() -> ASTNode & {
+    return _value;
   }
 };
 
 struct Function {
 private:
   std::string _name;
-  Lambda      _lambda;
+  ASTNode     _lambda;
 
 public:
-  Function(std::string &&name, Lambda &&lambda) :
+  Function(std::string &&name, ASTNode &&lambda) :
       _name(std::move(name)), _lambda(std::move(lambda)) {
   }
 
@@ -679,7 +714,7 @@ public:
   inline auto name() const -> const std::string & {
     return _name;
   }
-  inline auto lambda() -> Lambda & {
+  inline auto lambda() -> ASTNode & {
     return _lambda;
   }
 };
@@ -733,6 +768,22 @@ public:
   }
 };
 
+struct Main {
+private:
+  std::vector<Statement> _body;
+
+public:
+  Main(std::vector<Statement> &&body) : _body(std::move(body)) {
+  }
+
+  Main(const Main &) = delete;
+  Main(Main &&)      = default;
+
+  inline auto body() -> std::vector<Statement> & {
+    return _body;
+  }
+};
+
 // Visitor
 
 template <class E, class S>
@@ -741,20 +792,21 @@ protected:
   virtual E evaluate(ASTNode &, Identifier &)    = 0;
   virtual E evaluate(ASTNode &, Unary &)         = 0;
   virtual E evaluate(ASTNode &, Binary &)        = 0;
+  virtual E evaluate(ASTNode &, KeyLiteral &)    = 0;
   virtual E evaluate(ASTNode &, BoolLiteral &)   = 0;
   virtual E evaluate(ASTNode &, IntLiteral &)    = 0;
   virtual E evaluate(ASTNode &, RealLiteral &)   = 0;
   virtual E evaluate(ASTNode &, CharLiteral &)   = 0;
   virtual E evaluate(ASTNode &, StringLiteral &) = 0;
   virtual E evaluate(ASTNode &, ArrayLiteral &)  = 0;
-  virtual E evaluate(ASTNode &, Constant &)      = 0;
+  virtual E evaluate(ASTNode &, VectorLiteral &) = 0;
   virtual E evaluate(ASTNode &, Lambda &)        = 0;
   virtual E evaluate(ASTNode &, Assignment &)    = 0;
   virtual E evaluate(ASTNode &, Call &)          = 0;
   virtual E evaluate(ASTNode &, Access &)        = 0;
-  virtual E evaluate(ASTNode &, ConstExpr &)     = 0;
 
   virtual S execute(Empty &)       = 0;
+  virtual S execute(Variable &)    = 0;
   virtual S execute(Package &)     = 0;
   virtual S execute(ExprStmt &)    = 0;
   virtual S execute(Block &)       = 0;
@@ -765,10 +817,11 @@ protected:
   virtual S execute(MatchCase &)   = 0;
   virtual S execute(ControlFlow &) = 0;
   virtual S execute(Return &)      = 0;
-  virtual S execute(Variable &)    = 0;
   virtual S execute(Function &)    = 0;
+  virtual S execute(Constant &)    = 0;
   virtual S execute(Enum &)        = 0;
   virtual S execute(Struct &)      = 0;
+  virtual S execute(Main &)        = 0;
 
 public:
   virtual ~ASTHandler() {

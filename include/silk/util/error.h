@@ -78,6 +78,8 @@ public:
   auto errors() const -> const std::vector<SilkError> &;
 };
 
+/// Format and then pretty print an error to `out`,
+/// the formatting is the same as that of `fmt::format`
 template <class... Args>
 void print_error(std::ostream &out, std::string_view frmt, Args... args) {
   out << BOLD RED "(!) Error" RESET ":" << std::endl;
@@ -85,6 +87,8 @@ void print_error(std::ostream &out, std::string_view frmt, Args... args) {
       << fmt_function(frmt, std::forward<Args>(args)...) << RESET << std::endl;
 }
 
+/// Pretty print errors from an instance of an
+/// [`ErrorReporter`] to `out`
 template <class Reporter>
 void print_errors(std::ostream &out, Reporter &err_rep) {
   for (const auto &error : err_rep.errors()) {
