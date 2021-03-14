@@ -1,0 +1,123 @@
+{
+  "name": "Silk Script",
+  "scopeName": "source.silk",
+  "fileTypes": [
+    "silk"
+  ],
+  "uuid": "5ab7269a-384d-404e-bcc9-dc92c8f8e970",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#entities"
+    },
+    {
+      "include": "#literals"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.silk",
+          "match": "(#.*$)"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.silk",
+          "match": "(?x) (\\b(\n  if|else|for|match|\n  return|break|continue\n)\\b)\n"
+        },
+        {
+          "name": "keyword.operator.silk",
+          "match": "(?x) (\\b(\n  pkg|main|use|dll|\n  and|or|not\n)\\b)\n"
+        },
+        {
+          "name": "constant.language",
+          "match": "(?x) (\\b(\n  void|\n  true|false|\n  pi|tau|e\n)\\b)\n"
+        }
+      ]
+    },
+    "literals": {
+      "patterns": [
+        {
+          "name": "constant.numeric",
+          "match": "(\\b(\\d+)?(\\.?\\d+)?\\b)"
+        },
+        {
+          "name": "constant.character",
+          "match": "(\".)",
+          "patterns": [
+            {
+              "include": "#char-escape"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.silk",
+          "begin": "(')",
+          "end": "(')",
+          "patterns": [
+            {
+              "include": "#char-escape"
+            }
+          ]
+        }
+      ]
+    },
+    "char-escape": {
+      "patterns": [
+        {
+          "name": "constant.character.escape",
+          "match": "(\\\\.)"
+        }
+      ]
+    },
+    "entities": {
+      "patterns": [
+        {
+          "name": "meta.variable",
+          "match": "\\b(let|def|const)\\s+(\\w+)\\b",
+          "captures": {
+            "1": {
+              "name": "storage.type"
+            },
+            "2": {
+              "name": "variable.other"
+            }
+          }
+        },
+        {
+          "name": "meta.function",
+          "match": "(?x)\n  \\b(fun)   # fun keyword\n  \\s+(\\w+)  # function name\n    (\\s*\\(  # begin optional params\n    \\))?    # end optional params\n",
+          "captures": {
+            "1": {
+              "name": "storage.type"
+            },
+            "2": {
+              "name": "entity.name.function"
+            }
+          }
+        },
+        {
+          "name": "meta.type",
+          "match": "(\\b(obj|enum)\\s+(\\w+)\\b)",
+          "captures": {
+            "1": {
+              "name": "storage.type"
+            },
+            "2": {
+              "name": "entity.name.type"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

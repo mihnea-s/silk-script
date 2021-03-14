@@ -1,5 +1,87 @@
 ---
-name: SilkScript
+name: Silk Script
 scopeName: source.silk
 fileTypes: [silk]
 uuid: 5ab7269a-384d-404e-bcc9-dc92c8f8e970
+
+patterns:
+  - { include: "#comments" }
+  - { include: "#keywords" }
+  - { include: "#entities" }
+  - { include: "#literals" }
+
+repository:
+  comments:
+    patterns:
+      - name: 'comment.line.silk'
+        match: (#.*$)
+  
+  keywords:
+    patterns:
+      - name: 'keyword.control.silk'
+        match: >
+          (?x) (\b(
+            if|else|for|match|
+            return|break|continue
+          )\b)
+
+      - name: 'keyword.operator.silk'
+        match: >
+          (?x) (\b(
+            pkg|main|use|dll|
+            and|or|not
+          )\b)
+      
+      - name: 'constant.language'
+        match: >
+          (?x) (\b(
+            void|
+            true|false|
+            pi|tau|e
+          )\b)
+  
+  literals:
+    patterns:
+      - name: 'constant.numeric'
+        match: (\b(\d+)?(\.?\d+)?\b)
+      
+      - name: 'constant.character'
+        match: (".)
+        patterns:
+          - { include: '#char-escape' }
+
+      - name: 'string.quoted.single.silk'
+        begin: (')
+        end: (')
+        patterns:
+          - { include: '#char-escape' }
+  
+  char-escape:
+    patterns:
+      - name: 'constant.character.escape'
+        match: (\\.)
+
+  entities:
+    patterns:
+      - name: 'meta.variable'
+        match: \b(let|def|const)\s+(\w+)\b
+        captures:
+          '1': { name: 'storage.type' }
+          '2': { name: 'variable.other' }
+
+      - name: 'meta.function'
+        match: >
+          (?x)
+            \b(fun)   # fun keyword
+            \s+(\w+)  # function name
+              (\s*\(  # begin optional params
+              \))?    # end optional params
+        captures:
+          '1': { name: 'storage.type' }
+          '2': { name: 'entity.name.function' }
+
+      - name: 'meta.type'
+        match: (\b(obj|enum)\s+(\w+)\b)
+        captures:
+          '1': { name: 'storage.type' }
+          '2': { name: 'entity.name.type' }
