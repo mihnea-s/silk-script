@@ -30,6 +30,12 @@ extern "C" {
 
 #define FINISH() return
 
+#define BREAKPOINT()                                                           \
+  do {                                                                         \
+    vm->st = STATUS_BRKPNT;                                                    \
+    return;                                                                    \
+  } while (false)
+
 // #define OFST() (uint32_t)(vm->ip - vm->prg->ins)
 // #define RET()  (vm->ip = vm->prg->ins + stk_return(&vm->stk))
 
@@ -76,13 +82,25 @@ extern "C" {
 #define NOTHING(...)
 
 #ifdef __WIN32
-  #define IS_BIG_ENDIAN 0
-  #define SWAP_BYTES    _byteswap_uint64
+  #define IS_BIG_ENDIAN  0
+  #define SWAP_BYTES     _byteswap_uint64
+  #define PATH_SEPARATOR '\\'
 #else
   #include <byteswap.h>
-  #define IS_BIG_ENDIAN __BYTE_ORDER == __BIG_ENDIAN
-  #define SWAP_BYTES    bswap_64
+  #define IS_BIG_ENDIAN  __BYTE_ORDER == __BIG_ENDIAN
+  #define SWAP_BYTES     bswap_64
+  #define PATH_SEPARATOR '/'
 #endif
+
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+
+#define SWAP(T, a, b)                                                          \
+  do {                                                                         \
+    T tmp = a;                                                                 \
+    a     = b;                                                                 \
+    b     = tmp;                                                               \
+  } while (false)
 
 #define VAL_GET_STR(VALUE)                                                     \
   IS_STR(VALUE) ? VALUE.as.string : ((ObjectString *)VALUE.as.object)->data

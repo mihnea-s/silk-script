@@ -11,6 +11,7 @@ typedef enum {
   VM_FIN, // program finished
   VM_NOP, // no operation
   VM_GC,  // collect garbage
+  VM_DBG, // stop for breakpoint
 
   VM_POP, // pop
   VM_PSH, // push value from stack to top (2 bytes)
@@ -21,10 +22,10 @@ typedef enum {
   VM_JPF, // jump if false (2 bytes)
   VM_JBW, // jump backwards (2 bytes)
 
-  VM_CLO,  // close over
-  VM_CAL,  // function call
-  VM_RET,  // return
-  VM_RETV, // return value
+  VM_CLO, // close over
+  VM_CAL, // function call
+  VM_PRO, // promote value to heap
+  VM_RET, // return
 
   VM_VAL,  // load value (byte address)
   VM_VAL2, // 2 byte address
@@ -51,12 +52,6 @@ typedef enum {
   VM_FRM3, // 3 bytes
   VM_FRM4, // 4 bytes
 
-  VM_VEC,  // create a vector
-  VM_ARR,  // make array (byte elem count)
-  VM_ARR2, // 2 byte elem count
-  VM_ARR3, // 3 byte elem count
-  VM_ARR4, // 4 byte elem count
-
   VM_VID, // void
   VM_TRU, // true
   VM_FAL, // false
@@ -64,6 +59,10 @@ typedef enum {
   VM_PI,  // pi constant 3.141...
   VM_TAU, // tau constant 6.28...
   VM_EUL, // euler constant 2.78...
+
+  VM_VEC, // create a vector
+  VM_ARR, // create an array
+  VM_DCT, // create a dictionary
 
   VM_NEG, // negation
   VM_NOT, // logical not
@@ -76,15 +75,16 @@ typedef enum {
   VM_POW, // power
   VM_MOD, // modulo
 
+  VM_IDX, // indexing
+  VM_IDA, // index assign
+  VM_MRG, // merge / append
+
   VM_EQ,  // equal
   VM_NEQ, // not equal
   VM_GT,  // greater than
   VM_LT,  // less than
   VM_GTE, // greater than equal
   VM_LTE, // less than equal
-
-  VM_DBG_LOC, // mark location in source code
-  VM_DBG_BRK, // breakpoint
 } OpCode;
 
 #ifdef __cplusplus

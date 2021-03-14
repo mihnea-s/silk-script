@@ -14,8 +14,10 @@ typedef enum {
   STATUS_OK = 0,
   STATUS_INVTYP,
   STATUS_INVARG,
+  STATUS_INVIDX,
   STATUS_UNDEFN,
   STATUS_NOTFUN,
+  STATUS_BRKPNT,
 } VMStatus;
 
 typedef struct {

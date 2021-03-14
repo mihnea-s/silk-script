@@ -36,6 +36,61 @@ uint32_t hash(const char *str) {
   return x;
 }
 
+uint32_t hash_value(const Value v) {
+  uint32_t x = 2166136261u;
+
+  switch (v.type) {
+    case T_VOID: return 0;
+    case T_STR: return hash(v.as.string);
+
+    case T_BOOL:
+      x *= 1046527u;
+      x ^= v.as.boolean * 121021u;
+      break;
+
+    case T_INT:
+      x *= 16769023u;
+      x ^= v.as.integer * 151121u;
+      break;
+
+    case T_REAL:
+      x *= 112909u;
+      x ^= (uint32_t)(v.as.real * 180181u);
+      break;
+
+    case T_CHAR:
+      x *= 479001599u;
+      x ^= v.as.charac;
+      break;
+
+    case T_OBJ:
+      x *= 16777619u;
+      x ^= (uintptr_t)v.as.object;
+      break;
+  }
+
+  return x;
+}
+
+const char *string_value(Value v) {
+  if (IS_STR(v)) return v.as.string;
+  if (IS_OBJ_STR(v)) return OBJ_STR(v.as.object)->data;
+  return NULL;
+}
+
+bool equal_values(Value a, Value b) {
+  if (a.type != b.type) return false;
+  switch (a.type) {
+    case T_VOID: return true;
+    case T_BOOL: return a.as.boolean == b.as.boolean;
+    case T_INT: return a.as.integer == b.as.integer;
+    case T_REAL: return a.as.real == b.as.real;
+    case T_CHAR: return a.as.charac == b.as.charac;
+    case T_STR: return a.as.string == b.as.string;
+    case T_OBJ: return equal_objects(a.as.object, b.as.object);
+  }
+}
+
 void print_value(Value v) {
   switch (v.type) {
     case T_VOID: PRINT_BR("{void}");

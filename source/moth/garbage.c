@@ -7,6 +7,59 @@
 // The initial capacity of the GC's registry
 #define GC_INIT_CAP 10
 
+static void mark_object(Object *obj) {
+  obj->reachable = true;
+
+  switch (obj->type) {
+    case O_STRING: {
+      break;
+    }
+
+    case O_ARRAY: {
+      ObjectArray *arr = OBJ_ARR(obj);
+
+      for (Value *val = arr->vals; val < arr->vals + arr->size; val++) {
+        if (val->type != T_OBJ) continue;
+        mark_object(val->as.object);
+      }
+
+      break;
+    }
+
+    case O_VECTOR: {
+      break;
+    }
+
+    case O_DICTIONARY: {
+      ObjectDictionary *dict = OBJ_DCT(obj);
+
+      for (size_t i = 0; i < dict->len; i++) {
+        ObjectDictionaryEntry *entry = &dict->entries[i];
+        if (entry->key.type == T_OBJ) mark_object(entry->key.as.object);
+        if (entry->value.type == T_OBJ) mark_object(entry->value.as.object);
+      }
+
+      break;
+    }
+
+    case O_FUNCTION: {
+      break;
+    }
+
+    case O_CLOSURE: {
+      break;
+    }
+
+    case O_HEAPVAL: {
+      ObjectHeapval *upv = OBJ_HPV(obj);
+
+      if (upv->val.type == T_OBJ) { mark_object(upv->val.as.object); }
+
+      break;
+    }
+  }
+}
+
 void init_gc(GarbageCollector *gc, Stack *stk) {
   gc->len  = 0;
   gc->cap  = GC_INIT_CAP;
@@ -18,12 +71,7 @@ void gc_collect(GarbageCollector *gc) {
   // Mark all values on the VM's stack's value array
   for (Value *v = gc->stk->varr; v < gc->stk->vtop; v++) {
     if (v->type != T_OBJ) continue;
-
-    Object *obj    = v->as.object;
-    obj->reachable = true;
-
-    // TODO: mark member objects (i.e. values in a list)
-    
+    mark_object(v->as.object);
   }
 
   // Free unreachable objects on the GC's registry

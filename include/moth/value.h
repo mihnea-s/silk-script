@@ -38,13 +38,13 @@ typedef struct {
   } as;
 } Value;
 
-#define IS_VOID(val) val.type == T_VOID
-#define IS_BOOL(val) val.type == T_BOOL
-#define IS_INT(val)  val.type == T_INT
-#define IS_REAL(val) val.type == T_REAL
-#define IS_CHAR(val) val.type == T_CHAR
-#define IS_STR(val)  val.type == T_STR
-#define IS_OBJ(val)  val.type == T_OBJ
+#define IS_VOID(val) (val.type == T_VOID)
+#define IS_BOOL(val) (val.type == T_BOOL)
+#define IS_INT(val)  (val.type == T_INT)
+#define IS_REAL(val) (val.type == T_REAL)
+#define IS_CHAR(val) (val.type == T_CHAR)
+#define IS_STR(val)  (val.type == T_STR)
+#define IS_OBJ(val)  (val.type == T_OBJ)
 
 #define VOID_VAL                                                               \
   (Value) {                                                                    \
@@ -71,10 +71,15 @@ typedef struct {
     .type = T_OBJ, .as.object = x                                              \
   }
 
-bool     truthy(Value);
-bool     falsy(Value);
-uint32_t hash(const char *);
-void     print_value(Value);
+bool truthy(Value v);
+bool falsy(Value v);
+
+uint32_t hash(const char *str);
+uint32_t hash_value(Value v);
+
+const char *string_value(Value v);
+bool        equal_values(Value a, Value b);
+void        print_value(Value v);
 
 #ifdef __cplusplus
 }
