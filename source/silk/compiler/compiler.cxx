@@ -1,3 +1,4 @@
+#include <bits/stdint-intn.h>
 #include <silk/compiler/compiler.h>
 
 #include <algorithm>
@@ -21,11 +22,13 @@
 #include <silk/parser/token.h>
 #include <silk/util/error.h>
 
+namespace silk {
+
 auto Compiler::emit(std::uint8_t byte) -> void {
   if (_targets.empty()) {
     write_byte(&_program, byte);
   } else {
-    _targets.top().buffer.push_back(byte);
+    _targets.top().second.push_back(byte);
   }
 }
 
@@ -59,7 +62,7 @@ auto Compiler::get_offset() -> std::uint32_t {
   if (_targets.empty()) {
     return _program.len;
   } else {
-    return _targets.top().buffer.size();
+    return _targets.top().second.size();
   }
 }
 
@@ -67,80 +70,188 @@ auto Compiler::get_buffer() -> std::uint8_t * {
   if (_targets.empty()) {
     return _program.bytes;
   } else {
-    return _targets.top().buffer.data();
+    return _targets.top().second.data();
   }
 }
 
 auto Compiler::push_scope() -> void {
   if (_targets.empty()) {
-    _main_depth++;
+    _main_locals.depth++;
   } else {
-    _targets.top().depth++;
+    _targets.top().first.depth++;
   }
 }
 
 auto Compiler::pop_scope() -> void {
-  auto &locals = _targets.empty() ? _main_locals : _targets.top().locals;
+  auto &locals = [&]() -> auto & {
+    if (_targets.empty()) {
+      _main_locals.depth--;
+      return _main_locals;
+    } else {
+      _targets.top().first.depth--;
+      return _targets.top().first;
+    }
+  }
+  ();
 
-  if (_targets.empty()) {
-    _main_depth--;
-  } else {
-    _targets.top().depth--;
+  while (locals.definitions.size() &&
+         locals.definitions.back().depth > locals.depth) {
+    locals.definitions.pop_back();
+    emit(VM_POP);
+  }
+}
+
+auto Compiler::load_constant(std::int64_t value) -> void {
+
+  // Check if the integer is already in the read-only data
+  if (_integers.find(value) != _integers.end()) {
+    load_rodata(_integers[value]);
+    return;
   }
 
-  // while (locals.size() && locals.> depth) {
-  //   decls.pop_back();
-  //   emit(VM_POP);
-  // }
+  Value v;
+  v.type       = T_INT;
+  v.as.integer = value;
+
+  auto value_id    = encode_rodata(v);
+  _integers[value] = value_id;
+
+  load_rodata(value_id);
+}
+
+auto Compiler::load_constant(double value) -> void {
+
+  // Check if the real is already in the read-only data
+  if (_reals.find(value) != _reals.end()) {
+    load_rodata(_reals[value]);
+    return;
+  }
+
+  Value v;
+  v.type    = T_REAL;
+  v.as.real = value;
+
+  auto value_id = encode_rodata(v);
+  _reals[value] = value_id;
+
+  load_rodata(value_id);
+}
+
+auto Compiler::load_constant(char32_t value) -> void {
+
+  // Check if the char is already in the read-only data
+  if (_chars.find(value) != _chars.end()) {
+    load_rodata(_chars[value]);
+    return;
+  }
+
+  // Make it a VM Value
+  Value v;
+  v.type      = T_CHAR;
+  v.as.charac = value;
+
+  // Add the value to the read-only data
+  auto value_id = encode_rodata(v);
+  _chars[value] = value_id;
+
+  load_rodata(value_id);
+}
+
+auto Compiler::load_constant(std::string_view str) -> void {
+  // Check if the string is already in the read-only data
+  if (_strings.find(str) != _strings.end()) {
+    load_rodata(_strings[str]);
+    return;
+  }
+
+  // Copy the string into a VM allocated buffer
+  auto c_str = (char *)memory(NULL, 0x0, sizeof(char) * str.size() + 1);
+  memcpy(c_str, str.data(), str.size());
+  c_str[str.size()] = '\0';
+
+  // Make it a VM Value
+  Value value;
+  value.type      = T_STR;
+  value.as.string = c_str;
+
+  // Add the value to the read-only data
+  auto value_id = encode_rodata(value);
+  _strings[str] = value_id;
+  load_rodata(value_id);
+}
+
+auto Compiler::load_identifier_val(const ASTNode &parent, std::string_view name)
+  -> void {
+  // ! URGENT: This function needs implementation
+
+#ifdef pula
+  if ((varinfo = get_stack_var(node.identifier()))) {
+    load_stack_var(varinfo->slot);
+  }
+
+  if ((varinfo = get_upvalue(node.identifier()))) {
+    load_upvalue(varinfo->depth, varinfo->slot);
+  }
+
+  if (_symbols.find(node.identifier()) != _symbols.end()) {
+    return load_symbol(_symbols[node.identifier()]);
+  }
+#endif
+
+  throw report(parent.location(), "undefined variable");
+}
+
+auto Compiler::load_identifier_ref(const ASTNode &parent, std::string_view name)
+  -> void {
+  // ! URGENT: This function needs implementation
+
+#ifdef pula
+  if ((varinfo = get_stack_var(node.identifier()))) {
+    if (varinfo->immut) {
+      throw report(parent.location(), "assignment to immutable variable");
+    }
+
+    return store_stack_var(varinfo->slot);
+  }
+
+  if ((varinfo = get_upvalue(node.identifier()))) {
+    return store_upvalue(varinfo->depth, varinfo->slot);
+  }
+#endif
+
+  throw report(parent.location(), "assignment to undefined variable");
 }
 
 auto Compiler::define_stack_var(std::string_view name, bool immut) -> bool {
-  auto &locals = _targets.empty() ? _main_locals : _targets.top().locals;
-  auto &depth  = _targets.empty() ? _main_depth : _targets.top().depth;
+  auto &locals = _targets.empty() ? _main_locals : _targets.top().first;
 
-  if (depth == -1) return false;
-  // locals.push_back({name, depth, immut});
+  if (locals.depth == -1) return false;
+
+  locals.definitions.push_back({name, locals.depth, immut});
   return true;
 }
 
-auto Compiler::get_stack_var(std::string_view name) -> const VarInfo * {
-  auto &locals = _targets.empty() ? _main_locals : _targets.top().locals;
-  // auto &decls  = locals.decls;
+auto Compiler::get_stack_var(std::string_view name)
+  -> const std::pair<Definition, std::int64_t> {
+  auto &locals = _targets.empty() ? _main_locals : _targets.top().first;
 
-  // for (int i = decls.size() - 1; i >= 0; i--) {
-  //   if (decls[i].name == name) {
-  //     decls[i].slot = i;
-  //     return &decls[i];
-  //   }
-  // }
+  for (auto i = 0; i < locals.definitions.size(); i++) {
+    if (locals.definitions[i].name == name) {
+      return {locals.definitions[i], i};
+    }
+  }
 
-  return nullptr;
+  return {{}, -1};
 }
 
-auto Compiler::load_stack_var(std::uint16_t id) -> void {
+auto Compiler::load_stack_var(std::uint16_t slot) -> void {
   emit(VM_PSH);
-  emit_arg(id, 2);
+  emit_arg(slot, 2);
 }
 
-auto Compiler::store_stack_var(std::uint16_t id) -> void {
+auto Compiler::store_stack_var(std::uint16_t slot) -> void {
   emit(VM_STR);
-  emit_arg(id, 2);
-}
-
-auto Compiler::get_upvalue(std::string_view name) -> const VarInfo * {
-  if (_targets.size() < 2) return nullptr;
-
-  // for (const auto &var : _targets.top().locals.decls) {
-  //   if (var.name == name) return &var;
-  // }
-
-  return nullptr;
-}
-
-auto Compiler::load_upvalue(int depth, int slot) -> void {
-}
-
-auto Compiler::store_upvalue(int depth, int slot) -> void {
+  emit_arg(slot, 2);
 }
 
 auto Compiler::encode_rodata(Value value) -> std::uint32_t {
@@ -246,38 +357,10 @@ auto Compiler::logical_and(ASTNode &left, ASTNode &right) -> void {
 }
 
 auto Compiler::evaluate(ASTNode &parent, Identifier &node) -> void {
-  auto varinfo = (const VarInfo *)nullptr;
-
-  if (node.type() == Identifier::VAL) {
-
-    if ((varinfo = get_stack_var(node.identifier()))) {
-      load_stack_var(varinfo->slot);
-    }
-
-    if ((varinfo = get_upvalue(node.identifier()))) {
-      load_upvalue(varinfo->depth, varinfo->slot);
-    }
-
-    if (_symbols.find(node.identifier()) != _symbols.end()) {
-      return load_symbol(_symbols[node.identifier()]);
-    }
-
-    throw report(parent.location(), "undefined variable");
+  if (_assignment_context) {
+    load_identifier_ref(parent, node.identifier());
   } else {
-
-    if ((varinfo = get_stack_var(node.identifier()))) {
-      if (varinfo->immut) {
-        throw report(parent.location(), "assignment to immutable variable");
-      }
-
-      return store_stack_var(varinfo->slot);
-    }
-
-    if ((varinfo = get_upvalue(node.identifier()))) {
-      return store_upvalue(varinfo->depth, varinfo->slot);
-    }
-
-    throw report(parent.location(), "assignment to undefined variable");
+    load_identifier_val(parent, node.identifier());
   }
 }
 
@@ -287,7 +370,7 @@ auto Compiler::evaluate(ASTNode &parent, Unary &node) -> void {
 
   // ... and the corresponding operation
   switch (node.operation()) {
-    case TokenKind::SYM_BANG: return emit(VM_NOT);
+    case TokenKind::KW_NOT: return emit(VM_NOT);
     case TokenKind::SYM_MINUS: return emit(VM_NEG);
     default: throw report(parent.location(), "invalid unary operation");
   }
@@ -323,6 +406,12 @@ auto Compiler::evaluate(ASTNode &parent, Binary &node) -> void {
     case TokenKind::SYM_LT: return emit(VM_LT);
     case TokenKind::SYM_GTEQUAL: return emit(VM_GTE);
     case TokenKind::SYM_LTEQUAL: return emit(VM_LTE);
+    case TokenKind::SYM_PIPE: return emit(VM_MRG);
+
+    case TokenKind::SYM_DOT: {
+      if (!_assignment_context) emit(VM_IDX);
+      return;
+    }
 
     default: throw report(parent.location(), "invalid binary operator");
   }
@@ -343,92 +432,19 @@ auto Compiler::evaluate(ASTNode &parent, BoolLiteral &node) -> void {
 }
 
 auto Compiler::evaluate(ASTNode &parent, IntLiteral &node) -> void {
-  size_t value_id;
-
-  if (_integers.find(node.value()) != _integers.end()) {
-    value_id = _integers[node.value()];
-  } else {
-    Value value;
-    value.type       = T_INT;
-    value.as.integer = node.value();
-
-    value_id                = encode_rodata(value);
-    _integers[node.value()] = value_id;
-  }
-
-  load_rodata(value_id);
+  load_constant(node.value());
 }
 
 auto Compiler::evaluate(ASTNode &parent, RealLiteral &node) -> void {
-  size_t value_id;
-
-  if (_reals.find(node.value()) != _reals.end()) {
-    value_id = _reals[node.value()];
-  } else {
-    Value value;
-    value.type    = T_REAL;
-    value.as.real = node.value();
-
-    value_id             = encode_rodata(value);
-    _reals[node.value()] = value_id;
-  }
-
-  load_rodata(value_id);
+  load_constant(node.value());
 }
 
 auto Compiler::evaluate(ASTNode &parent, CharLiteral &node) -> void {
-
-  // Check if the string is already in the read-only data
-  if (_chars.find(node.value()) != _chars.end()) {
-    load_rodata(_chars[node.value()]);
-  }
-
-  // Make it a VM Value
-  Value value;
-  value.type      = T_CHAR;
-  value.as.charac = node.value();
-
-  // Add the value to the read-only data
-  size_t value_id      = encode_rodata(value);
-  _chars[node.value()] = value_id;
-  load_rodata(value_id);
+  load_constant(node.value());
 }
 
 auto Compiler::evaluate(ASTNode &parent, StringLiteral &node) -> void {
-  // Check if the string is already in the read-only data
-  if (_strings.find(node.value()) != _strings.end()) {
-    load_rodata(_strings[node.value()]);
-  }
-
-  // Copy the string into a VM allocated buffer
-  auto c_str =
-    (char *)memory(NULL, 0x0, sizeof(char) * node.value().size() + 1);
-  memcpy(c_str, node.value().data(), node.value().size());
-  c_str[node.value().size()] = '\0';
-
-  // Make it a VM Value
-  Value value;
-  value.type      = T_STR;
-  value.as.string = c_str;
-
-  // Add the value to the read-only data
-  size_t value_id        = encode_rodata(value);
-  _strings[node.value()] = value_id;
-  load_rodata(value_id);
-}
-
-auto Compiler::evaluate(ASTNode &parent, ArrayLiteral &node) -> void {
-  // ! This is not a good idea, this
-  // ! can overflow the stack quite easily
-  // ! but for now it works.
-
-  // Push on the stack every element
-  for (auto &elem : node.contents()) {
-    evaluate_expression(elem);
-  }
-
-  // Pop off every element into an array
-  emit_op_arg(VM_ARR, node.contents().size());
+  load_constant(node.value());
 }
 
 auto Compiler::evaluate(ASTNode &parent, VectorLiteral &node) -> void {
@@ -445,6 +461,40 @@ auto Compiler::evaluate(ASTNode &parent, VectorLiteral &node) -> void {
 
   // Pop off components in a vector
   emit_arg(VM_VEC, node.contents().size());
+}
+
+auto Compiler::evaluate(ASTNode &parent, ArrayLiteral &node) -> void {
+  // Create a new array on the stack
+  emit(VM_ARR);
+
+  // Push each element of the array, along with it's index
+  // and then perform an index assignment
+  for (auto i = std::int64_t{0}; i < node.contents().size(); i++) {
+    load_constant(i);
+    evaluate_expression(node.contents()[i]);
+    emit(VM_IDA);
+  }
+}
+
+auto Compiler::evaluate(ASTNode &parent, DictionaryLiteral &node) -> void {
+  // Create a new dictionary on the stack
+  emit(VM_DCT);
+
+  // Push each value of the dictonary, along with it's key
+  // and then perform an index assignment
+  for (auto &[key, val] : node.contents()) {
+    evaluate_expression(val);
+    evaluate_expression(key);
+    emit(VM_IDA);
+  }
+}
+
+auto Compiler::evaluate(ASTNode &parent, Assignment &node) -> void {
+  _assignment_context = true;
+  evaluate_expression(node.target());
+  _assignment_context = false;
+
+  evaluate_expression(node.value());
 }
 
 auto Compiler::evaluate(ASTNode &parent, Lambda &node) -> void {
@@ -477,15 +527,10 @@ auto Compiler::evaluate(ASTNode &parent, Lambda &node) -> void {
 
   Value value;
   value.type      = T_OBJ;
-  value.as.object = (Object *)fct;
+  value.as.object = (::Object *)fct;
 
   auto val = encode_rodata(value);
   load_rodata(val);
-}
-
-auto Compiler::evaluate(ASTNode &parent, Assignment &node) -> void {
-  evaluate_expression(node.target());
-  evaluate_expression(node.value());
 }
 
 auto Compiler::evaluate(ASTNode &parent, Call &call) -> void {
@@ -497,10 +542,6 @@ auto Compiler::evaluate(ASTNode &parent, Call &call) -> void {
 
   emit(VM_CAL);
   emit((std::uint8_t)call.args().size());
-}
-
-auto Compiler::evaluate(ASTNode &parent, Access &node) -> void {
-  // TODO
 }
 
 auto Compiler::execute(Empty &) -> void {
@@ -617,13 +658,14 @@ auto Compiler::execute(ControlFlow &node) -> void {
 
 auto Compiler::execute(Return &node) -> void {
   evaluate_expression(node.value());
-  emit(VM_RETV);
+  emit(VM_RET);
 }
 
 auto Compiler::execute(Constant &node) -> void {
   auto id = encode_symbol(node.name());
   evaluate_expression(node.value());
   define_symbol(id);
+  _globals.push_back(node.name());
 }
 
 auto Compiler::execute(Function &node) -> void {
@@ -636,12 +678,31 @@ auto Compiler::execute(Enum &node) -> void {
   // TODO
 }
 
-auto Compiler::execute(Struct &node) -> void {
+auto Compiler::execute(Object &node) -> void {
   // TODO
 }
 
 auto Compiler::execute(Main &node) -> void {
-  // TODO
+  // Push a scope for the locals in main
+  push_scope();
+
+  // Compile every statement in main
+  for (auto &stmt : node.body()) {
+    execute_statement(stmt);
+  }
+
+  // Main is done, pop its scope
+  pop_scope();
+
+  // End of main means the end
+  // of the execution of the program
+  emit(VM_FIN);
+}
+
+auto Compiler::add_breakpoint(size_t) noexcept -> void {
+}
+
+auto Compiler::add_breakpoint(std::string) noexcept -> void {
 }
 
 auto Compiler::compile(AST &ast) noexcept -> void {
@@ -654,8 +715,16 @@ auto Compiler::compile(AST &ast) noexcept -> void {
     for (auto &node : ast) {
       execute_statement(node);
     }
-
-    // Finalize the program
-    emit(VM_FIN);
   } catch (...) {}
 }
+
+auto Compiler::dry_compile(AST &ast) noexcept -> void {
+  // Compile the ast normally
+  compile(ast);
+
+  // ... but produce no bytecode
+  free_program(&_program);
+  init_program(&_program, 0, 0, 0);
+}
+
+} // namespace silk

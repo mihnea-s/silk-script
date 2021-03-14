@@ -3,6 +3,8 @@
 #include <silk/parser/token.h>
 #include <sstream>
 
+namespace silk {
+
 const std::unordered_map<std::string_view, TokenKind> TokenScanner::keywords = {
   {"pkg", TokenKind::KW_PKG},
   {"main", TokenKind::KW_MAIN},
@@ -13,8 +15,8 @@ const std::unordered_map<std::string_view, TokenKind> TokenScanner::keywords = {
   {"def", TokenKind::KW_DEF},
   {"const", TokenKind::KW_CONST},
   {"fun", TokenKind::KW_FUN},
+  {"obj", TokenKind::KW_OBJ},
   {"enum", TokenKind::KW_ENUM},
-  {"struct", TokenKind::KW_STRUCT},
 
   {"if", TokenKind::KW_IF},
   {"else", TokenKind::KW_ELSE},
@@ -132,8 +134,14 @@ auto TokenScanner::scan() noexcept -> Token {
       advance();
 
     if (peek() == '#') {
-      while (advance() != '\n')
-        ;
+      advance();
+
+      if (peek() == '{') {
+        advance();
+        return make_token(TokenKind::SYM_HASHBRACE);
+      }
+
+      while (advance() != '\n') {};
     }
   } while (iswspace(peek()));
 
@@ -253,3 +261,5 @@ auto TokenScanner::scan() noexcept -> Token {
     }
   }
 }
+
+} // namespace silk

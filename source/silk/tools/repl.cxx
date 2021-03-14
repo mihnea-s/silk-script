@@ -1,3 +1,4 @@
+#include "moth/disas.h"
 #include <silk/tools/repl.h>
 
 #include <cstddef>
@@ -14,6 +15,8 @@
 #include <silk/parser/parser.h>
 #include <silk/util/cli.h>
 #include <silk/util/error.h>
+
+namespace silk {
 
 // print prompt
 
@@ -81,6 +84,8 @@ auto Repl::run(std::istream &in, std::ostream &out) noexcept -> int {
       continue;
     }
 
+    disassemble("YOUR SHITTY PROGRAM", &compiler.bytecode());
+
     // finally execute the line
     vm_run(&vm, &compiler.bytecode());
     if (vm.st != STATUS_OK) {
@@ -91,3 +96,5 @@ auto Repl::run(std::istream &in, std::ostream &out) noexcept -> int {
   free_vm(&vm);
   return 0;
 }
+
+} // namespace silk

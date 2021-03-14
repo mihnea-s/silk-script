@@ -6,10 +6,13 @@
 #include <cstddef>
 #include <memory>
 
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
+
+namespace silk {
 
 auto parse_command(const std::string &line)
   -> std::pair<char, std::string_view> {
@@ -28,7 +31,7 @@ constexpr auto help_string() -> std::string_view {
 
     YELLOW "\td " RESET "- disassemble immediate instructions\n"
 
-    YELLOW "\tp " RESET BOLD "<name> " RESET "- print value of a variable\n"
+    YELLOW "\tp " RESET "- print the vm's stack and environment\n"
 
     YELLOW "\tb " RESET BOLD "<file>:<line> " RESET
               "- break at line of source file\n"
@@ -41,7 +44,7 @@ auto Debugger::debug(AST &&ast, std::istream &in, std::ostream &out) noexcept
   -> int {
   // Compile the program
   auto compiler = Compiler{};
-  compiler.compile(ast);
+  compiler.dry_compile(ast);
 
   if (compiler.has_error()) {
     print_errors(out, compiler);
@@ -84,8 +87,20 @@ auto Debugger::debug(AST &&ast, std::istream &in, std::ostream &out) noexcept
       }
 
       case 'p': break;
-      case 'b': break;
-      case 'f': break;
+
+      case 'b': {
+        auto line = size_t{0};
+        auto ss   = std::stringstream{std::string{args}};
+        ss >> line;
+
+        compiler.add_breakpoint(line);
+        break;
+      }
+
+      case 'f': {
+        compiler.add_breakpoint(std::string{args});
+        break;
+      }
 
       case '\0': break;
       default: print_error(out, "invalid command `{}`", cmd);
@@ -94,3 +109,5 @@ auto Debugger::debug(AST &&ast, std::istream &in, std::ostream &out) noexcept
 
   return 0;
 }
+
+} // namespace silk

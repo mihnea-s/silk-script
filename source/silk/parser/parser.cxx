@@ -1,14 +1,15 @@
-#include <optional>
-#include <silk/parser/parser.h>
-
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include <silk/parser/ast.h>
+#include <silk/parser/parser.h>
 #include <silk/parser/token.h>
 #include <silk/util/error.h>
+
+namespace silk {
 
 const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
   // GROUPING -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=
@@ -23,6 +24,13 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
   },
 
   {
+    TokenKind::SYM_LT,
+    {
+      .prefix = &Parser::expr_vector,
+    },
+  },
+
+  {
     TokenKind::SYM_LSQUARE,
     {
       .prefix = &Parser::expr_array,
@@ -30,9 +38,9 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
   },
 
   {
-    TokenKind::SYM_LT,
+    TokenKind::SYM_HASHBRACE,
     {
-      .prefix = &Parser::expr_vector,
+      .prefix = &Parser::expr_dictionary,
     },
   },
 
@@ -41,7 +49,7 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
   // LOGICAL OPERATIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
   {
-    TokenKind::SYM_BANG,
+    TokenKind::KW_NOT,
     {
       .prefix = &Parser::expr_unary,
     },
@@ -94,7 +102,7 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
   },
 
   {
-    TokenKind::SYM_AMPAMP,
+    TokenKind::KW_AND,
     {
       .infix = &Parser::expr_binary,
       .prec  = Precedence::AND,
@@ -102,7 +110,7 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
   },
 
   {
-    TokenKind::SYM_PIPEPIPE,
+    TokenKind::KW_OR,
     {
       .infix = &Parser::expr_binary,
       .prec  = Precedence::OR,
@@ -256,6 +264,22 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
   },
 
   {
+    TokenKind::SYM_DOT,
+    {
+      .infix = &Parser::expr_binary,
+      .prec  = Precedence::CALL,
+    },
+  },
+
+  {
+    TokenKind::SYM_PIPE,
+    {
+      .infix = &Parser::expr_binary,
+      .prec  = Precedence::POWER,
+    },
+  },
+
+  {
     TokenKind::KW_FUN,
     {
       .prefix = &Parser::expr_lambda,
@@ -315,11 +339,6 @@ auto Parser::precendece(Precedence prec) -> ASTNode {
   return std::move(prefix);
 }
 
-auto Parser::next_assign() -> bool {
-  return match(
-    TokenKind::SYM_EQUAL, TokenKind::SYM_EQUALEQUAL, TokenKind::SYM_MINUSEQUAL);
-}
-
 auto Parser::parse_name() -> std::string {
   must_match(TokenKind::IDENTIFIER, "expected a name");
   return advance().lexeme;
@@ -338,6 +357,7 @@ auto Parser::parse_typing() -> Typing {
   }
 
   // typing!
+  parse_name();
   return nullptr;
 }
 
@@ -358,8 +378,8 @@ auto Parser::declaration() -> Statement {
     case TokenKind::KW_USE: return decl_package();
     case TokenKind::KW_CONST: return decl_constant();
     case TokenKind::KW_FUN: return decl_function();
+    case TokenKind::KW_OBJ: return decl_object();
     case TokenKind::KW_ENUM: return decl_enum();
-    case TokenKind::KW_STRUCT: return decl_struct();
     case TokenKind::KW_MAIN: return decl_main();
     default: throw report(_prev.location, "expected declaration");
   }
@@ -426,8 +446,8 @@ auto Parser::decl_enum() -> Statement {
   return std::make_unique<Enum>(std::move(name), std::move(variants));
 }
 
-auto Parser::decl_struct() -> Statement {
-  must_consume(TokenKind::KW_STRUCT, "expected `struct`");
+auto Parser::decl_object() -> Statement {
+  must_consume(TokenKind::KW_OBJ, "expected `obj`");
 
   auto name = parse_name();
 
@@ -445,13 +465,14 @@ auto Parser::decl_struct() -> Statement {
     }
   }
 
-  auto methods = std::vector<Statement>{};
+  auto methods = std::vector<Function>{};
 
   while (!consume(TokenKind::SYM_RBRACE)) {
-    methods.push_back(decl_function());
+    auto method = to<Function>(decl_function());
+    methods.push_back(std::move(method));
   }
 
-  return std::make_unique<Struct>(
+  return std::make_unique<Object>(
     std::move(name), std::move(fields), std::move(methods));
 }
 
@@ -571,6 +592,7 @@ auto Parser::stmt_match() -> Statement {
 }
 
 auto Parser::stmt_match_case() -> Statement {
+  // TODO
   auto expr = expression();
 
   must_match(TokenKind::SYM_ARROW, "expected `->`");
@@ -613,8 +635,7 @@ auto Parser::expression() -> ASTNode {
 auto Parser::expr_identifier() -> ASTNode {
   must_consume(TokenKind::IDENTIFIER, "expected identifier");
   const auto name = _prev.lexeme;
-  const auto type = next_assign() ? Identifier::REF : Identifier::VAL;
-  return make_node<Identifier>(type, name);
+  return make_node<Identifier>(name);
 }
 
 auto Parser::expr_unary() -> ASTNode {
@@ -651,24 +672,89 @@ auto Parser::expr_literal() -> ASTNode {
   }
 }
 
-auto Parser::expr_lambda() -> ASTNode {
-  must_consume(TokenKind::KW_FUN, "expected `fun`");
+auto Parser::expr_vector() -> ASTNode {
+  auto contents = std::vector<ASTNode>{};
 
-  // TODO
-  return make_node<KeyLiteral>(KeyLiteral::VOID);
+  must_consume(TokenKind::SYM_LT, "expected `<`");
+
+  while (!consume(TokenKind::SYM_GT)) {
+    contents.push_back(expression());
+
+    if (!match(TokenKind::SYM_GT)) {
+      must_consume(TokenKind::SYM_COMMA, "expected `,`");
+    }
+  }
+
+  return make_node<VectorLiteral>(std::move(contents));
+}
+
+auto Parser::expr_array() -> ASTNode {
+  auto contents = std::vector<ASTNode>{};
+
+  must_consume(TokenKind::SYM_LSQUARE, "expected `[`");
+
+  while (!consume(TokenKind::SYM_RSQUARE)) {
+    contents.push_back(expression());
+
+    if (!match(TokenKind::SYM_RSQUARE)) {
+      must_match(TokenKind::SYM_COMMA, "expected `,`");
+    }
+  }
+
+  return make_node<ArrayLiteral>(std::move(contents));
+}
+
+auto Parser::expr_dictionary() -> ASTNode {
+  auto contents = std::vector<std::pair<ASTNode, ASTNode>>{};
+
+  must_consume(TokenKind::SYM_HASHBRACE, "expected `#{`");
+
+  while (!consume(TokenKind::SYM_RBRACE)) {
+    auto key = expression();
+
+    must_consume(TokenKind::SYM_FATARROW, "expected `=>`");
+
+    auto value = expression();
+
+    contents.push_back({std::move(key), std::move(value)});
+
+    if (!match(TokenKind::SYM_RSQUARE)) {
+      must_match(TokenKind::SYM_COMMA, "expected `,`");
+    }
+  }
+
+  return make_node<DictionaryLiteral>(std::move(contents));
 }
 
 auto Parser::expr_assignment(ASTNode &&target) -> ASTNode {
-  const auto type = [&] {
+  const auto operation = [&] {
     switch (advance().kind) {
-      case TokenKind::SYM_EQUAL: return Assignment::ASSIGN;
-      case TokenKind::SYM_PLUSEQUAL: return Assignment::ADD;
-      case TokenKind::SYM_MINUSEQUAL: return Assignment::SUBTRACT;
+      // todo
+      case TokenKind::SYM_EQUAL: return TokenKind::TOK_END;
+      case TokenKind::SYM_PLUSEQUAL: return TokenKind::SYM_PLUS;
+      case TokenKind::SYM_MINUSEQUAL: return TokenKind::SYM_MINUS;
       default: throw report(_prev.location, "expected `=`, `+=` or `-=`");
     }
   }();
 
-  return make_node<Assignment>(type, std::move(target), expression());
+  return make_node<Assignment>(operation, std::move(target), expression());
+}
+
+auto Parser::expr_lambda() -> ASTNode {
+  must_consume(TokenKind::KW_FUN, "expected `fun`");
+
+  auto params =
+    consume(TokenKind::SYM_LROUND)
+      ? parse_typed_fields(TokenKind::SYM_RROUND, TokenKind::SYM_COMMA)
+      : TypedFields{};
+
+  auto return_type = parse_typing();
+
+  auto body = consume(TokenKind::SYM_EQUAL)
+                ? std::make_unique<Return>(expression())
+                : stmt_block();
+
+  return make_node<Lambda>(return_type, std::move(params), std::move(body));
 }
 
 auto Parser::expr_call(ASTNode &&left) -> ASTNode {
@@ -692,38 +778,6 @@ auto Parser::expr_grouping() -> ASTNode {
   auto inner = expression();
   must_consume(TokenKind::SYM_RROUND, "expected closing parenthesis `)`");
   return std::move(inner);
-}
-
-auto Parser::expr_array() -> ASTNode {
-  auto contents = std::vector<ASTNode>{};
-
-  must_consume(TokenKind::SYM_LSQUARE, "expected `]`");
-
-  while (!consume(TokenKind::SYM_RSQUARE)) {
-    contents.push_back(expression());
-
-    if (!match(TokenKind::SYM_RSQUARE)) {
-      must_match(TokenKind::SYM_COMMA, "expected `,`");
-    }
-  }
-
-  return make_node<ArrayLiteral>(std::move(contents));
-}
-
-auto Parser::expr_vector() -> ASTNode {
-  auto contents = std::vector<ASTNode>{};
-
-  must_consume(TokenKind::SYM_LT, "expected `<`");
-
-  while (!consume(TokenKind::SYM_GT)) {
-    contents.push_back(expression());
-
-    if (!match(TokenKind::SYM_GT)) {
-      must_consume(TokenKind::SYM_COMMA, "expected `,`");
-    }
-  }
-
-  return make_node<VectorLiteral>(std::move(contents));
 }
 
 // public compile function
@@ -761,3 +815,5 @@ auto Parser::parse_line() noexcept -> AST {
 
   return ast;
 }
+
+} // namespace silk

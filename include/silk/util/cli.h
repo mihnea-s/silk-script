@@ -32,8 +32,11 @@
 #include <string_view>
 #include <vector>
 
+namespace silk {
+
+/// TODoc
 struct CLIFlags {
-  private:
+private:
   enum class Flag {
     HELP,
     COMPILE,
@@ -49,29 +52,43 @@ struct CLIFlags {
   std::bitset<(size_t)Flag::LAST> _bits;
   std::vector<std::string>        _files;
 
-  auto is_flag(const char*) const -> bool;
-  auto is_flag(const char*, Flag) const -> bool;
+  auto is_flag(const char *) const -> bool;
+  auto is_flag(const char *, Flag) const -> bool;
 
-  auto parse(const int, const char**) -> void;
+  auto parse(const int, const char **) -> void;
 
-  public:
-  static constexpr auto HELP        = Flag::HELP;
-  static constexpr auto COMPILE     = Flag::COMPILE;
-  static constexpr auto DEBUG       = Flag::DEBUG;
+public:
+  /// TODoc
+  static constexpr auto HELP = Flag::HELP;
+  /// TODoc
+  static constexpr auto COMPILE = Flag::COMPILE;
+  /// TODoc
+  static constexpr auto DEBUG = Flag::DEBUG;
+  /// TODoc
   static constexpr auto INTERACTIVE = Flag::INTERACTIVE;
-  static constexpr auto RUN         = Flag::RUN;
+  /// TODoc
+  static constexpr auto RUN = Flag::RUN;
 
+  /// TODoc
   auto is_set(Flag) const -> bool;
-  auto files() const -> const std::vector<std::string>&;
 
-  CLIFlags(const int argc, const char** argv) : _bits() {
+  /// TODoc
+  auto files() const -> const std::vector<std::string> &;
+
+  /// TODoc
+  CLIFlags(const int argc, const char **argv) : _bits() {
     parse(argc, argv);
   }
 
+  /// TODoc
   static auto help_string() noexcept -> std::string;
 
+  /// TODoc
   static constexpr auto flag_aliases(Flag flag)
     -> std::pair<std::string_view, std::string_view>;
 
+  /// TODoc
   static constexpr auto flag_usage(Flag flag) -> std::string_view;
 };
+
+} // namespace silk

@@ -11,7 +11,9 @@
 #include <silk/parser/token.h>
 #include <silk/util/error.h>
 
-/// The parser is written like this.
+namespace silk {
+
+/// TODoc
 class Parser : public ErrorReporter {
 private:
   TokenScanner _scanner;
@@ -22,14 +24,14 @@ private:
   enum class Precedence {
     ANY,        // lowest
     ASSIGNMENT, // =
-    OR,         // || is isnt
-    AND,        // &&
+    OR,         // or
+    AND,        // and
     EQUALITY,   // == !=
     COMPARISON, // < > <= >=
     TERM,       // + -
     FACTOR,     // * / // %
-    POWER,      // **
-    UNARY,      // ! - typeof
+    POWER,      // ** |
+    UNARY,      // not -
     CALL,       // . ()
     NONE,       // highest
   };
@@ -100,8 +102,6 @@ private:
   auto get_rule(const Token &) const
     -> std::optional<std::reference_wrapper<const Rule>>;
 
-  auto next_assign() -> bool;
-
   auto parse_name() -> std::string;
   auto parse_package() -> std::string;
   auto parse_typing() -> Typing;
@@ -116,7 +116,7 @@ private:
   auto decl_constant() -> Statement;
   auto decl_function() -> Statement;
   auto decl_enum() -> Statement;
-  auto decl_struct() -> Statement;
+  auto decl_object() -> Statement;
   auto decl_main() -> Statement;
 
   // statements
@@ -136,23 +136,29 @@ private:
   auto expr_unary() -> ASTNode;
   auto expr_binary(ASTNode &&) -> ASTNode;
   auto expr_literal() -> ASTNode;
-  auto expr_lambda() -> ASTNode;
+  auto expr_vector() -> ASTNode;
+  auto expr_array() -> ASTNode;
+  auto expr_dictionary() -> ASTNode;
   auto expr_assignment(ASTNode &&) -> ASTNode;
+  auto expr_lambda() -> ASTNode;
   auto expr_call(ASTNode &&) -> ASTNode;
   auto expr_grouping() -> ASTNode;
-  auto expr_array() -> ASTNode;
-  auto expr_vector() -> ASTNode;
 
 public:
+  /// TODoc
   Parser(std::istream &source) : _scanner({source}) {
     // Initialize tokens
     this->_prev.kind = TokenKind::TOK_ERROR;
     this->_next      = _scanner.scan();
   }
 
+  /// TODoc
   /// Parse the full source file as a list of declarations
   auto parse_source() noexcept -> AST;
 
+  /// TODoc
   /// Parse a single declaration or a single expression
   auto parse_line() noexcept -> AST;
 };
+
+} // namespace silk

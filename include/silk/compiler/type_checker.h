@@ -5,6 +5,9 @@
 #include <silk/parser/ast.h>
 #include <silk/util/error.h>
 
+namespace silk {
+
+/// TODoc
 class TypeChecker final :
     public ErrorReporter,
     public ASTHandler<Typing, void> {
@@ -18,12 +21,12 @@ private:
   auto evaluate(ASTNode &, RealLiteral &) -> Typing override;
   auto evaluate(ASTNode &, CharLiteral &) -> Typing override;
   auto evaluate(ASTNode &, StringLiteral &) -> Typing override;
-  auto evaluate(ASTNode &, ArrayLiteral &) -> Typing override;
   auto evaluate(ASTNode &, VectorLiteral &) -> Typing override;
-  auto evaluate(ASTNode &, Lambda &) -> Typing override;
+  auto evaluate(ASTNode &, ArrayLiteral &) -> Typing override;
+  auto evaluate(ASTNode &, DictionaryLiteral &) -> Typing override;
   auto evaluate(ASTNode &, Assignment &) -> Typing override;
+  auto evaluate(ASTNode &, Lambda &) -> Typing override;
   auto evaluate(ASTNode &, Call &) -> Typing override;
-  auto evaluate(ASTNode &, Access &) -> Typing override;
 
   auto execute(Empty &) -> void override;
   auto execute(Package &) -> void override;
@@ -40,7 +43,7 @@ private:
   auto execute(Constant &) -> void override;
   auto execute(Function &) -> void override;
   auto execute(Enum &) -> void override;
-  auto execute(Struct &) -> void override;
+  auto execute(Object &) -> void override;
   auto execute(Main &) -> void override;
 
 public:
@@ -50,6 +53,8 @@ public:
   ~TypeChecker() {
   }
 
-  // check ast function
+  /// TODoc
   auto type_check(AST &ast) noexcept -> void;
 };
+
+} // namespace silk

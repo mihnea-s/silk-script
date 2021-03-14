@@ -6,7 +6,9 @@
 
 #include <silk/util/error.h>
 
-/// TODO
+namespace silk {
+
+/// TODoc
 enum class TokenKind {
   IDENTIFIER,
 
@@ -34,9 +36,10 @@ enum class TokenKind {
   SYM_LT,
   SYM_LTEQUAL,
 
-  SYM_ARROW,    // UNUSED
-  SYM_RARROW,   // UNUSED
-  SYM_FATARROW, // UNUSED
+  SYM_ARROW,  // UNUSED
+  SYM_RARROW, // UNUSED
+  SYM_FATARROW,
+  SYM_HASHBRACE,
 
   SYM_AMP,
   SYM_AMPAMP, // UNUSED
@@ -75,8 +78,8 @@ enum class TokenKind {
   KW_DEF,
   KW_CONST,
   KW_FUN,
+  KW_OBJ,
   KW_ENUM,
-  KW_STRUCT,
 
   KW_IF,
   KW_ELSE,
@@ -117,7 +120,7 @@ struct Token {
   Location    location; //< Where this token occurs in the source file
 };
 
-/// TODO
+/// TODoc
 struct TokenScanner {
 private:
   Location      _location;
@@ -143,3 +146,5 @@ public:
 
   auto scan() noexcept -> Token;
 };
+
+} // namespace silk

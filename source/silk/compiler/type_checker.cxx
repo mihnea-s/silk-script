@@ -3,6 +3,8 @@
 
 #include <silk/util/error.h>
 
+namespace silk {
+
 auto TypeChecker::evaluate(ASTNode &parent, Identifier &) -> Typing {
   return nullptr;
 }
@@ -39,11 +41,15 @@ auto TypeChecker::evaluate(ASTNode &parent, StringLiteral &) -> Typing {
   return nullptr;
 }
 
+auto TypeChecker::evaluate(ASTNode &parent, VectorLiteral &) -> Typing {
+  return nullptr;
+}
+
 auto TypeChecker::evaluate(ASTNode &parent, ArrayLiteral &) -> Typing {
   return nullptr;
 }
 
-auto TypeChecker::evaluate(ASTNode &parent, VectorLiteral &) -> Typing {
+auto TypeChecker::evaluate(ASTNode &parent, DictionaryLiteral &) -> Typing {
   return nullptr;
 }
 
@@ -56,10 +62,6 @@ auto TypeChecker::evaluate(ASTNode &parent, Assignment &) -> Typing {
 }
 
 auto TypeChecker::evaluate(ASTNode &parent, Call &) -> Typing {
-  return nullptr;
-}
-
-auto TypeChecker::evaluate(ASTNode &parent, Access &) -> Typing {
   return nullptr;
 }
 
@@ -123,7 +125,7 @@ auto TypeChecker::execute(Enum &) -> void {
   return;
 }
 
-auto TypeChecker::execute(Struct &) -> void {
+auto TypeChecker::execute(Object &) -> void {
   return;
 }
 
@@ -138,3 +140,5 @@ auto TypeChecker::type_check(AST &ast) noexcept -> void {
     } catch (...) {}
   }
 }
+
+} // namespace silk

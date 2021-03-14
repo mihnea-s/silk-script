@@ -9,6 +9,8 @@
 
 #include <silk/util/error.h>
 
+namespace silk {
+
 auto CLIFlags::is_flag(const char *arg) const -> bool {
   return strncmp(arg, "-", 1) == 0;
 }
@@ -81,7 +83,7 @@ constexpr auto CLIFlags::flag_aliases(Flag flag)
     case Flag::RUN: return {"-r", "--run"};
     case Flag::DEBUG: return {"-d", "--debug"};
     case Flag::INTERACTIVE: return {"-i", "--interactive"};
-    case Flag::LAST: return {"?", "?"};
+    default: return {"?", "?"};
   }
 }
 
@@ -92,6 +94,8 @@ constexpr auto CLIFlags::flag_usage(Flag flag) -> std::string_view {
     case Flag::DEBUG: return "debug the files with the debug tool";
     case Flag::INTERACTIVE: return "open a repl session";
     case Flag::RUN: return "compile and run the source (default behaviour)";
-    case Flag::LAST: return "error! this should never happen!";
+    default: return "error! this should never happen!";
   }
 }
+
+} // namespace silk

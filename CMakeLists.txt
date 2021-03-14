@@ -14,6 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
 set(SILK_COMPILER       "silk")
 set(SILK_VIRTUALMACHINE "moth")
+set(SILK_STDLIBRARY     "stdsilk")
 set(SILK_DOCUMENTATION  "docs")
 
 FetchContent_Declare(
@@ -45,8 +46,10 @@ add_library(${SILK_VIRTUALMACHINE} STATIC
   "source/moth/file.c"
   "source/moth/disas.c"
 
+  "source/moth/ffi.c"
   "source/moth/value.c"
   "source/moth/object.c"
+
   "source/moth/garbage.c"
   "source/moth/vm.c"
 )
@@ -58,6 +61,16 @@ endif()
 target_include_directories(${SILK_VIRTUALMACHINE} PUBLIC "include")
 
 target_link_libraries(${SILK_VIRTUALMACHINE} ${C_MATH_LIB})
+
+add_library(${SILK_STDLIBRARY} SHARED
+  "source/stdsilk/io.c"
+)
+
+set_target_properties(${SILK_STDLIBRARY} PROPERTIES VERSION ${PROJECT_VERSION})
+
+target_include_directories(${SILK_STDLIBRARY} PUBLIC "include")
+
+target_link_libraries(${SILK_STDLIBRARY} ${SILK_VIRTUALMACHINE} ${C_MATH_LIB})
 
 add_executable(${SILK_COMPILER}
   "source/silk/main.cxx"

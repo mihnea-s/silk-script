@@ -14,6 +14,8 @@
 #include <silk/parser/token.h>
 #include <silk/util/error.h>
 
+namespace silk {
+
 using Typing = std::nullptr_t;
 
 using TypedFields = std::vector<std::pair<std::string, Typing>>;
@@ -31,10 +33,10 @@ struct CharLiteral;
 struct StringLiteral;
 struct ArrayLiteral;
 struct VectorLiteral;
+struct DictionaryLiteral;
 struct Lambda;
 struct Assignment;
 struct Call;
-struct Access;
 
 // Statements
 
@@ -53,7 +55,7 @@ struct Return;
 struct Constant;
 struct Function;
 struct Enum;
-struct Struct;
+struct Object;
 struct Main;
 
 using Expression = std::variant<
@@ -66,12 +68,12 @@ using Expression = std::variant<
   std::unique_ptr<RealLiteral>,
   std::unique_ptr<CharLiteral>,
   std::unique_ptr<StringLiteral>,
-  std::unique_ptr<ArrayLiteral>,
   std::unique_ptr<VectorLiteral>,
-  std::unique_ptr<Lambda>,
+  std::unique_ptr<ArrayLiteral>,
+  std::unique_ptr<DictionaryLiteral>,
   std::unique_ptr<Assignment>,
-  std::unique_ptr<Call>,
-  std::unique_ptr<Access>>;
+  std::unique_ptr<Lambda>,
+  std::unique_ptr<Call>>;
 
 using Statement = std::variant<
   std::unique_ptr<Empty>,
@@ -89,7 +91,7 @@ using Statement = std::variant<
   std::unique_ptr<Constant>,
   std::unique_ptr<Function>,
   std::unique_ptr<Enum>,
-  std::unique_ptr<Struct>,
+  std::unique_ptr<Object>,
   std::unique_ptr<Main>>;
 
 struct ASTNode {
@@ -122,30 +124,25 @@ public:
 
 using AST = std::vector<Statement>;
 
+/// TODoc
 struct Identifier {
 public:
-  enum IdentifierType { REF, VAL };
-
 private:
-  IdentifierType _type;
-  std::string    _identifier;
+  std::string _identifier;
 
 public:
-  Identifier(IdentifierType type, std::string &&identifier) :
-      _type(type), _identifier(identifier) {
+  Identifier(std::string &&identifier) : _identifier(identifier) {
   }
 
   Identifier(const Identifier &) = delete;
   Identifier(Identifier &&)      = default;
 
-  inline auto type() const -> const IdentifierType & {
-    return _type;
-  }
   inline auto identifier() const -> const std::string & {
     return _identifier;
   }
 };
 
+/// TODoc
 struct Unary {
 private:
   TokenKind _operation;
@@ -167,6 +164,7 @@ public:
   }
 };
 
+/// TODoc
 struct Binary {
 private:
   TokenKind _operation;
@@ -192,6 +190,7 @@ public:
   }
 };
 
+/// TODoc
 struct KeyLiteral {
 public:
   enum KeyType { VOID, PI, TAU, EULER };
@@ -211,6 +210,7 @@ public:
   }
 };
 
+/// TODoc
 struct BoolLiteral {
 private:
   bool _value;
@@ -227,6 +227,7 @@ public:
   }
 };
 
+/// TODoc
 struct IntLiteral {
 private:
   std::int64_t _value;
@@ -243,6 +244,7 @@ public:
   }
 };
 
+/// TODoc
 struct RealLiteral {
 private:
   double _value;
@@ -259,6 +261,7 @@ public:
   }
 };
 
+/// TODoc
 struct CharLiteral {
 private:
   char32_t _value;
@@ -275,6 +278,7 @@ public:
   }
 };
 
+/// TODoc
 struct StringLiteral {
 private:
   std::string _value;
@@ -291,23 +295,7 @@ public:
   }
 };
 
-struct ArrayLiteral {
-private:
-  std::vector<ASTNode> _contents;
-
-public:
-  ArrayLiteral(std::vector<ASTNode> &&contents) :
-      _contents(std::move(contents)) {
-  }
-
-  ArrayLiteral(const ArrayLiteral &) = delete;
-  ArrayLiteral(ArrayLiteral &&)      = default;
-
-  inline auto contents() -> std::vector<ASTNode> & {
-    return _contents;
-  }
-};
-
+/// TODoc
 struct VectorLiteral {
 private:
   std::vector<ASTNode> _contents;
@@ -325,6 +313,71 @@ public:
   }
 };
 
+/// TODoc
+struct ArrayLiteral {
+private:
+  std::vector<ASTNode> _contents;
+
+public:
+  ArrayLiteral(std::vector<ASTNode> &&contents) :
+      _contents(std::move(contents)) {
+  }
+
+  ArrayLiteral(const ArrayLiteral &) = delete;
+  ArrayLiteral(ArrayLiteral &&)      = default;
+
+  inline auto contents() -> std::vector<ASTNode> & {
+    return _contents;
+  }
+};
+
+/// TODoc
+struct DictionaryLiteral {
+private:
+  std::vector<std::pair<ASTNode, ASTNode>> _contents;
+
+public:
+  DictionaryLiteral(std::vector<std::pair<ASTNode, ASTNode>> &&contents) :
+      _contents(std::move(contents)) {
+  }
+
+  DictionaryLiteral(const DictionaryLiteral &) = delete;
+  DictionaryLiteral(DictionaryLiteral &&)      = default;
+
+  inline auto contents() -> std::vector<std::pair<ASTNode, ASTNode>> & {
+    return _contents;
+  }
+};
+
+/// TODoc
+struct Assignment {
+private:
+  TokenKind _operation;
+  ASTNode   _target;
+  ASTNode   _value;
+
+public:
+  Assignment(TokenKind operation, ASTNode &&target, ASTNode &&value) :
+      _operation(operation),
+      _target(std::move(target)),
+      _value(std::move(value)) {
+  }
+
+  Assignment(const Assignment &) = delete;
+  Assignment(Assignment &&)      = default;
+
+  inline auto operation() const -> const TokenKind & {
+    return _operation;
+  }
+  inline auto target() -> ASTNode & {
+    return _target;
+  }
+  inline auto value() -> ASTNode & {
+    return _value;
+  }
+};
+
+/// TODoc
 struct Lambda {
 private:
   Typing      _return_type;
@@ -352,34 +405,7 @@ public:
   }
 };
 
-struct Assignment {
-public:
-  enum AssignType { ASSIGN, ADD, SUBTRACT };
-
-private:
-  AssignType _type;
-  ASTNode    _target;
-  ASTNode    _value;
-
-public:
-  Assignment(AssignType type, ASTNode &&target, ASTNode &&value) :
-      _type(type), _target(std::move(target)), _value(std::move(value)) {
-  }
-
-  Assignment(const Assignment &) = delete;
-  Assignment(Assignment &&)      = default;
-
-  inline auto type() const -> const AssignType & {
-    return _type;
-  }
-  inline auto target() -> ASTNode & {
-    return _target;
-  }
-  inline auto value() -> ASTNode & {
-    return _value;
-  }
-};
-
+/// TODoc
 struct Call {
 private:
   ASTNode              _target;
@@ -401,29 +427,9 @@ public:
   }
 };
 
-struct Access {
-private:
-  ASTNode _target;
-  ASTNode _property;
-
-public:
-  Access(ASTNode &&target, ASTNode &&property) :
-      _target(std::move(target)), _property(std::move(property)) {
-  }
-
-  Access(const Access &) = delete;
-  Access(Access &&)      = default;
-
-  inline auto target() -> ASTNode & {
-    return _target;
-  }
-  inline auto property() -> ASTNode & {
-    return _property;
-  }
-};
-
 // Statements
 
+/// TODoc
 struct Empty {
 public:
   Empty() {
@@ -456,6 +462,7 @@ public:
   }
 };
 
+/// TODoc
 struct Variable {
 private:
   std::string _name;
@@ -488,6 +495,7 @@ public:
   }
 };
 
+/// TODoc
 struct ExprStmt {
 private:
   ASTNode _expr;
@@ -504,6 +512,7 @@ public:
   }
 };
 
+/// TODoc
 struct Block {
 private:
   std::vector<Statement> _statements;
@@ -521,6 +530,7 @@ public:
   }
 };
 
+/// TODoc
 struct Conditional {
 private:
   ASTNode   _clause;
@@ -548,6 +558,7 @@ public:
   }
 };
 
+/// TODoc
 struct Loop {
 private:
   ASTNode   _clause;
@@ -569,6 +580,7 @@ public:
   }
 };
 
+/// TODoc
 struct Foreach {
 private:
   ASTNode   _binding;
@@ -596,6 +608,7 @@ public:
   }
 };
 
+/// TODoc
 struct Match {
 private:
   ASTNode                _target;
@@ -617,20 +630,21 @@ public:
   }
 };
 
+/// TODoc
 struct MatchCase {
 private:
-  Expression _expr;
-  Statement  _body;
+  ASTNode   _expr;
+  Statement _body;
 
 public:
-  MatchCase(Expression &&expr, Statement &&body) :
+  MatchCase(ASTNode &&expr, Statement &&body) :
       _expr(std::move(expr)), _body(std::move(body)) {
   }
 
   MatchCase(const MatchCase &) = delete;
   MatchCase(MatchCase &&)      = default;
 
-  inline auto expr() -> Expression & {
+  inline auto expr() -> ASTNode & {
     return _expr;
   }
   inline auto body() -> Statement & {
@@ -638,6 +652,7 @@ public:
   }
 };
 
+/// TODoc
 struct ControlFlow {
 public:
   enum ControlFlowType { BREAK, CONTINUE };
@@ -657,6 +672,7 @@ public:
   }
 };
 
+/// TODoc
 struct Return {
 private:
   ASTNode _value;
@@ -673,6 +689,7 @@ public:
   }
 };
 
+/// TODoc
 struct Constant {
 private:
   std::string _name;
@@ -698,6 +715,7 @@ public:
   }
 };
 
+/// TODoc
 struct Function {
 private:
   std::string _name;
@@ -719,6 +737,37 @@ public:
   }
 };
 
+/// TODoc
+struct Object {
+private:
+  std::string           _name;
+  TypedFields           _fields;
+  std::vector<Lambda>   _ctors;
+  std::vector<Function> _methods;
+
+public:
+  Object(
+    std::string &&name, TypedFields &&fields, std::vector<Function> &&methods) :
+      _name(std::move(name)),
+      _fields(std::move(fields)),
+      _methods(std::move(methods)) {
+  }
+
+  Object(const Object &) = delete;
+  Object(Object &&)      = default;
+
+  inline auto name() const -> const std::string & {
+    return _name;
+  }
+  inline auto fields() -> TypedFields & {
+    return _fields;
+  }
+  inline auto methods() -> std::vector<Function> & {
+    return _methods;
+  }
+};
+
+/// TODoc
 struct Enum {
 private:
   std::string _name;
@@ -740,34 +789,7 @@ public:
   }
 };
 
-struct Struct {
-private:
-  std::string           _name;
-  TypedFields           _fields;
-  std::vector<Function> _methods;
-
-public:
-  Struct(
-    std::string &&name, TypedFields &&fields, std::vector<Function> &&methods) :
-      _name(std::move(name)),
-      _fields(std::move(fields)),
-      _methods(std::move(methods)) {
-  }
-
-  Struct(const Struct &) = delete;
-  Struct(Struct &&)      = default;
-
-  inline auto name() const -> const std::string & {
-    return _name;
-  }
-  inline auto fields() -> TypedFields & {
-    return _fields;
-  }
-  inline auto methods() -> std::vector<Function> & {
-    return _methods;
-  }
-};
-
+/// TODoc
 struct Main {
 private:
   std::vector<Statement> _body;
@@ -786,24 +808,25 @@ public:
 
 // Visitor
 
+/// TODoc
 template <class E, class S>
 class ASTHandler {
 protected:
-  virtual E evaluate(ASTNode &, Identifier &)    = 0;
-  virtual E evaluate(ASTNode &, Unary &)         = 0;
-  virtual E evaluate(ASTNode &, Binary &)        = 0;
-  virtual E evaluate(ASTNode &, KeyLiteral &)    = 0;
-  virtual E evaluate(ASTNode &, BoolLiteral &)   = 0;
-  virtual E evaluate(ASTNode &, IntLiteral &)    = 0;
-  virtual E evaluate(ASTNode &, RealLiteral &)   = 0;
-  virtual E evaluate(ASTNode &, CharLiteral &)   = 0;
-  virtual E evaluate(ASTNode &, StringLiteral &) = 0;
-  virtual E evaluate(ASTNode &, ArrayLiteral &)  = 0;
-  virtual E evaluate(ASTNode &, VectorLiteral &) = 0;
-  virtual E evaluate(ASTNode &, Lambda &)        = 0;
-  virtual E evaluate(ASTNode &, Assignment &)    = 0;
-  virtual E evaluate(ASTNode &, Call &)          = 0;
-  virtual E evaluate(ASTNode &, Access &)        = 0;
+  virtual E evaluate(ASTNode &, Identifier &)        = 0;
+  virtual E evaluate(ASTNode &, Unary &)             = 0;
+  virtual E evaluate(ASTNode &, Binary &)            = 0;
+  virtual E evaluate(ASTNode &, KeyLiteral &)        = 0;
+  virtual E evaluate(ASTNode &, BoolLiteral &)       = 0;
+  virtual E evaluate(ASTNode &, IntLiteral &)        = 0;
+  virtual E evaluate(ASTNode &, RealLiteral &)       = 0;
+  virtual E evaluate(ASTNode &, CharLiteral &)       = 0;
+  virtual E evaluate(ASTNode &, StringLiteral &)     = 0;
+  virtual E evaluate(ASTNode &, VectorLiteral &)     = 0;
+  virtual E evaluate(ASTNode &, ArrayLiteral &)      = 0;
+  virtual E evaluate(ASTNode &, DictionaryLiteral &) = 0;
+  virtual E evaluate(ASTNode &, Assignment &)        = 0;
+  virtual E evaluate(ASTNode &, Lambda &)            = 0;
+  virtual E evaluate(ASTNode &, Call &)              = 0;
 
   virtual S execute(Empty &)       = 0;
   virtual S execute(Variable &)    = 0;
@@ -820,19 +843,55 @@ protected:
   virtual S execute(Function &)    = 0;
   virtual S execute(Constant &)    = 0;
   virtual S execute(Enum &)        = 0;
-  virtual S execute(Struct &)      = 0;
+  virtual S execute(Object &)      = 0;
   virtual S execute(Main &)        = 0;
 
-public:
-  virtual ~ASTHandler() {
-  }
-
+  /// TODoc
   E evaluate_expression(ASTNode &n) {
     return std::visit(
       [&](auto &&expr) { return this->evaluate(n, *expr); }, n.inner());
   }
 
+  /// TODoc
   S execute_statement(Statement &s) {
     return std::visit([&](auto &&stmt) { return this->execute(*stmt); }, s);
   }
+
+public:
+  virtual ~ASTHandler() {
+  }
 };
+
+/// TODoc
+template <typename T, typename Y>
+constexpr auto to(Y &&node) noexcept(false) -> T {
+  return std::visit(
+    [](auto &&node) -> T {
+      using NodeT = typename std::decay_t<decltype(node)>::element_type;
+
+      if constexpr (std::is_same_v<T, NodeT>) {
+        return std::move(*node);
+      } else {
+        throw std::invalid_argument("statement is not of correct type");
+      }
+    },
+    node);
+}
+
+/// TODoc
+template <typename T, typename Y>
+constexpr auto is(Y &&node) noexcept(false) -> bool {
+  return std::visit(
+    [](auto &&node) -> T {
+      using NodeT = typename std::decay_t<decltype(node)>::element_type;
+
+      if constexpr (std::is_same_v<T, NodeT>) {
+        return true;
+      } else {
+        return false;
+      }
+    },
+    node);
+}
+
+} // namespace silk
