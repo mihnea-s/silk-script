@@ -75,18 +75,21 @@ target_link_libraries(${SILK_STDLIBRARY} ${SILK_VIRTUALMACHINE} ${C_MATH_LIB})
 add_executable(${SILK_COMPILER}
   "source/silk/main.cxx"
 
-  "source/silk/parser/token.cxx"
-  "source/silk/parser/ast.cxx"
-  "source/silk/parser/parser.cxx"
-  
-  "source/silk/compiler/compiler.cxx"
-  "source/silk/compiler/type_checker.cxx"
-
+  "source/silk/tools/cli.cxx"
   "source/silk/tools/debugger.cxx"
   "source/silk/tools/repl.cxx"
+  "source/silk/tools/stprinter.cxx"
 
-  "source/silk/util/cli.cxx"
-  "source/silk/util/error.cxx"
+  "source/silk/syntax/package.cxx"
+  "source/silk/syntax/scanner.cxx"
+  
+  "source/silk/stages/pipeline.cxx"
+  "source/silk/stages/parser.cxx"
+  "source/silk/stages/type_checker.cxx"
+  "source/silk/stages/optimizer.cxx"
+
+  "source/silk/compiler/mothvm.cxx"
+  "source/silk/compiler/webasm.cxx"
 )
 
 set_target_properties(${SILK_COMPILER} PROPERTIES

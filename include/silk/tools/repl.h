@@ -3,18 +3,17 @@
 #include <istream>
 #include <ostream>
 
-#include <silk/util/cli.h>
+#include <silk/tools/cli.h>
 
 namespace silk {
 
-/// TODoc
+// TODO: implement
 class Repl {
 private:
   static constexpr auto PROMPT       = CYAN "|>" RESET " ";
   static constexpr auto MLINE_PROMPT = CYAN "|:" RESET " ";
 
 public:
-  /// TODoc
   auto run(std::istream &in, std::ostream &out) noexcept -> int;
 };
 

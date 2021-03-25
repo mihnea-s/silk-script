@@ -13,6 +13,15 @@ typedef enum {
   VM_GC,  // collect garbage
   VM_DBG, // stop for breakpoint
 
+  // tldr:
+  // VM_DLL [SYM] : load dll, stack is [dll]
+  // VM_FFN [SYM] : load fun from dll, stack is [dll, ffifun]
+  // VM_ASN [SYM] : assign to symbol, stack is [dll], repeat until no more funs
+  // VM_POP       : remove dll from stack
+
+  VM_DLL, // open a dynamic lib
+  VM_FFN, // load a function from the dyn lib
+
   VM_POP, // pop
   VM_PSH, // push value from stack to top (2 bytes)
   VM_STR, // store top value to index (2 bytes)

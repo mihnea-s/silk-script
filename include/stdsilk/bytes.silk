@@ -1,0 +1,48 @@
+QUOTED (
+
+pkg 'std/bytes';
+
+dll 'stdsilk' {
+
+    fun stdsilk_bytes_alloc(size :: int) :: ffiptr;
+
+    fun stdsilk_bytes_open(name :: str, mode :: str) :: ffiptr;
+
+    fun stdsilk_bytes_read(bytes :: ffiptr, ...) :: arr;
+
+    fun stdsilk_bytes_write(bytes :: ffiptr, ...) :: void;
+
+    fun stdsilk_bytes_to_array(bytes :: ffiptr) :: arr;
+
+    fun stdsilk_bytes_to_string(bytes :: ffiptr) :: str;
+}
+
+fun _bytes(bytes :: ffiptr) :: map {
+    return #{
+        'read' => fun (...) :: arr {
+            return stdsilk_bytes_read(bytes, ...);
+        },
+
+        'write' => fun (...) :: void {
+            stdsilk_bytes_write(bytes, ...);
+        },
+
+        'toArray' => fun :: arr {
+            return stdsilk_bytes_to_array(bytes);
+        },
+
+        'toString' => fun :: str {
+            return stdsilk_bytes_to_string(bytes);
+        },
+    };
+}
+
+fun bytes(size :: int) :: map {
+    return _bytes(stdsilk_bytes_alloc(size));
+}
+
+fun bytesOpen(name :: str, mode :: str) :: map {
+    return _bytes(stdsilk_bytes_open(name, mode));
+}
+
+)

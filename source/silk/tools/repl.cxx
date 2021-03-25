@@ -1,4 +1,3 @@
-#include "moth/disas.h"
 #include <silk/tools/repl.h>
 
 #include <cstddef>
@@ -8,13 +7,6 @@
 #include <sstream>
 #include <string>
 #include <string_view>
-
-#include <moth/vm.h>
-#include <silk/compiler/compiler.h>
-#include <silk/compiler/type_checker.h>
-#include <silk/parser/parser.h>
-#include <silk/util/cli.h>
-#include <silk/util/error.h>
 
 namespace silk {
 
@@ -45,9 +37,6 @@ constexpr auto is_nested(std::string_view str) noexcept -> bool {
 }
 
 auto Repl::run(std::istream &in, std::ostream &out) noexcept -> int {
-  auto vm = VM{};
-  init_vm(&vm);
-
   while (!in.eof()) {
     auto input = std::stringstream{};
 
@@ -59,41 +48,11 @@ auto Repl::run(std::istream &in, std::ostream &out) noexcept -> int {
       read_line(in, input);
     }
 
-    // parse
-    auto parser = Parser{input};
-    auto ast    = parser.parse_line();
-    if (parser.has_error()) {
-      print_errors(out, parser);
-      parser.clear_errors();
-      continue;
-    }
-
-    // type checking
-    auto checker = TypeChecker{};
-    checker.type_check(ast);
-    if (checker.has_error()) {
-      print_errors(out, checker);
-      continue;
-    }
-
-    // compile program
-    auto compiler = Compiler{};
-    compiler.compile(ast);
-    if (compiler.has_error()) {
-      print_errors(out, compiler);
-      continue;
-    }
-
-    disassemble("YOUR SHITTY PROGRAM", &compiler.bytecode());
-
-    // finally execute the line
-    vm_run(&vm, &compiler.bytecode());
-    if (vm.st != STATUS_OK) {
-      print_error(out, "vm failed with status {}", vm.st);
-    }
+    out << "Unfortunately, this compiler made in bosnia." << std::endl
+        << "Due to poor technology in my country it do not" << std::endl
+        << "work. Please imagine it work. Thank you." << std::endl;
   }
 
-  free_vm(&vm);
   return 0;
 }
 

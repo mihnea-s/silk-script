@@ -1,16 +1,7 @@
 #include <silk/tools/debugger.h>
 
-#include "moth/disas.h"
-#include "moth/vm.h"
-#include "silk/util/error.h"
-#include <cstddef>
-#include <memory>
-
-#include <sstream>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
+#include <moth/disas.h>
+#include <moth/vm.h>
 
 namespace silk {
 
@@ -33,6 +24,8 @@ constexpr auto help_string() -> std::string_view {
 
     YELLOW "\tp " RESET "- print the vm's stack and environment\n"
 
+    YELLOW "\tm " RESET "- break on main\n"
+
     YELLOW "\tb " RESET BOLD "<file>:<line> " RESET
               "- break at line of source file\n"
 
@@ -40,23 +33,8 @@ constexpr auto help_string() -> std::string_view {
               "- break when function gets called\n";
 }
 
-auto Debugger::debug(AST &&ast, std::istream &in, std::ostream &out) noexcept
-  -> int {
-  // Compile the program
-  auto compiler = Compiler{};
-  compiler.dry_compile(ast);
-
-  if (compiler.has_error()) {
-    print_errors(out, compiler);
-    return 1;
-  }
-
-  // The execution vm
-  auto vm = VM{};
-  init_vm(&vm);
-
-  // make sure the vm gets free'd
-  auto __ = std::shared_ptr<void>{nullptr, [&](...) { free_vm(&vm); }};
+auto Debugger::debug(
+  Package &&pkg, std::istream &in, std::ostream &out) noexcept -> int {
 
   while (!in.eof()) {
     auto line = std::string{};
@@ -77,28 +55,30 @@ auto Debugger::debug(AST &&ast, std::istream &in, std::ostream &out) noexcept
       }
 
       case 'r': {
-        vm_run(&vm, &compiler.bytecode());
         break;
       }
 
       case 'd': {
-        disassemble("PROGRAM", &compiler.bytecode());
         break;
       }
 
-      case 'p': break;
+      case 'p': {
+        break;
+      }
+
+      case 'm': {
+        break;
+      }
 
       case 'b': {
         auto line = size_t{0};
         auto ss   = std::stringstream{std::string{args}};
         ss >> line;
 
-        compiler.add_breakpoint(line);
         break;
       }
 
       case 'f': {
-        compiler.add_breakpoint(std::string{args});
         break;
       }
 

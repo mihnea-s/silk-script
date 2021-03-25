@@ -1,18 +1,19 @@
+#include "silk/stages/pipeline.h"
+#include "silk/syntax/tree.h"
 #include <fstream>
 #include <iostream>
 
 #include <fmt/format.h>
 
-#include <moth/file.h>
-#include <moth/vm.h>
-#include <silk/compiler/compiler.h>
-#include <silk/compiler/type_checker.h>
-#include <silk/parser/parser.h>
-#include <silk/parser/token.h>
+#include <silk/stages/optimizer.h>
+#include <silk/stages/parser.h>
+#include <silk/stages/type_checker.h>
+#include <silk/syntax/package.h>
+#include <silk/tools/cli.h>
 #include <silk/tools/debugger.h>
 #include <silk/tools/repl.h>
-#include <silk/util/cli.h>
-#include <silk/util/error.h>
+#include <silk/tools/stprinter.h>
+#include <type_traits>
 
 int main(const int argc, const char **argv) {
   const auto flags = silk::CLIFlags{argc, argv};
@@ -32,70 +33,25 @@ int main(const int argc, const char **argv) {
     return 1;
   }
 
-  for (auto &file : flags.files()) {
-    auto file_stream = std::ifstream(file);
+  auto pipeline = silk::Parser{} >> silk::TypeChecker{} >> silk::Optimizer{} >>
+                  silk::TreePrinter{};
 
-    if (!file_stream) {
-      silk::print_error(std::cout, "file not found `{}`", file);
+  for (auto &file_name : flags.files()) {
+    auto file = std::ifstream(file_name);
+
+    if (!file) {
+      silk::print_error(std::cout, "file not found `{}`", file_name);
       return 1;
     }
 
-    auto parser = silk::Parser{file_stream};
-    auto ast    = parser.parse_source();
+    auto source = silk::Source{file_name, file};
+    auto result = pipeline.execute(std::move(source));
 
-    if (parser.has_error()) {
-      print_errors(std::cout, parser);
-      return 1;
+    if (pipeline.has_errors()) {
+      std::cerr << "pipeline errors." << std::endl;
+    } else {
+      std::cout << result;
     }
-
-    auto checker = silk::TypeChecker{};
-    checker.type_check(ast);
-
-    if (checker.has_error()) {
-      print_errors(std::cout, checker);
-      return 1;
-    }
-
-    if (flags.is_set(silk::CLIFlags::DEBUG)) {
-      // debug using the debugger
-      auto debugger = silk::Debugger{};
-      return debugger.debug(std::move(ast), std::cin, std::cout);
-    }
-
-    // compile to vm bytecode
-    auto compiler = silk::Compiler{};
-    compiler.compile(ast);
-
-    if (compiler.has_error()) {
-      print_errors(std::cout, compiler);
-      return 1;
-    }
-
-    if (flags.is_set(silk::CLIFlags::COMPILE)) {
-      auto fname = fmt_function("{}.silkexe", file);
-      auto error = (const char *)nullptr;
-
-      write_file(fname.c_str(), &compiler.bytecode(), &error);
-
-      if (error != nullptr) {
-        silk::print_error(std::cout, error);
-        return 1;
-      }
-    }
-
-    if (
-      flags.is_set(silk::CLIFlags::RUN) ||
-      !flags.is_set(silk::CLIFlags::COMPILE)) {
-
-      auto vm = VM{};
-      init_vm(&vm);
-
-      vm_run(&vm, &compiler.bytecode());
-      auto result = vm.st;
-
-      free_vm(&vm);
-      return result;
-    };
   }
 
   return 0;

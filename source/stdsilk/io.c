@@ -12,7 +12,8 @@
 
 static const uint32_t FILE_TAG = (STD_SILK_IO_TAG << 16) | 0x0001;
 
-static void file_deleter(uint32_t tag, void *file) {
+static MOTH_FFI_DELETER_FUN(file_deleter) {
+  FILE *file = (FILE *)ptr;
   if (tag == FILE_TAG && file != NULL) fclose((FILE *)file);
 }
 
@@ -87,92 +88,78 @@ static char *format_to_string(const char *fmt, Value *argv, uint8_t argc) {
   return output;
 }
 
-MOTH_FFI_PUB(stdsilk_format) {
-  if (argc < 1) return FFI_RESULT_ARITY;
-  if (!IS_STR(argv[0])) return FFI_RESULT_TYPES;
+MOTH_FFI_FUN_BODY(stdsilk_format) {
+  MOTH_FFI_FUN_ARITY_MIN(1);
+  MOTH_FFI_FUN_ARG_STR(0, format);
 
-  const char *formatted = format_to_string(argv->as.string, argv + 1, argc - 1);
-  *ret                  = OBJ_VAL((Object *)obj_str_from_raw(formatted));
-
+  const char *  formatted     = format_to_string(format, argv + 1, argc - 1);
+  ObjectString *formatted_str = obj_str_from_raw(formatted);
   free((void *)formatted);
+
+  *ret = OBJ_VAL((Object *)formatted_str);
   return FFI_RESULT_OK;
 }
 
-MOTH_FFI_PUB(stdsilk_print) {
-  if (argc < 1) return FFI_RESULT_ARITY;
-  if (!IS_STR(argv[0])) return FFI_RESULT_TYPES;
+MOTH_FFI_FUN_BODY(stdsilk_print) {
+  MOTH_FFI_FUN_ARITY_MIN(1);
+  MOTH_FFI_FUN_ARG_STR(0, format);
 
-  const char *formatted = format_to_string(argv->as.string, argv + 1, argc - 1);
+  const char *formatted = format_to_string(format, argv + 1, argc - 1);
+
   fputs(formatted, stdout);
   free((void *)formatted);
 
   return FFI_RESULT_OK;
 }
 
-MOTH_FFI_PUB(stdsilk_scan) {
-  if (argc < 1) return FFI_RESULT_ARITY;
-  if (!IS_STR(argv[0])) return FFI_RESULT_TYPES;
+MOTH_FFI_FUN_BODY(stdsilk_scan) {
+  MOTH_FFI_FUN_ARITY(0);
 
   char buf[256];
-  if (fgets(buf, 256, stdin) == NULL) return FFI_RESULT_ERROR;
+  if (!fgets(buf, 256, stdin)) return FFI_RESULT_ERROR;
 
   *ret = OBJ_VAL((Object *)obj_str_from_raw(buf));
   return FFI_RESULT_OK;
 }
 
-MOTH_FFI_PRIV(stdsilk_file_write) {
-  MOTH_FFI_METHOD_CHECK(1);
-
-  ObjectDictionary *this = MOTH_FFI_METHOD_THIS();
-  MOTH_FFI_METHOD_MEMBER(this, fd, IS_OBJ_FFI_PTR);
-
-  FILE *file = (FILE *)OBJ_FFI_PTR(fd.as.object)->ptr;
-
-  const char *content = string_value(argv[1]);
-  if (!content) return FFI_RESULT_ERROR;
-  fputs(content, file);
-
-  return FFI_RESULT_OK;
-}
-
-MOTH_FFI_PRIV(stdsilk_file_read) {
-  MOTH_FFI_METHOD_CHECK(0);
-
-  ObjectDictionary *this = MOTH_FFI_METHOD_THIS();
-  MOTH_FFI_METHOD_MEMBER(this, fd, IS_OBJ_FFI_PTR);
-
-  FILE *file = (FILE *)OBJ_FFI_PTR(fd.as.object)->ptr;
-
-  char buf[256];
-  if (fgets(buf, 256, file) == NULL) return FFI_RESULT_ERROR;
-
-  *ret = OBJ_VAL((Object *)obj_str_from_raw(buf));
-  return FFI_RESULT_OK;
-}
-
-MOTH_FFI_PUB(stdsilk_open) {
-  if (argc < 2) return FFI_RESULT_ARITY;
-
-  const char *name = string_value(argv[0]), *mode = string_value(argv[1]);
-
-  if (!name || !mode) return FFI_RESULT_TYPES;
+MOTH_FFI_FUN_BODY(stdsilk_fopen) {
+  MOTH_FFI_FUN_ARITY(2);
+  MOTH_FFI_FUN_ARG_STR(0, name);
+  MOTH_FFI_FUN_ARG_STR(1, mode);
 
   FILE *file = fopen(name, mode);
+  if (!file) return FFI_RESULT_ERROR;
+  ObjectFFIPointer *ptr = obj_ffi_ptr_new(FILE_TAG, (void *)file, file_deleter);
 
-  Value keys[] = {
-    OBJ_VAL((Object *)obj_str_from_raw("fd")),
-    OBJ_VAL((Object *)obj_str_from_raw("write")),
-    OBJ_VAL((Object *)obj_str_from_raw("read")),
-  };
+  *ret = OBJ_VAL((Object *)ptr);
+  return FFI_RESULT_OK;
+}
 
-  Value vals[] = {
-    OBJ_VAL((Object *)obj_ffi_ptr_new(FILE_TAG, (void *)file, file_deleter)),
-    OBJ_VAL((Object *)obj_ffi_fun_new(stdsilk_file_write)),
-    OBJ_VAL((Object *)obj_ffi_fun_new(stdsilk_file_read)),
-  };
+MOTH_FFI_FUN_BODY(stdsilk_fwrite) {
+  MOTH_FFI_FUN_ARITY(2);
+  MOTH_FFI_FUN_ARG_FFI_PTR(0, fd, FILE *, FILE_TAG);
+  MOTH_FFI_FUN_ARG_STR(1, content);
 
-  size_t len = sizeof(keys) / sizeof(Value);
+  fputs(content, fd);
 
-  *ret = OBJ_VAL((Object *)obj_dct_from_raw(keys, vals, len));
+  return FFI_RESULT_OK;
+}
+
+MOTH_FFI_FUN_BODY(stdsilk_fread) {
+  MOTH_FFI_FUN_ARITY(1);
+  MOTH_FFI_FUN_ARG_FFI_PTR(0, fd, FILE *, FILE_TAG);
+
+  char buf[256];
+  if (!fgets(buf, 256, fd)) return FFI_RESULT_ERROR;
+
+  *ret = OBJ_VAL((Object *)obj_str_from_raw(buf));
+  return FFI_RESULT_OK;
+}
+
+MOTH_FFI_FUN_BODY(stdsilk_feof) {
+  MOTH_FFI_FUN_ARITY(1);
+  MOTH_FFI_FUN_ARG_FFI_PTR(0, fd, FILE *, FILE_TAG);
+
+  *ret = BOOL_VAL(feof(fd));
   return FFI_RESULT_OK;
 }

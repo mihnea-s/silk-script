@@ -77,7 +77,7 @@ bool env_set_existing(Environment *env, Symbol key, Value value) {
   if (env->len == 0) return false;
 
   Entry *bucket = env_find_bucket(env, key);
-  if (bucket == NULL) return false;
+  if (!bucket) return false;
 
   bucket->value = value;
   return true;
@@ -94,7 +94,7 @@ void env_delete(Environment *env, Symbol key) {
   if (env->len == 0) return;
 
   Entry *bucket = env_find_bucket(env, key);
-  if (bucket == NULL) return;
+  if (!bucket) return;
 
   bucket->key.hash = 0x1;
   bucket->key.str  = NULL;

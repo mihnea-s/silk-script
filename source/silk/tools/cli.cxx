@@ -1,13 +1,9 @@
-#include <silk/util/cli.h>
+#include <silk/tools/cli.h>
 
 #include <iostream>
 #include <map>
 #include <sstream>
 #include <string_view>
-
-#include <fmt/core.h>
-
-#include <silk/util/error.h>
 
 namespace silk {
 

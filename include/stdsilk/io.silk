@@ -1,0 +1,49 @@
+QUOTED (
+
+pkg 'std/io'
+
+dll 'stdsilk' {
+
+    fun stdsilk_format(fmt :: str, ...) :: str;
+
+    fun stdsilk_print(fmt :: str, ...) :: void;
+
+    fun stdsilk_scan :: str;
+
+    fun stdsilk_fopen(name :: str, modes :: str) :: ffiptr;
+
+    fun stdsilk_fwrite(fd :: ffiptr, content :: str) :: void;
+    
+    fun stdsilk_fread(fd :: ffiptr) :: str;
+
+    fun stdsilk_feof(fd :: ffiptr) :: bool;
+
+}
+
+fun format(fmt :: str, ...) :: str {
+    return stdsilk_format(fmt, ...);
+}
+
+fun print(fmt :: str, ...) :: void {
+    stdsilk_print(fmt, ...);
+}
+
+fun open(name :: str, mode :: str) :: map {
+    let fd = stdsilk_fopen(name, mode);
+
+    return #{
+        'write' => fun (content :: str) :: void {
+            stdsilk_fwrite(fd, content);
+        },
+
+        'read' => fun :: str {
+            return stdsilk_fread(fd);
+        },
+
+        'eof' => fun :: bool {
+            return stdsilk_feof(fd);
+        },
+    };
+}
+
+)
