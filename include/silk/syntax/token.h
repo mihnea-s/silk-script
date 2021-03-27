@@ -18,8 +18,9 @@ enum class TokenKind {
   KW_PKG,   // pkg
   KW_USE,   // use
   KW_FUN,   // fun
-  KW_OBJ,   // obj
   KW_ENUM,  // enum
+  KW_OBJ,   // obj
+  KW_PRIV,  // priv
   KW_DLL,   // dll
   KW_MACRO, // macro
 

@@ -13,6 +13,7 @@ const std::unordered_map<std::string_view, TokenKind> Scanner::keywords = {
   {"fun", TokenKind::KW_FUN},
   {"enum", TokenKind::KW_ENUM},
   {"obj", TokenKind::KW_OBJ},
+  {"priv", TokenKind::KW_PRIV},
   {"dll", TokenKind::KW_DLL},
   {"macro", TokenKind::KW_MACRO},
 
@@ -77,9 +78,13 @@ auto Scanner::scan_string() noexcept -> Token {
   auto c   = EOF;
   auto oss = std::ostringstream{};
 
+  oss << '\'';
+
   while ((c = advance()) != EOF && c != '\'') {
     oss << (char)c;
   }
+
+  oss << '\'';
 
   return make_token(TokenKind::LITERAL_STRING, oss.str());
 }
