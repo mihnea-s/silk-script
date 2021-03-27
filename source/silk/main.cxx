@@ -12,7 +12,7 @@
 #include <silk/tools/cli.h>
 #include <silk/tools/debugger.h>
 #include <silk/tools/repl.h>
-#include <silk/tools/stprinter.h>
+#include <silk/stages/json_serializer.h>
 #include <type_traits>
 
 int main(const int argc, const char **argv) {
@@ -34,7 +34,7 @@ int main(const int argc, const char **argv) {
   }
 
   auto pipeline = silk::Parser{} >> silk::TypeChecker{} >> silk::Optimizer{} >>
-                  silk::TreePrinter{};
+                  silk::JsonSerializer{};
 
   for (auto &file_name : flags.files()) {
     auto file = std::ifstream(file_name);
