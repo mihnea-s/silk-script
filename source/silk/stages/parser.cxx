@@ -1,4 +1,3 @@
-#include "silk/syntax/tree.h"
 #include <silk/stages/parser.h>
 
 #include <cstdint>
@@ -7,7 +6,11 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
+
+#include <silk/stages/pipeline.h>
+#include <silk/syntax/tree.h>
 
 namespace silk {
 
@@ -241,7 +244,7 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
   {
     TokenKind::LITERAL_STRING,
     {
-      .prefix = &Parser::expression_literal,
+      .prefix = &Parser::expression_string,
     },
   },
 
@@ -308,11 +311,11 @@ inline auto Parser::eof() const -> bool {
 
 inline auto Parser::advance() -> Token & {
   _tokens.push_back(_scanner->scan());
-  return *(_tokens.rbegin()++);
+  return *(++_tokens.rbegin());
 }
 
 inline auto Parser::previous() const -> const Token & {
-  return *(_tokens.rbegin()++);
+  return *(++_tokens.rbegin());
 }
 
 inline auto Parser::peek() const -> const Token & {
@@ -367,7 +370,13 @@ auto Parser::parse_identifier() -> std::string_view {
 
 auto Parser::parse_package() -> std::string_view {
   must_match(TokenKind::LITERAL_STRING, "expected a package name");
-  return advance().lexeme;
+  auto &pkg_str = advance().lexeme;
+
+  if (pkg_str.size() <= 2) {
+    throw report<LocError>(previous().location, "invalid package string");
+  }
+
+  return std::string_view{pkg_str}.substr(1, pkg_str.size() - 2);
 }
 
 auto Parser::parse_typing() -> st::Typing {
@@ -416,35 +425,46 @@ auto Parser::declaration_main() -> std::unique_ptr<st::Node> {
 
 auto Parser::declaration_package() -> std::unique_ptr<st::Node> {
   must_consume(TokenKind::KW_PKG, "expected `pkg`");
-  return make_node<st::ModuleDeclaration>(parse_package());
+  auto package = parse_package();
+  must_consume(TokenKind::SYM_SEMICOLON, "expected `;`");
+  return make_node<st::ModuleDeclaration>(package);
 }
 
 auto Parser::declaration_import() -> std::unique_ptr<st::Node> {
   must_consume(TokenKind::KW_USE, "expected `use`");
-  // todo named imports
-  return make_node<st::ModuleImport>(parse_package());
+
+  auto imports = std::vector<std::string_view>{};
+
+  if (consume(TokenKind::SYM_SLASH)) {
+    do {
+      imports.push_back(parse_identifier());
+    } while (consume(TokenKind::SYM_COMMA));
+  }
+
+  must_consume(TokenKind::SYM_SEMICOLON, "expected `;`");
+  return make_node<st::ModuleImport>(parse_package(), std::move(imports));
 }
 
 auto Parser::declaration_function() -> std::unique_ptr<st::Node> {
   must_consume(TokenKind::KW_FUN, "expected `fun`");
-  return nullptr;
-  // todo
-  // auto name = parse_name();
 
-  // auto params =
-  //   consume(TokenKind::SYM_LROUND)
-  //     ? parse_typed_fields(TokenKind::SYM_RROUND, TokenKind::SYM_COMMA)
-  //     : TypedFields{};
+  auto name = parse_identifier();
 
-  // auto return_type = parse_typing();
+  auto params =
+    consume(TokenKind::SYM_RD_OPEN)
+      ? parse_typed_fields(TokenKind::SYM_RD_CLOSE, TokenKind::SYM_COMMA)
+      : st::TypedFields{};
 
-  // auto body = consume(TokenKind::SYM_EQUAL)
-  //               ? std::make_unique<Return>(expression())
-  //               : stmt_block();
+  auto return_type = parse_typing();
 
-  // return std::make_unique<Function>(
-  //   std::move(name),
-  //   make_node<Lambda>(return_type, std::move(params), std::move(body)));
+  auto body = consume(TokenKind::SYM_FATARROW)
+                ? make_node<st::StatementReturn>(nullptr, expression())
+                : statement_block();
+
+  auto lambda =
+    make_node<st::ExpressionLambda>(std::move(params), std::move(body));
+
+  return make_node<st::DeclarationFunction>(std::move(name), std::move(lambda));
 }
 
 auto Parser::declaration_enum() -> std::unique_ptr<st::Node> {
@@ -728,11 +748,23 @@ auto Parser::expression_literal() -> std::unique_ptr<st::Node> {
       return make_node<st::ExpressionChar>(
         static_cast<char32_t>(previous().lexeme.at(0)));
 
-    case TokenKind::LITERAL_STRING:
-      return make_node<st::ExpressionString>(previous().lexeme);
-
     default: throw report<LocError>(previous().location, "expected literal");
   }
+}
+
+auto Parser::expression_string() -> std::unique_ptr<st::Node> {
+  must_consume(TokenKind::LITERAL_STRING, "expected string");
+
+  auto &raw_value = previous().lexeme;
+
+  if (raw_value.size() < 2) {
+    throw report<LocError>(previous().location, "invalid string");
+  }
+
+  auto parsed = raw_value.substr(1, raw_value.size() - 2);
+  // todo parse it
+
+  return make_node<st::ExpressionString>(raw_value, parsed);
 }
 
 auto Parser::expression_unary() -> std::unique_ptr<st::Node> {
@@ -862,13 +894,11 @@ auto Parser::expression_call(std::unique_ptr<st::Node> &&target)
 
   must_consume(TokenKind::SYM_RD_OPEN, "expected `(`");
 
-  while (!consume(TokenKind::SYM_RD_CLOSE)) {
+  do {
     args.push_back(std::move(*expression()));
+  } while (consume(TokenKind::SYM_COMMA));
 
-    if (!match(TokenKind::SYM_RD_CLOSE)) {
-      must_consume(TokenKind::SYM_COMMA, "expected `,`");
-    }
-  }
+  must_consume(TokenKind::SYM_RD_OPEN, "expected `)`");
 
   return make_node<st::ExpressionCall>(std::move(target), std::move(args));
 }
