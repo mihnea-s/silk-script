@@ -5,6 +5,7 @@
 
 #include <fmt/format.h>
 
+#include <silk/stages/json_serializer.h>
 #include <silk/stages/optimizer.h>
 #include <silk/stages/parser.h>
 #include <silk/stages/type_checker.h>
@@ -12,7 +13,6 @@
 #include <silk/tools/cli.h>
 #include <silk/tools/debugger.h>
 #include <silk/tools/repl.h>
-#include <silk/stages/json_serializer.h>
 #include <type_traits>
 
 int main(const int argc, const char **argv) {

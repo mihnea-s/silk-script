@@ -37,6 +37,7 @@ private:
   void serialize(st::StatementIterationControl::Kind);
   void serialize(st::StatementForeach::IterKind);
   void serialize(st::ExpressionRealKeyword::Kind);
+  void serialize(st::ExpressionAssignment::Kind);
   void serialize(st::ExpressionUnaryOp::Kind);
   void serialize(st::ExpressionBinaryOp::Kind);
 

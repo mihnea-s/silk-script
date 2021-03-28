@@ -33,15 +33,16 @@ void JsonSerializer::serialize(bool value) {
 }
 
 void JsonSerializer::serialize(char32_t value) {
-  _output << '"' << (char)value << '"';
+  // TODO : unicode
+  _output << std::quoted(std::string{static_cast<char>(value)});
 }
 
 void JsonSerializer::serialize(const char *value) {
-  _output << '"' << value << '"';
+  _output << std::quoted(value);
 }
 
 void JsonSerializer::serialize(std::string_view value) {
-  _output << '"' << value << '"';
+  _output << std::quoted(value);
 }
 
 void JsonSerializer::serialize(st::Node &node) {
@@ -74,6 +75,13 @@ void JsonSerializer::serialize(st::StatementIterationControl::Kind kind) {
   }
 }
 
+void JsonSerializer::serialize(st::StatementForeach::IterKind kind) {
+  switch (kind) {
+    case st::StatementForeach::LET: serialize("let"); break;
+    case st::StatementForeach::DEF: serialize("def"); break;
+  }
+}
+
 void JsonSerializer::serialize(st::ExpressionRealKeyword::Kind kind) {
   switch (kind) {
     case st::ExpressionRealKeyword::PI: serialize("pi"); break;
@@ -82,17 +90,22 @@ void JsonSerializer::serialize(st::ExpressionRealKeyword::Kind kind) {
   }
 }
 
+void JsonSerializer::serialize(st::ExpressionAssignment::Kind kind) {
+  switch (kind) {
+    case st::ExpressionAssignment::ASSIGN: serialize("="); break;
+    case st::ExpressionAssignment::ADD: serialize("+="); break;
+    case st::ExpressionAssignment::SUB: serialize("-="); break;
+    case st::ExpressionAssignment::DIV: serialize("/="); break;
+    case st::ExpressionAssignment::RDIV: serialize("//="); break;
+    case st::ExpressionAssignment::MUL: serialize("*="); break;
+    case st::ExpressionAssignment::POW: serialize("**="); break;
+  }
+}
+
 void JsonSerializer::serialize(st::ExpressionUnaryOp::Kind kind) {
   switch (kind) {
     case st::ExpressionUnaryOp::NOT: serialize("not"); break;
     case st::ExpressionUnaryOp::NEG: serialize("-"); break;
-  }
-}
-
-void JsonSerializer::serialize(st::StatementForeach::IterKind kind) {
-  switch (kind) {
-    case st::StatementForeach::LET: serialize("let"); break;
-    case st::StatementForeach::DEF: serialize("def"); break;
   }
 }
 
@@ -230,7 +243,7 @@ void JsonSerializer::handle(st::Node &node, st::StatementCircuit &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "circuit");
-  //  todo
+  keyval("children", data.children);
   obj_end();
 }
 
@@ -469,7 +482,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionDictionary &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "dictionary");
-  // todo
+  keyval("children", data.children);
   obj_end();
 }
 
@@ -477,7 +490,9 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionAssignment &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "dictionary");
-  // todo
+  keyval("kind", data.kind);
+  keyval("assignee", data.assignee);
+  keyval("child", data.child);
   obj_end();
 }
 
