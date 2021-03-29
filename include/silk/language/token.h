@@ -9,6 +9,7 @@ using Location = std::pair<size_t, size_t>;
 
 enum class TokenKind {
   IDENTIFIER, // <id>
+  COMMENT,    // <cmnt>
 
   TOK_END,   // <end>
   TOK_ERROR, // <err>

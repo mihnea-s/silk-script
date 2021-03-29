@@ -71,6 +71,17 @@ auto Scanner::compound(char c, TokenKind m, TokenKind n) noexcept -> Token {
   return make_token(n);
 }
 
+auto Scanner::scan_comment() noexcept -> Token {
+  auto c   = EOF;
+  auto oss = std::ostringstream{};
+
+  while ((c = advance()) != EOF && c != '\n') {
+    oss << (char)c;
+  }
+
+  return make_token(TokenKind::COMMENT, oss.str());
+}
+
 auto Scanner::scan_char() noexcept -> Token {
   auto character = (char)advance();
   return make_token(TokenKind::LITERAL_CHAR, std::string{character});
@@ -143,21 +154,9 @@ auto Scanner::make_token(TokenKind kind, std::string lexeme) const noexcept
 }
 
 auto Scanner::scan() noexcept -> Token {
-  do {
-    while (iswspace(peek()))
-      advance();
-
-    if (peek() == '#') {
-      advance();
-
-      if (peek() == '{') {
-        advance();
-        return make_token(TokenKind::SYM_HASH_BRACE);
-      }
-
-      while (advance() != '\n') {};
-    }
-  } while (iswspace(peek()));
+  while (iswspace(peek())) {
+    advance();
+  }
 
   auto c = advance();
 
@@ -172,6 +171,15 @@ auto Scanner::scan() noexcept -> Token {
 
     case '\'': {
       return scan_string();
+    }
+
+    case '#': {
+      if (peek() == '{') {
+        advance();
+        return make_token(TokenKind::SYM_HASH_BRACE);
+      }
+
+      return scan_comment();
     }
 
     case ',': return make_token(TokenKind::SYM_COMMA);

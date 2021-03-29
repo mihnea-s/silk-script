@@ -311,8 +311,20 @@ inline auto Parser::eof() const -> bool {
 }
 
 inline auto Parser::advance() -> Token & {
-  _tokens.push_back(_scanner->scan());
+  auto next = _scanner->scan();
+
+  while (next.kind == TokenKind::COMMENT) {
+    next = _scanner->scan();
+  }
+
+  _tokens.push_back(next);
   return *(++_tokens.rbegin());
+
+  // Until proper comment parsing is implemented the
+  // following code will be replaced with the above
+  //
+  //    _tokens.push_back(_scanner->scan());
+  //    return *(++_tokens.rbegin());
 }
 
 inline auto Parser::previous() const -> const Token & {

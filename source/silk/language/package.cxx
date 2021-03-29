@@ -12,6 +12,7 @@ auto read_package(std::filesystem::path root_path) -> std::optional<Package> {
 auto token_kind_string(TokenKind kind) -> std::string_view {
   switch (kind) {
     case TokenKind::IDENTIFIER: return "identifier";
+    case TokenKind::COMMENT: return "comment";
     case TokenKind::TOK_END: return "end of file";
     case TokenKind::TOK_ERROR: return "error";
     case TokenKind::KW_MAIN: return "keyword `main`";

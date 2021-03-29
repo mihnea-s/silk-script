@@ -17,6 +17,7 @@ private:
   auto advance() noexcept -> int;
   auto compound(char, TokenKind, TokenKind) noexcept -> Token;
 
+  auto scan_comment() noexcept -> Token;
   auto scan_char() noexcept -> Token;
   auto scan_string() noexcept -> Token;
   auto scan_number(int) noexcept -> Token;
