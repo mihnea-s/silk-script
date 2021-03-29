@@ -934,7 +934,7 @@ auto Parser::expression_call(std::unique_ptr<st::Node> &&target)
     args.push_back(std::move(*expression()));
   } while (consume(TokenKind::SYM_COMMA));
 
-  must_consume(TokenKind::SYM_RD_OPEN, "expected `)`");
+  must_consume(TokenKind::SYM_RD_CLOSE, "expected `)`");
 
   return make_node<st::ExpressionCall>(std::move(target), std::move(args));
 }
