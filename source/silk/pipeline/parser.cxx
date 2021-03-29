@@ -429,6 +429,22 @@ auto Parser::parse_typed_fields(TokenKind end, TokenKind delim)
   return fields;
 }
 
+auto Parser::parse_function_header()
+  -> std::tuple<std::string, st::TypedFields, st::Typing> {
+  must_consume(TokenKind::KW_FUN, "function declaration");
+
+  auto name = parse_identifier();
+
+  auto params =
+    consume(TokenKind::SYM_RD_OPEN)
+      ? parse_typed_fields(TokenKind::SYM_RD_CLOSE, TokenKind::SYM_COMMA)
+      : st::TypedFields{};
+
+  auto return_type = parse_typing();
+
+  return {std::move(name), std::move(params), std::move(return_type)};
+}
+
 auto Parser::declaration() -> std::unique_ptr<st::Node> {
   switch (peek().kind) {
     case TokenKind::KW_MAIN: return declaration_main();
@@ -444,20 +460,20 @@ auto Parser::declaration() -> std::unique_ptr<st::Node> {
 }
 
 auto Parser::declaration_main() -> std::unique_ptr<st::Node> {
-  must_consume(TokenKind::KW_MAIN, "expected `main`");
+  must_consume(TokenKind::KW_MAIN, "main package declaration");
   must_consume(TokenKind::SYM_SEMICOLON, "expected `;`");
   return make_node<st::ModuleMain>();
 }
 
 auto Parser::declaration_package() -> std::unique_ptr<st::Node> {
-  must_consume(TokenKind::KW_PKG, "expected `pkg`");
+  must_consume(TokenKind::KW_PKG, "package declaration");
   auto package = parse_package();
   must_consume(TokenKind::SYM_SEMICOLON, "expected `;`");
   return make_node<st::ModuleDeclaration>(package);
 }
 
 auto Parser::declaration_import() -> std::unique_ptr<st::Node> {
-  must_consume(TokenKind::KW_USE, "expected `use`");
+  must_consume(TokenKind::KW_USE, "package import");
 
   auto package = parse_package();
   auto imports = std::vector<std::string>{};
@@ -473,16 +489,7 @@ auto Parser::declaration_import() -> std::unique_ptr<st::Node> {
 }
 
 auto Parser::declaration_function() -> std::unique_ptr<st::Node> {
-  must_consume(TokenKind::KW_FUN, "expected `fun`");
-
-  auto name = parse_identifier();
-
-  auto params =
-    consume(TokenKind::SYM_RD_OPEN)
-      ? parse_typed_fields(TokenKind::SYM_RD_CLOSE, TokenKind::SYM_COMMA)
-      : st::TypedFields{};
-
-  auto return_type = parse_typing();
+  auto [name, params, return_type] = parse_function_header();
 
   auto body = consume(TokenKind::SYM_FATARROW)
                 ? make_node<st::StatementReturn>(nullptr, expression())
@@ -495,24 +502,55 @@ auto Parser::declaration_function() -> std::unique_ptr<st::Node> {
 }
 
 auto Parser::declaration_enum() -> std::unique_ptr<st::Node> {
-  must_consume(TokenKind::KW_ENUM, "expected `enum`");
-  return make_node<st::DeclarationEnum>(parse_identifier());
+  must_consume(TokenKind::KW_ENUM, "enum declaration");
+  auto name = parse_identifier();
+
+  must_consume(TokenKind::SYM_BR_OPEN, "open object body");
+  must_consume(TokenKind::SYM_BR_CLOSE, "close object body");
+
+  return make_node<st::DeclarationEnum>(std::move(name));
 }
 
 auto Parser::declaration_object() -> std::unique_ptr<st::Node> {
-  must_consume(TokenKind::KW_OBJ, "expected `obj`");
-  return make_node<st::DeclarationObject>(parse_identifier());
+  must_consume(TokenKind::KW_OBJ, "object declaration");
+  auto name = parse_identifier();
+
+  must_consume(TokenKind::SYM_BR_OPEN, "open object body");
+  must_consume(TokenKind::SYM_BR_CLOSE, "close object body");
+
+  return make_node<st::DeclarationObject>(std::move(name));
 }
 
 auto Parser::declaration_library() -> std::unique_ptr<st::Node> {
-  must_consume(TokenKind::KW_DLL, "expected `dll`");
-  // todo
-  return make_node<st::DeclarationDynamicLibrary>(parse_identifier());
+  must_consume(TokenKind::KW_DLL, "external library declaration");
+
+  auto library   = parse_package();
+  auto functions = std::vector<st::Node>{};
+
+  must_consume(TokenKind::SYM_BR_OPEN, "open extern library body");
+
+  while (!consume(TokenKind::SYM_BR_CLOSE)) {
+    auto [name, params, return_type] = parse_function_header();
+    auto function                    = make_node<st::DeclarationExternFunction>(
+      std::move(name), std::move(params), std::move(return_type));
+
+    must_consume(TokenKind::SYM_SEMICOLON, "extern function semicolon");
+
+    functions.push_back(std::move(*function));
+  }
+
+  return make_node<st::DeclarationExternLibrary>(
+    std::move(library), std::move(functions));
 }
 
 auto Parser::declaration_macro() -> std::unique_ptr<st::Node> {
-  must_consume(TokenKind::KW_OBJ, "expected `macro`");
-  return make_node<st::DeclarationMacro>(parse_identifier());
+  must_consume(TokenKind::KW_MACRO, "macro declaration");
+  auto name = parse_identifier();
+
+  must_consume(TokenKind::SYM_BR_OPEN, "open macro body");
+  must_consume(TokenKind::SYM_BR_CLOSE, "close macro body");
+
+  return make_node<st::DeclarationMacro>(std::move(name));
 }
 
 auto Parser::statement() -> std::unique_ptr<st::Node> {
@@ -580,7 +618,7 @@ auto Parser::statement_circuit() -> std::unique_ptr<st::Node> {
 
 auto Parser::statement_variable() -> std::unique_ptr<st::Node> {
   if (!match(TokenKind::KW_LET, TokenKind::KW_DEF)) {
-    throw report("expected `let` or `def`", peek().location);
+    throw report("variable declaration", peek().location);
   }
 
   auto kind   = static_cast<st::StatementVariable::Kind>(advance().kind);
@@ -930,11 +968,13 @@ auto Parser::expression_call(std::unique_ptr<st::Node> &&target)
 
   must_consume(TokenKind::SYM_RD_OPEN, "expected `(`");
 
-  do {
+  while (!consume(TokenKind::SYM_RD_CLOSE)) {
     args.push_back(std::move(*expression()));
-  } while (consume(TokenKind::SYM_COMMA));
 
-  must_consume(TokenKind::SYM_RD_CLOSE, "expected `)`");
+    if (!match(TokenKind::SYM_RD_CLOSE)) {
+      must_consume(TokenKind::SYM_COMMA, "expected `,`");
+    }
+  }
 
   return make_node<st::ExpressionCall>(std::move(target), std::move(args));
 }

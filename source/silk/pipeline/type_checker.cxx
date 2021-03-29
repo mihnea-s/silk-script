@@ -1,5 +1,7 @@
 #include <silk/pipeline/type_checker.h>
 
+#include <silk/language/syntax_tree.h>
+
 namespace silk {
 
 auto TypeChecker::handle(st::Node &, st::Comment &) -> st::Typing {
@@ -30,7 +32,12 @@ auto TypeChecker::handle(st::Node &, st::DeclarationObject &) -> st::Typing {
   return nullptr;
 }
 
-auto TypeChecker::handle(st::Node &, st::DeclarationDynamicLibrary &)
+auto TypeChecker::handle(st::Node &, st::DeclarationExternLibrary &)
+  -> st::Typing {
+  return nullptr;
+}
+
+auto TypeChecker::handle(st::Node &, st::DeclarationExternFunction &)
   -> st::Typing {
   return nullptr;
 }

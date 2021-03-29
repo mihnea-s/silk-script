@@ -1,6 +1,7 @@
 #pragma once
 
 #include <silk/language/package.h>
+#include <silk/language/syntax_tree.h>
 #include <silk/pipeline/stage.h>
 
 namespace silk {
@@ -15,7 +16,9 @@ private:
   auto handle(st::Node &, st::DeclarationFunction &) -> st::Typing override;
   auto handle(st::Node &, st::DeclarationEnum &) -> st::Typing override;
   auto handle(st::Node &, st::DeclarationObject &) -> st::Typing override;
-  auto handle(st::Node &, st::DeclarationDynamicLibrary &)
+  auto handle(st::Node &, st::DeclarationExternLibrary &)
+    -> st::Typing override;
+  auto handle(st::Node &, st::DeclarationExternFunction &)
     -> st::Typing override;
   auto handle(st::Node &, st::DeclarationMacro &) -> st::Typing override;
   auto handle(st::Node &, st::StatementEmpty &) -> st::Typing override;

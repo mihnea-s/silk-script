@@ -201,11 +201,21 @@ void JsonSerializer::handle(st::Node &node, st::DeclarationObject &data) {
 }
 
 void JsonSerializer::handle(
-  st::Node &node, st::DeclarationDynamicLibrary &data) {
+  st::Node &node, st::DeclarationExternLibrary &data) {
   obj_beg();
   keyval("type", "declaration");
-  keyval("data", "dll");
+  keyval("data", "externlibrary");
   keyval("name", data.name);
+  obj_end();
+}
+
+void JsonSerializer::handle(
+  st::Node &node, st::DeclarationExternFunction &data) {
+  obj_beg();
+  keyval("type", "declaration");
+  keyval("data", "externfunction");
+  keyval("name", data.name);
+  keyval("params", data.params);
   obj_end();
 }
 

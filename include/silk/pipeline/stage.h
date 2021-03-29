@@ -91,7 +91,8 @@ protected:
   virtual auto handle(st::Node &, st::DeclarationFunction &) -> Nt       = 0;
   virtual auto handle(st::Node &, st::DeclarationEnum &) -> Nt           = 0;
   virtual auto handle(st::Node &, st::DeclarationObject &) -> Nt         = 0;
-  virtual auto handle(st::Node &, st::DeclarationDynamicLibrary &) -> Nt = 0;
+  virtual auto handle(st::Node &, st::DeclarationExternLibrary &) -> Nt  = 0;
+  virtual auto handle(st::Node &, st::DeclarationExternFunction &) -> Nt = 0;
   virtual auto handle(st::Node &, st::DeclarationMacro &) -> Nt          = 0;
   virtual auto handle(st::Node &, st::StatementEmpty &) -> Nt            = 0;
   virtual auto handle(st::Node &, st::StatementExpression &) -> Nt       = 0;
@@ -180,7 +181,8 @@ private:
   auto handle(st::Node &, st::DeclarationFunction &) -> void final{};
   auto handle(st::Node &, st::DeclarationEnum &) -> void final{};
   auto handle(st::Node &, st::DeclarationObject &) -> void final{};
-  auto handle(st::Node &, st::DeclarationDynamicLibrary &) -> void final{};
+  auto handle(st::Node &, st::DeclarationExternLibrary &) -> void final{};
+  auto handle(st::Node &, st::DeclarationExternFunction &) -> void final{};
   auto handle(st::Node &, st::DeclarationMacro &) -> void final{};
   auto handle(st::Node &, st::StatementEmpty &) -> void final{};
   auto handle(st::Node &, st::StatementExpression &) -> void final{};

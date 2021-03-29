@@ -27,7 +27,11 @@ auto Compiler::handle(st::Node &node, st::DeclarationEnum &data) -> void {
 auto Compiler::handle(st::Node &node, st::DeclarationObject &data) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::DeclarationDynamicLibrary &data)
+auto Compiler::handle(st::Node &node, st::DeclarationExternLibrary &data)
+  -> void {
+}
+
+auto Compiler::handle(st::Node &node, st::DeclarationExternFunction &data)
   -> void {
 }
 

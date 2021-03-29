@@ -1,5 +1,6 @@
 #pragma once
 
+#include <silk/language/syntax_tree.h>
 #include <silk/language/package.h>
 #include <silk/pipeline/stage.h>
 
@@ -17,7 +18,8 @@ private:
   auto handle(st::Node &, st::DeclarationFunction &) -> void override;
   auto handle(st::Node &, st::DeclarationEnum &) -> void override;
   auto handle(st::Node &, st::DeclarationObject &) -> void override;
-  auto handle(st::Node &, st::DeclarationDynamicLibrary &) -> void override;
+  auto handle(st::Node &, st::DeclarationExternLibrary &) -> void override;
+  auto handle(st::Node &, st::DeclarationExternFunction &) -> void override;
   auto handle(st::Node &, st::DeclarationMacro &) -> void override;
 
   auto handle(st::Node &, st::StatementEmpty &) -> void override;

@@ -4,6 +4,7 @@
 #include <silk/language/scanner.h>
 #include <silk/language/syntax_tree.h>
 #include <silk/pipeline/stage.h>
+#include <tuple>
 
 namespace silk {
 
@@ -105,6 +106,8 @@ private:
   auto parse_package() -> std::string;
   auto parse_typing() -> st::Typing;
   auto parse_typed_fields(TokenKind, TokenKind) -> st::TypedFields;
+  auto parse_function_header()
+    -> std::tuple<std::string, st::TypedFields, st::Typing>;
 
   // Declarations & Module
   auto declaration() -> std::unique_ptr<st::Node>;

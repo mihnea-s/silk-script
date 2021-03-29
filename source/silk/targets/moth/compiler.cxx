@@ -411,7 +411,10 @@ auto Compiler::handle(st::Node &node, st::DeclarationEnum &) -> void {
 auto Compiler::handle(st::Node &node, st::DeclarationObject &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::DeclarationDynamicLibrary &) -> void {
+auto Compiler::handle(st::Node &node, st::DeclarationExternLibrary &) -> void {
+}
+
+auto Compiler::handle(st::Node &node, st::DeclarationExternFunction &) -> void {
 }
 
 auto Compiler::handle(st::Node &node, st::DeclarationMacro &) -> void {

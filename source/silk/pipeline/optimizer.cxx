@@ -23,7 +23,11 @@ auto Optimizer::handle(st::Node &node, st::DeclarationEnum &data) -> void {
 auto Optimizer::handle(st::Node &node, st::DeclarationObject &data) -> void {
 }
 
-auto Optimizer::handle(st::Node &node, st::DeclarationDynamicLibrary &data)
+auto Optimizer::handle(st::Node &node, st::DeclarationExternLibrary &data)
+  -> void {
+}
+
+auto Optimizer::handle(st::Node &node, st::DeclarationExternFunction &data)
   -> void {
 }
 

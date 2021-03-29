@@ -93,7 +93,8 @@ private:
   void handle(st::Node &, st::DeclarationFunction &) override;
   void handle(st::Node &, st::DeclarationEnum &) override;
   void handle(st::Node &, st::DeclarationObject &) override;
-  void handle(st::Node &, st::DeclarationDynamicLibrary &) override;
+  void handle(st::Node &, st::DeclarationExternLibrary &) override;
+  void handle(st::Node &, st::DeclarationExternFunction &) override;
   void handle(st::Node &, st::DeclarationMacro &) override;
   void handle(st::Node &, st::StatementEmpty &) override;
   void handle(st::Node &, st::StatementExpression &) override;

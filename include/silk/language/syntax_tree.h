@@ -98,9 +98,20 @@ struct DeclarationObject {
 ///
 ///   dll $name { $children }
 ///
-struct DeclarationDynamicLibrary {
+struct DeclarationExternLibrary {
   std::string       name;
   std::vector<Node> children;
+};
+
+/// Declare an extern function as a child of a dynamic library
+/// declaration.
+///
+///   fun $name ($params...) (:: $return_type)? ;
+///
+struct DeclarationExternFunction {
+  std::string name;
+  TypedFields params;
+  Typing      return_type;
 };
 
 // TODO: incomplete
@@ -407,7 +418,8 @@ struct Node {
     DeclarationFunction,
     DeclarationEnum,
     DeclarationObject,
-    DeclarationDynamicLibrary,
+    DeclarationExternLibrary,
+    DeclarationExternFunction,
     DeclarationMacro,
     StatementEmpty,
     StatementExpression,
