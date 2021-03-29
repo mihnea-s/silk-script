@@ -1,3 +1,4 @@
+#include "silk/tools/cli.h"
 #include <silk/stages/parser.h>
 
 #include <cstdint>
@@ -322,12 +323,22 @@ inline auto Parser::peek() const -> const Token & {
   return *_tokens.rbegin();
 }
 
-inline auto Parser::must_match(TokenKind kind, std::string msg) const -> void {
-  if (!match(kind)) throw report<LocError>(previous().location, msg);
+inline auto Parser::must_match(TokenKind kind, std::string_view msg) const
+  -> void {
+  if (!match(kind)) {
+    throw report<LocError>(
+      previous().location,
+      fmt_function(
+        "{}, expected {} found {} instead",
+        msg,
+        token_kind_string(kind),
+        token_kind_string(peek().kind)));
+  }
 }
 
-inline auto Parser::must_consume(TokenKind kind, std::string msg) -> void {
-  if (!consume(kind)) throw report<LocError>(previous().location, msg);
+inline auto Parser::must_consume(TokenKind kind, std::string_view msg) -> void {
+  must_match(kind, msg);
+  advance();
 }
 
 auto Parser::get_rule(const Token &tok) const
@@ -363,12 +374,12 @@ auto Parser::precendece(Precedence prec) -> std::unique_ptr<st::Node> {
   return std::move(prefix);
 }
 
-auto Parser::parse_identifier() -> std::string_view {
+auto Parser::parse_identifier() -> std::string {
   must_match(TokenKind::IDENTIFIER, "expected a name");
   return advance().lexeme;
 }
 
-auto Parser::parse_package() -> std::string_view {
+auto Parser::parse_package() -> std::string {
   must_match(TokenKind::LITERAL_STRING, "expected a package name");
   auto &pkg_str = advance().lexeme;
 
@@ -376,7 +387,8 @@ auto Parser::parse_package() -> std::string_view {
     throw report<LocError>(previous().location, "invalid package string");
   }
 
-  return std::string_view{pkg_str}.substr(1, pkg_str.size() - 2);
+  // remove quotes from raw string
+  return pkg_str.substr(1, pkg_str.size() - 2);
 }
 
 auto Parser::parse_typing() -> st::Typing {
@@ -433,7 +445,7 @@ auto Parser::declaration_package() -> std::unique_ptr<st::Node> {
 auto Parser::declaration_import() -> std::unique_ptr<st::Node> {
   must_consume(TokenKind::KW_USE, "expected `use`");
 
-  auto imports = std::vector<std::string_view>{};
+  auto imports = std::vector<std::string>{};
 
   if (consume(TokenKind::SYM_SLASH)) {
     do {
@@ -761,8 +773,10 @@ auto Parser::expression_string() -> std::unique_ptr<st::Node> {
     throw report<LocError>(previous().location, "invalid string");
   }
 
+  // remove quotes
   auto parsed = raw_value.substr(1, raw_value.size() - 2);
-  // todo parse it
+
+  // todo parse escapes
 
   return make_node<st::ExpressionString>(raw_value, parsed);
 }
@@ -937,9 +951,8 @@ auto Parser::execute(Source &&source) noexcept -> Module {
   }
 
   return Module{
-    .path   = std::move(source.path),
-    .tokens = std::move(_tokens),
-    .tree   = std::move(tree),
+    .path = std::move(source.path),
+    .tree = std::move(tree),
   };
 }
 

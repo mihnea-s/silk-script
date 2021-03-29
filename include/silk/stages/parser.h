@@ -87,11 +87,11 @@ private:
   }
 
   // Wrapper around match that adds an error if match returned false
-  inline auto must_match(TokenKind, std::string) const -> void;
+  inline auto must_match(TokenKind, std::string_view) const -> void;
 
   /// Just like [`must_match`] but throws an error if the
   /// next token is equal to the argument
-  inline auto must_consume(TokenKind, std::string) -> void;
+  inline auto must_consume(TokenKind, std::string_view) -> void;
 
   template <class T, class... Args>
   auto make_node(Args &&...args) -> std::unique_ptr<st::Node> {
@@ -109,8 +109,8 @@ private:
     -> std::optional<std::reference_wrapper<const Rule>>;
 
   // Parsing helpers
-  auto parse_identifier() -> std::string_view;
-  auto parse_package() -> std::string_view;
+  auto parse_identifier() -> std::string;
+  auto parse_package() -> std::string;
   auto parse_typing() -> st::Typing;
   auto parse_typed_fields(TokenKind, TokenKind) -> st::TypedFields;
 

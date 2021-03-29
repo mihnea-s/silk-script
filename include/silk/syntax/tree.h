@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -21,7 +20,7 @@ using Typing = std::nullptr_t;
 
 /// Vector of identifier, typing pairs used by objects for
 /// their fields or functions for their parameters.
-using TypedFields = std::vector<std::pair<std::string_view, Typing>>;
+using TypedFields = std::vector<std::pair<std::string, Typing>>;
 
 /// A comment and the tree node attached to it
 ///
@@ -29,7 +28,7 @@ using TypedFields = std::vector<std::pair<std::string_view, Typing>>;
 ///
 struct Comment {
   enum Placement { BEFORE, AFTER } placement;
-  std::string_view      text;
+  std::string           text;
   std::unique_ptr<Node> child;
 };
 
@@ -44,7 +43,7 @@ struct ModuleMain {};
 ///   pkg $path;
 ///
 struct ModuleDeclaration {
-  std::string_view path;
+  std::string path;
 };
 
 /// Import of symbols from an external package
@@ -52,8 +51,8 @@ struct ModuleDeclaration {
 ///   use $name (/ $imports)?;
 ///
 struct ModuleImport {
-  std::string_view              name;
-  std::vector<std::string_view> imports;
+  std::string              name;
+  std::vector<std::string> imports;
 };
 
 /// Declare a free function, the child is of the ExpressionLambda
@@ -62,7 +61,7 @@ struct ModuleImport {
 ///   fun $name $child.parameters $child.child
 ///
 struct DeclarationFunction {
-  std::string_view      name;
+  std::string           name;
   std::unique_ptr<Node> child;
 };
 
@@ -75,7 +74,7 @@ struct DeclarationFunction {
 //    }
 //
 struct DeclarationEnum {
-  std::string_view name;
+  std::string name;
 };
 
 // TODO: incomplete
@@ -93,7 +92,7 @@ struct DeclarationEnum {
 //  Additional ideas: inheritence, vtable
 //
 struct DeclarationObject {
-  std::string_view name;
+  std::string name;
 };
 
 /// Declares functions available at run time thorugh the FFI.
@@ -102,14 +101,14 @@ struct DeclarationObject {
 ///   dll $name { $children }
 ///
 struct DeclarationDynamicLibrary {
-  std::string_view  name;
+  std::string       name;
   std::vector<Node> children;
 };
 
 // TODO: incomplete
 /// No clue where to start on this one
 struct DeclarationMacro {
-  std::string_view name;
+  std::string name;
 };
 
 /// Empty statement (lone semicolon)
@@ -139,7 +138,7 @@ struct StatementBlock {
 ///   ${ $children }
 ///
 struct StatementCircuit {
-  std::vector<std::pair<std::string_view, Node>> children;
+  std::vector<std::pair<std::string, Node>> children;
 };
 
 /// Define scoped variable at runtime, def for mutable variables,
@@ -148,7 +147,7 @@ struct StatementCircuit {
 ///   $kind $name = $child;
 ///
 struct StatementVariable {
-  std::string_view      name;
+  std::string           name;
   std::unique_ptr<Node> child;
   enum Kind {
     LET = (int)TokenKind::KW_LET,
@@ -161,7 +160,7 @@ struct StatementVariable {
 /// const $name = $child;
 ///
 struct StatementConstant {
-  std::string_view      name;
+  std::string           name;
   std::unique_ptr<Node> child;
 };
 
@@ -181,7 +180,7 @@ struct StatementReturn {
 ///   switch $label;
 ///
 struct StatementSwitch {
-  std::string_view label;
+  std::string label;
 };
 
 /// Control the flow of a (for, while, infinite) loop.
@@ -242,7 +241,7 @@ struct StatementForeach {
     LET = (int)TokenKind::KW_LET,
     DEF = (int)TokenKind::KW_DEF,
   } iterator_kind;
-  std::string_view      iterator;
+  std::string           iterator;
   std::unique_ptr<Node> collection;
   std::unique_ptr<Node> child;
 };
@@ -261,7 +260,7 @@ struct StatementForeach {
 struct StatementMatch {};
 
 struct ExpressionIdentifier {
-  std::string_view name;
+  std::string name;
 };
 
 struct ExpressionVoid {};
@@ -299,8 +298,8 @@ struct ExpressionChar {
 
 ///
 struct ExpressionString {
-  std::string_view raw_value;
-  std::string      value;
+  std::string raw_value;
+  std::string value;
 };
 
 ///
