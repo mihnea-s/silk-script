@@ -1,8 +1,5 @@
 #include <silk/tools/debugger.h>
 
-#include <moth/disas.h>
-#include <moth/vm.h>
-
 namespace silk {
 
 auto parse_command(const std::string &line)

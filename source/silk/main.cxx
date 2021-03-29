@@ -1,19 +1,13 @@
-#include "silk/stages/pipeline.h"
-#include "silk/syntax/tree.h"
 #include <fstream>
-#include <iostream>
 
-#include <fmt/format.h>
-
-#include <silk/stages/json_serializer.h>
-#include <silk/stages/optimizer.h>
-#include <silk/stages/parser.h>
-#include <silk/stages/type_checker.h>
-#include <silk/syntax/package.h>
-#include <silk/tools/cli.h>
 #include <silk/tools/debugger.h>
 #include <silk/tools/repl.h>
-#include <type_traits>
+#include <silk/utility/cli.h>
+
+#include <silk/pipeline/json_serializer.h>
+#include <silk/pipeline/optimizer.h>
+#include <silk/pipeline/parser.h>
+#include <silk/pipeline/type_checker.h>
 
 int main(const int argc, const char **argv) {
   const auto flags = silk::CLIFlags{argc, argv};

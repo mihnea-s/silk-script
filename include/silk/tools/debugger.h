@@ -1,8 +1,8 @@
 #pragma once
 
-#include <silk/stages/pipeline.h>
-#include <silk/syntax/tree.h>
-#include <silk/tools/cli.h>
+#include <silk/language/syntax_tree.h>
+#include <silk/pipeline/stage.h>
+#include <silk/utility/cli.h>
 
 namespace silk {
 

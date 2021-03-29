@@ -3,7 +3,7 @@
 #include <istream>
 #include <ostream>
 
-#include <silk/tools/cli.h>
+#include <silk/utility/cli.h>
 
 namespace silk {
 
