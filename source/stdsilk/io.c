@@ -19,7 +19,7 @@ static MOTH_FFI_DELETER_FUN(file_deleter) {
 
 #define RETURN_CONST_STRING(str)                                               \
   do {                                                                         \
-    char *ret = malloc(sizeof(char) * strlen(str));                            \
+    char *ret = malloc(sizeof(str));                                           \
     strcpy(ret, str);                                                          \
     return ret;                                                                \
   } while (true);
