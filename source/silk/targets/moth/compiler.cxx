@@ -129,7 +129,7 @@ auto Compiler::load_constant(std::uint64_t value) -> void {
   v.as.charac = value;
 
   // Add the value to the read-only data
-  auto value_id = encode_rodata(v);
+  auto value_id    = encode_rodata(v);
   _naturals[value] = value_id;
 
   load_rodata(value_id);
@@ -232,7 +232,7 @@ auto Compiler::load_identifier_val(const st::Node &node, std::string_view name)
   }
 #endif
 
-  throw report<LocError>(node.location, "undefined variable");
+  throw report("undefined variable", node.location);
 }
 
 auto Compiler::load_identifier_ref(const st::Node &node, std::string_view name)
@@ -253,7 +253,7 @@ auto Compiler::load_identifier_ref(const st::Node &node, std::string_view name)
   }
 #endif
 
-  throw report<LocError>(node.location, "assignment to undefined variable");
+  throw report("assignment to undefined variable", node.location);
 }
 
 auto Compiler::define_stack_var(std::string_view name, bool immut) -> bool {
@@ -594,7 +594,7 @@ auto Compiler::handle(st::Node &node, st::ExpressionUnaryOp &data) -> void {
   switch (data.kind) {
     case st::ExpressionUnaryOp::NOT: return emit(VM_NOT);
     case st::ExpressionUnaryOp::NEG: return emit(VM_NEG);
-    default: throw report<LocError>(node.location, "invalid unary operation");
+    default: throw report("invalid unary operation", node.location);
   }
 }
 
@@ -636,7 +636,7 @@ auto Compiler::handle(st::Node &node, st::ExpressionBinaryOp &data) -> void {
       return;
     }
 
-    default: throw report<LocError>(node.location, "invalid binary operator");
+    default: throw report("invalid binary operator", node.location);
   }
 }
 

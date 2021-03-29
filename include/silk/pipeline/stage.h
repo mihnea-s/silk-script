@@ -5,12 +5,14 @@
 
 namespace silk {
 
-class Error : public std::exception {
+class Error final : public std::exception {
 protected:
+  const Location    _location;
   const std::string _message;
 
 public:
-  Error(const std::string message) noexcept : _message(std::move(message)) {
+  Error(const Location location, const std::string message) noexcept :
+      _message(std::move(message)), _location(std::move(location)) {
   }
 
   virtual ~Error() {
@@ -19,21 +21,6 @@ public:
   virtual void print(std::ostream &) const noexcept;
 
   const char *what() const noexcept override;
-};
-
-class LocError : public Error {
-protected:
-  const Location _location;
-
-public:
-  LocError(const Location location, const std::string message) noexcept :
-      Error(std::move(message)), _location(std::move(location)) {
-  }
-
-  virtual ~LocError() {
-  }
-
-  virtual void print(std::ostream &) const noexcept override;
 };
 
 template <class T>
@@ -69,12 +56,19 @@ public:
   }
 
   auto has_errors() const noexcept -> bool {
-    return _b.has_errors() || _b.has_errors();
+    return _a.has_errors() || _b.has_errors();
   }
 
-  auto errors() const noexcept -> const std::vector<std::unique_ptr<Error>> {
-    // todo
-    return _a.errors();
+  auto errors() const noexcept -> const std::vector<Error> {
+    auto errs = std::vector<Error>{};
+
+    auto a_errors = _a.errors();
+    auto b_errors = _b.errors();
+
+    std::copy(a_errors.begin(), a_errors.end(), std::back_inserter(errs));
+    std::copy(b_errors.begin(), b_errors.end(), std::back_inserter(errs));
+
+    return errs;
   }
 
   template <class Nxt>
@@ -87,22 +81,9 @@ public:
 template <class D, class I = Module, class O = Module, class Nt = void>
 class Stage {
 private:
-  std::vector<std::unique_ptr<Error>> mutable _errors{};
+  std::vector<Error> mutable _errors{};
 
 protected:
-  auto report(std::string &&msg) const -> Error & {
-    _errors.emplace_back(msg);
-    return *_errors.back().get();
-  }
-
-  template <class E, class... Args>
-  auto report(Args &&...args) const
-    -> std::enable_if_t<std::is_base_of_v<Error, E>, E> & {
-    _errors.push_back(
-      std::unique_ptr<Error>(new E{std::forward<Args>(args)...}));
-    return *dynamic_cast<E *>(_errors.back().get());
-  }
-
   virtual auto handle(st::Node &, st::Comment &) -> Nt                   = 0;
   virtual auto handle(st::Node &, st::ModuleMain &) -> Nt                = 0;
   virtual auto handle(st::Node &, st::ModuleDeclaration &) -> Nt         = 0;
@@ -153,6 +134,11 @@ protected:
       [this, &node](auto &&data) { this->handle(node, data); }, node.data);
   }
 
+  auto report(std::string &&msg, Location loc = {0, 0}) const -> const Error & {
+    _errors.emplace_back(loc, std::move(msg));
+    return _errors.back();
+  }
+
 public:
   using Input  = I;
   using Output = O;
@@ -170,8 +156,7 @@ public:
     return !_errors.empty();
   }
 
-  virtual auto errors() const noexcept
-    -> const std::vector<std::unique_ptr<Error>> & {
+  virtual auto errors() const noexcept -> const std::vector<Error> & {
     return _errors;
   }
 

@@ -338,13 +338,13 @@ inline auto Parser::peek() const -> const Token & {
 inline auto Parser::must_match(TokenKind kind, std::string_view msg) const
   -> void {
   if (!match(kind)) {
-    throw report<LocError>(
-      previous().location,
+    throw report(
       fmt_function(
         "{}, expected {} found {} instead",
         msg,
         token_kind_string(kind),
-        token_kind_string(peek().kind)));
+        token_kind_string(peek().kind)),
+      previous().location);
   }
 }
 
@@ -372,7 +372,7 @@ auto Parser::lower(Precedence prec) const -> Precedence {
 auto Parser::precendece(Precedence prec) -> std::unique_ptr<st::Node> {
   auto rule = get_rule(peek());
 
-  if (!rule) throw report<LocError>(peek().location, "rule not found");
+  if (!rule) throw report("rule not found", peek().location);
 
   auto prefix_fn = rule->get().prefix;
   auto prefix    = (this->*prefix_fn)();
@@ -396,7 +396,7 @@ auto Parser::parse_package() -> std::string {
   auto &pkg_str = advance().lexeme;
 
   if (pkg_str.size() <= 2) {
-    throw report<LocError>(previous().location, "invalid package string");
+    throw report("invalid package string", previous().location);
   }
 
   // remove quotes from raw string
@@ -420,7 +420,9 @@ auto Parser::parse_typed_fields(TokenKind end, TokenKind delim)
   auto fields = st::TypedFields{};
 
   while (!consume(end)) {
-    fields.emplace_back(parse_identifier(), parse_typing());
+    auto name   = parse_identifier();
+    auto typing = parse_typing();
+    fields.emplace_back(name, typing);
     if (!match(end)) must_consume(delim, "expected a delimiter");
   }
 
@@ -578,7 +580,7 @@ auto Parser::statement_circuit() -> std::unique_ptr<st::Node> {
 
 auto Parser::statement_variable() -> std::unique_ptr<st::Node> {
   if (!match(TokenKind::KW_LET, TokenKind::KW_DEF)) {
-    throw report<LocError>(peek().location, "expected `let` or `def`");
+    throw report("expected `let` or `def`", peek().location);
   }
 
   auto kind   = static_cast<st::StatementVariable::Kind>(advance().kind);
@@ -635,7 +637,7 @@ auto Parser::statement_switch() -> std::unique_ptr<st::Node> {
 
 auto Parser::statement_itercontrol() -> std::unique_ptr<st::Node> {
   if (!match(TokenKind::KW_BREAK, TokenKind::KW_CONTINUE)) {
-    throw report<LocError>(peek().location, "expected `break` or `continue`");
+    throw report("expected `break` or `continue`", peek().location);
   }
 
   auto kind = static_cast<st::StatementIterationControl::Kind>(advance().kind);
@@ -697,7 +699,7 @@ auto Parser::statement_foreach() -> std::unique_ptr<st::Node> {
   must_consume(TokenKind::SYM_RD_OPEN, "expected `(`");
 
   if (!match(TokenKind::KW_LET, TokenKind::KW_DEF)) {
-    throw report<LocError>(peek().location, "expected `let` or `def`");
+    throw report("expected `let` or `def`", peek().location);
   }
 
   auto iter_kind = static_cast<st::StatementForeach::IterKind>(advance().kind);
@@ -720,9 +722,7 @@ auto Parser::statement_match() -> std::unique_ptr<st::Node> {
 }
 
 auto Parser::expression() -> std::unique_ptr<st::Node> {
-  if (eof()) {
-    throw report<LocError>(previous().location, "expected expression");
-  }
+  if (eof()) { throw report("expected expression", previous().location); }
 
   return precendece(Precedence::ASSIGNMENT);
 }
@@ -769,7 +769,7 @@ auto Parser::expression_literal() -> std::unique_ptr<st::Node> {
     case TokenKind::LITERAL_REAL:
       return make_node<st::ExpressionReal>(std::stod(previous().lexeme));
 
-    default: throw report<LocError>(previous().location, "expected literal");
+    default: throw report("expected literal", previous().location);
   }
 }
 
@@ -780,7 +780,7 @@ auto Parser::expression_char() -> std::unique_ptr<st::Node> {
   auto wide_lexeme = converter.from_bytes(previous().lexeme);
 
   if (wide_lexeme.size() != 1) {
-    throw report<LocError>(previous().location, "invalid character literal");
+    throw report("invalid character literal", previous().location);
   }
 
   return make_node<st::ExpressionChar>(wide_lexeme.at(0));
@@ -792,7 +792,7 @@ auto Parser::expression_string() -> std::unique_ptr<st::Node> {
   auto &raw_value = previous().lexeme;
 
   if (raw_value.size() < 2) {
-    throw report<LocError>(previous().location, "invalid string");
+    throw report("invalid string", previous().location);
   }
 
   // remove quotes
@@ -805,7 +805,7 @@ auto Parser::expression_string() -> std::unique_ptr<st::Node> {
 
 auto Parser::expression_unary() -> std::unique_ptr<st::Node> {
   if (!match(TokenKind::KW_NOT, TokenKind::SYM_MINUS)) {
-    throw report<LocError>(peek().location, "expected `not` or `-`");
+    throw report("expected `not` or `-`", peek().location);
   }
 
   auto kind    = static_cast<st::ExpressionUnaryOp::Kind>(advance().kind);
@@ -915,7 +915,7 @@ auto Parser::expression_assignment(std::unique_ptr<st::Node> &&target)
         TokenKind::SYM_SLASH_SLASH_EQUAL,
         TokenKind::SYM_STAR_EQUAL,
         TokenKind::SYM_STAR_STAR_EQUAL)) {
-    throw report<LocError>(peek().location, "expected assignment");
+    throw report("expected assignment", peek().location);
   }
 
   auto kind = static_cast<st::ExpressionAssignment::Kind>(advance().kind);

@@ -43,6 +43,10 @@ int main(const int argc, const char **argv) {
 
     if (pipeline.has_errors()) {
       std::cerr << "pipeline errors." << std::endl;
+
+      for (auto &&err : pipeline.errors()) {
+        err.print(std::cerr);
+      }
     } else {
       std::cout << result;
     }
