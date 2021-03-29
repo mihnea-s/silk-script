@@ -19,13 +19,6 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
   // GROUPINGS --------------------------------
 
   {
-    TokenKind::SYM_LT,
-    {
-      .prefix = &Parser::expression_vector,
-    },
-  },
-
-  {
     TokenKind::SYM_SQ_OPEN,
     {
       .prefix = &Parser::expression_array,
@@ -66,7 +59,6 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
       .precedence = Precedence::EQUALITY,
     },
   },
-
   {
     TokenKind::SYM_BANG_EQUAL,
     {
@@ -74,7 +66,6 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
       .precedence = Precedence::EQUALITY,
     },
   },
-
   {
     TokenKind::SYM_GT,
     {
@@ -89,10 +80,10 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
       .precedence = Precedence::COMPARISON,
     },
   },
-
   {
     TokenKind::SYM_LT,
     {
+      .prefix     = &Parser::expression_vector,
       .infix      = &Parser::expression_binary,
       .precedence = Precedence::COMPARISON,
     },
@@ -104,7 +95,6 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
       .precedence = Precedence::COMPARISON,
     },
   },
-
   {
     TokenKind::KW_AND,
     {
@@ -112,7 +102,6 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
       .precedence = Precedence::AND,
     },
   },
-
   {
     TokenKind::KW_OR,
     {
@@ -120,7 +109,6 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
       .precedence = Precedence::OR,
     },
   },
-
   {
     TokenKind::SYM_MINUS,
     {
@@ -145,19 +133,20 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
     },
   },
   {
-    TokenKind::SYM_SLASH,
-    {
-      .infix      = &Parser::expression_binary,
-      .precedence = Precedence::FACTOR,
-    },
-  },
-  {
     TokenKind::SYM_STAR_STAR,
     {
       .infix      = &Parser::expression_binary,
       .precedence = Precedence::POWER,
     },
   },
+  {
+    TokenKind::SYM_SLASH,
+    {
+      .infix      = &Parser::expression_binary,
+      .precedence = Precedence::FACTOR,
+    },
+  },
+
   {
     TokenKind::SYM_SLASH_SLASH,
     {
@@ -175,6 +164,48 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
 
   {
     TokenKind::SYM_EQUAL,
+    {
+      .infix      = &Parser::expression_assignment,
+      .precedence = Precedence::ASSIGNMENT,
+    },
+  },
+  {
+    TokenKind::SYM_PLUS_EQUAL,
+    {
+      .infix      = &Parser::expression_assignment,
+      .precedence = Precedence::ASSIGNMENT,
+    },
+  },
+  {
+    TokenKind::SYM_MINUS_EQUAL,
+    {
+      .infix      = &Parser::expression_assignment,
+      .precedence = Precedence::ASSIGNMENT,
+    },
+  },
+  {
+    TokenKind::SYM_STAR_EQUAL,
+    {
+      .infix      = &Parser::expression_assignment,
+      .precedence = Precedence::ASSIGNMENT,
+    },
+  },
+  {
+    TokenKind::SYM_STAR_STAR_EQUAL,
+    {
+      .infix      = &Parser::expression_assignment,
+      .precedence = Precedence::ASSIGNMENT,
+    },
+  },
+  {
+    TokenKind::SYM_SLASH_EQUAL,
+    {
+      .infix      = &Parser::expression_assignment,
+      .precedence = Precedence::ASSIGNMENT,
+    },
+  },
+  {
+    TokenKind::SYM_SLASH_SLASH_EQUAL,
     {
       .infix      = &Parser::expression_assignment,
       .precedence = Precedence::ASSIGNMENT,
@@ -557,7 +588,7 @@ auto Parser::statement() -> std::unique_ptr<st::Node> {
   switch (peek().kind) {
     case TokenKind::SYM_SEMICOLON: return statement_empty();
 
-    case TokenKind::SYM_SQ_OPEN: return statement_block();
+    case TokenKind::SYM_BR_OPEN: return statement_block();
     case TokenKind::SYM_DOLLAR_BRACE: return statement_circuit();
 
     case TokenKind::KW_DEF: [[fallthrough]];
@@ -605,15 +636,23 @@ auto Parser::statement_block() -> std::unique_ptr<st::Node> {
 auto Parser::statement_circuit() -> std::unique_ptr<st::Node> {
   must_consume(TokenKind::SYM_DOLLAR_BRACE, "expected `${`");
 
-  auto body = std::vector<std::pair<std::string, st::Node>>{};
+  auto default_switch = static_cast<std::unique_ptr<st::Node>>(nullptr);
+  auto body           = std::vector<std::pair<std::string, st::Node>>{};
 
   while (!consume(TokenKind::SYM_BR_CLOSE)) {
+    if (consume(TokenKind::SYM_USCORE)) {
+      must_consume(TokenKind::SYM_COLON, "expected `:`");
+      default_switch = statement();
+      continue;
+    }
+
     auto label = parse_identifier();
     must_consume(TokenKind::SYM_COLON, "expected `:`");
     body.push_back({std::move(label), std::move(*statement())});
   }
 
-  return make_node<st::StatementCircuit>(std::move(body));
+  return make_node<st::StatementCircuit>(
+    std::move(default_switch), std::move(body));
 }
 
 auto Parser::statement_variable() -> std::unique_ptr<st::Node> {
@@ -700,7 +739,7 @@ auto Parser::statement_if() -> std::unique_ptr<st::Node> {
 }
 
 auto Parser::statement_while() -> std::unique_ptr<st::Node> {
-  must_consume(TokenKind::KW_FOR, "expected `while`");
+  must_consume(TokenKind::KW_WHILE, "expected `while`");
 
   must_consume(TokenKind::SYM_RD_OPEN, "expected `(`");
   auto cond = expression();
@@ -754,8 +793,15 @@ auto Parser::statement_foreach() -> std::unique_ptr<st::Node> {
 }
 
 auto Parser::statement_match() -> std::unique_ptr<st::Node> {
-  must_match(TokenKind::KW_MATCH, "expected match");
-  // TODO: implement
+  must_consume(TokenKind::KW_MATCH, "match block");
+
+  must_consume(TokenKind::SYM_RD_OPEN, "open matched expression");
+  auto matched = expression();
+  must_consume(TokenKind::SYM_RD_CLOSE, "close matched expression");
+
+  must_consume(TokenKind::SYM_BR_OPEN, "open match block");
+  must_consume(TokenKind::SYM_BR_CLOSE, "close match block");
+
   return make_node<st::StatementMatch>();
 }
 
