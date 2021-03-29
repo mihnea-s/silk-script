@@ -238,7 +238,7 @@ const std::unordered_map<TokenKind, Parser::Rule> Parser::rules = {
   {
     TokenKind::LITERAL_CHAR,
     {
-      .prefix = &Parser::expression_literal,
+      .prefix = &Parser::expression_char,
     },
   },
 
@@ -756,12 +756,21 @@ auto Parser::expression_literal() -> std::unique_ptr<st::Node> {
     case TokenKind::LITERAL_REAL:
       return make_node<st::ExpressionReal>(std::stod(previous().lexeme));
 
-    case TokenKind::LITERAL_CHAR:
-      return make_node<st::ExpressionChar>(
-        static_cast<char32_t>(previous().lexeme.at(0)));
-
     default: throw report<LocError>(previous().location, "expected literal");
   }
+}
+
+auto Parser::expression_char() -> std::unique_ptr<st::Node> {
+  must_consume(TokenKind::LITERAL_CHAR, "expected character");
+
+  auto converter   = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>{};
+  auto wide_lexeme = converter.from_bytes(previous().lexeme);
+
+  if (wide_lexeme.size() != 1) {
+    throw report<LocError>(previous().location, "invalid character literal");
+  }
+
+  return make_node<st::ExpressionChar>(wide_lexeme.at(0));
 }
 
 auto Parser::expression_string() -> std::unique_ptr<st::Node> {

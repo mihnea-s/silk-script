@@ -141,6 +141,7 @@ private:
   auto expression_void() -> std::unique_ptr<st::Node>;
   auto expression_continuation() -> std::unique_ptr<st::Node>;
   auto expression_literal() -> std::unique_ptr<st::Node>;
+  auto expression_char() -> std::unique_ptr<st::Node>;
   auto expression_string() -> std::unique_ptr<st::Node>;
   auto expression_unary() -> std::unique_ptr<st::Node>;
   auto expression_binary(std::unique_ptr<st::Node> &&)
