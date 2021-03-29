@@ -10,13 +10,26 @@ project(
   LANGUAGES C CXX
 )
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS on)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
-
 set(SILK_COMPILER       "silk")
 set(SILK_VIRTUALMACHINE "moth")
 set(SILK_STDLIBRARY     "stdsilk")
 set(SILK_DOCUMENTATION  "docs")
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS on)
+
+# Add Sanitize profile to multiconfig generators
+get_property(CMAKE_GENERATOR_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if (CMAKE_GENERATOR_IS_MULTI_CONFIG AND NOT "Sanitize" IN_LIST CMAKE_CONFIGURATION_TYPES)
+  list(APPEND CMAKE_CONFIGURATION_TYPES "Sanitize")
+endif()
+
+set(SANITIZE_LINKER_FLAGS "-fsanitize=address")
+set(SANITIZE_COMPILER_FLAGS "${SANITIZE_LINKER_FLAGS} -fno-omit-frame-pointer")
+
+set(CMAKE_C_FLAGS_SANITIZE             "${CMAKE_C_FLAGS_DEBUG} ${SANITIZE_COMPILER_FLAGS}"          )
+set(CMAKE_CXX_FLAGS_SANITIZE           "${CMAKE_CXX_FLAG_DEBUG} ${SANITIZE_COMPILER_FLAGS}"         )
+set(CMAKE_EXE_LINKER_FLAGS_SANITIZE    "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${SANITIZE_LINKER_FLAGS}"   )
+set(CMAKE_SHARED_LINKER_FLAGS_SANITIZE "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} ${SANITIZE_LINKER_FLAGS}")
 
 FetchContent_Declare(
   Catch2
@@ -101,22 +114,3 @@ set_target_properties(${SILK_COMPILER} PROPERTIES
 target_include_directories(${SILK_COMPILER} PUBLIC "include")
 
 target_link_libraries(${SILK_COMPILER} ${SILK_VIRTUALMACHINE} fmt::fmt)
-
-find_program(STANDARDESE_TOOL standardese)
-
-if(NOT STANDARDESE_TOOL)
-  message("-- Standardese not found, skipping documentation")
-else()
-  message("-- Standardese found, will build documentation")
-
-  add_custom_target(
-    ${SILK_DOCUMENTATION}
-    COMMAND ${STANDARDESE_TOOL}
-      --config ${CMAKE_CURRENT_SOURCE_DIR}/standardese.cfg
-      --output.prefix=${CMAKE_CURRENT_BINARY_DIR}/documentation/
-      "include/silk/parser/"
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Generating documentation using standardese..."
-    VERBATIM
-  )
-endif()
