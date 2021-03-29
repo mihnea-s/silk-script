@@ -78,6 +78,21 @@ private:
     _output << ',';
   }
 
+  void keyval(
+    std::string_view key, std::vector<std::pair<st::Node, st::Node>> &map) {
+    _output << '"' << key << '"' << ':';
+    _output << ":[";
+
+    for (auto &&[key, val] : map) {
+      obj_beg();
+      keyval("key", key);
+      keyval("value", val);
+      obj_end();
+    }
+
+    _output << "],";
+  }
+
   void handle(st::Node &, st::Comment &) override;
   void handle(st::Node &, st::ModuleMain &) override;
   void handle(st::Node &, st::ModuleDeclaration &) override;
