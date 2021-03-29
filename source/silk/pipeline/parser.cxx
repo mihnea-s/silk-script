@@ -457,6 +457,7 @@ auto Parser::declaration_package() -> std::unique_ptr<st::Node> {
 auto Parser::declaration_import() -> std::unique_ptr<st::Node> {
   must_consume(TokenKind::KW_USE, "expected `use`");
 
+  auto package = parse_package();
   auto imports = std::vector<std::string>{};
 
   if (consume(TokenKind::SYM_SLASH)) {
@@ -466,7 +467,7 @@ auto Parser::declaration_import() -> std::unique_ptr<st::Node> {
   }
 
   must_consume(TokenKind::SYM_SEMICOLON, "expected `;`");
-  return make_node<st::ModuleImport>(parse_package(), std::move(imports));
+  return make_node<st::ModuleImport>(package, std::move(imports));
 }
 
 auto Parser::declaration_function() -> std::unique_ptr<st::Node> {
