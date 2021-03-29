@@ -20,7 +20,6 @@ struct Source {
 /// A single parsed source file in a package tree.
 struct Module {
   std::string                            path;
-  std::vector<Token>                     tokens;
   std::vector<std::unique_ptr<st::Node>> tree;
 
   Module(const Module &) = delete;
@@ -35,5 +34,8 @@ struct Package {
 
 /// Read the source folder of a package.
 auto read_package(std::filesystem::path) -> std::optional<Package>;
+
+/// User friendly token kind string
+auto token_kind_string(TokenKind) -> std::string_view;
 
 } // namespace silk
