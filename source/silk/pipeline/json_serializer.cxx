@@ -254,6 +254,7 @@ void JsonSerializer::handle(st::Node &node, st::StatementCircuit &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "circuit");
+  keyval("default_switch", data.default_switch);
   keyval("children", data.children);
   obj_end();
 }

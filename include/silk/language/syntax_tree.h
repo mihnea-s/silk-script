@@ -147,6 +147,7 @@ struct StatementBlock {
 ///   ${ $children }
 ///
 struct StatementCircuit {
+  std::unique_ptr<Node>                     default_switch;
   std::vector<std::pair<std::string, Node>> children;
 };
 
