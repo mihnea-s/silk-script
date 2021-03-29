@@ -552,7 +552,7 @@ auto Parser::statement_block() -> std::unique_ptr<st::Node> {
 auto Parser::statement_circuit() -> std::unique_ptr<st::Node> {
   must_consume(TokenKind::SYM_DOLLAR_BRACE, "expected `${`");
 
-  auto body = std::vector<std::pair<std::string_view, st::Node>>{};
+  auto body = std::vector<std::pair<std::string, st::Node>>{};
 
   while (!consume(TokenKind::SYM_BR_CLOSE)) {
     auto label = parse_identifier();
