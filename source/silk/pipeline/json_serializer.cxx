@@ -206,6 +206,7 @@ void JsonSerializer::handle(
   keyval("type", "declaration");
   keyval("data", "externlibrary");
   keyval("name", data.name);
+  keyval("children", data.children);
   obj_end();
 }
 
