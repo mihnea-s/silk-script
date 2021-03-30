@@ -960,7 +960,7 @@ auto Parser::expression_array() -> std::unique_ptr<st::Node> {
     contents.push_back(std::move(*expression()));
 
     if (!match(TokenKind::SYM_SQ_CLOSE)) {
-      must_match(TokenKind::SYM_COMMA, "expected `,`");
+      must_consume(TokenKind::SYM_COMMA, "expected `,`");
     }
   }
 
@@ -982,7 +982,7 @@ auto Parser::expression_dictionary() -> std::unique_ptr<st::Node> {
     contents.push_back({std::move(*key), std::move(*value)});
 
     if (!match(TokenKind::SYM_BR_CLOSE)) {
-      must_match(TokenKind::SYM_COMMA, "expected `,`");
+      must_consume(TokenKind::SYM_COMMA, "expected `,`");
     }
   }
 

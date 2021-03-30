@@ -34,7 +34,7 @@ int main(const int argc, const char **argv) {
     auto file = std::ifstream(file_name);
 
     if (!file) {
-      silk::print_error(std::cout, "file not found `{}`", file_name);
+      silk::print_error(std::cerr, "file not found `{}`", file_name);
       return 1;
     }
 
