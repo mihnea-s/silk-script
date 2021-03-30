@@ -106,8 +106,13 @@ private:
   auto parse_package() -> std::string;
   auto parse_typing() -> st::Typing;
   auto parse_typed_fields(TokenKind, TokenKind) -> st::TypedFields;
-  auto parse_function_header()
+
+  // Function parsing helpers
+  auto parse_named_function_header()
     -> std::tuple<std::string, st::TypedFields, st::Typing>;
+  auto parse_nameless_function_header()
+    -> std::tuple<st::TypedFields, st::Typing>;
+  auto parse_function_body() -> std::unique_ptr<st::Node>;
 
   // Declarations & Module
   auto declaration() -> std::unique_ptr<st::Node>;

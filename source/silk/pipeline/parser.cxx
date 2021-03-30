@@ -460,7 +460,7 @@ auto Parser::parse_typed_fields(TokenKind end, TokenKind delim)
   return fields;
 }
 
-auto Parser::parse_function_header()
+auto Parser::parse_named_function_header()
   -> std::tuple<std::string, st::TypedFields, st::Typing> {
   must_consume(TokenKind::KW_FUN, "function declaration");
 
@@ -474,6 +474,26 @@ auto Parser::parse_function_header()
   auto return_type = parse_typing();
 
   return {std::move(name), std::move(params), std::move(return_type)};
+}
+
+auto Parser::parse_nameless_function_header()
+  -> std::tuple<st::TypedFields, st::Typing> {
+  must_consume(TokenKind::KW_FUN, "function declaration");
+
+  auto params =
+    consume(TokenKind::SYM_RD_OPEN)
+      ? parse_typed_fields(TokenKind::SYM_RD_CLOSE, TokenKind::SYM_COMMA)
+      : st::TypedFields{};
+
+  auto return_type = parse_typing();
+
+  return {std::move(params), std::move(return_type)};
+}
+
+auto Parser::parse_function_body() -> std::unique_ptr<st::Node> {
+  return consume(TokenKind::SYM_FATARROW)
+           ? make_node<st::StatementReturn>(nullptr, expression())
+           : statement_block();
 }
 
 auto Parser::declaration() -> std::unique_ptr<st::Node> {
@@ -520,11 +540,8 @@ auto Parser::declaration_import() -> std::unique_ptr<st::Node> {
 }
 
 auto Parser::declaration_function() -> std::unique_ptr<st::Node> {
-  auto [name, params, return_type] = parse_function_header();
-
-  auto body = consume(TokenKind::SYM_FATARROW)
-                ? make_node<st::StatementReturn>(nullptr, expression())
-                : statement_block();
+  auto [name, params, return_type] = parse_named_function_header();
+  auto body                        = parse_function_body();
 
   auto lambda =
     make_node<st::ExpressionLambda>(std::move(params), std::move(body));
@@ -561,7 +578,7 @@ auto Parser::declaration_library() -> std::unique_ptr<st::Node> {
   must_consume(TokenKind::SYM_BR_OPEN, "open extern library body");
 
   while (!consume(TokenKind::SYM_BR_CLOSE)) {
-    auto [name, params, return_type] = parse_function_header();
+    auto [name, params, return_type] = parse_named_function_header();
     auto function                    = make_node<st::DeclarationExternFunction>(
       std::move(name), std::move(params), std::move(return_type));
 
@@ -1026,19 +1043,8 @@ auto Parser::expression_call(std::unique_ptr<st::Node> &&target)
 }
 
 auto Parser::expression_lambda() -> std::unique_ptr<st::Node> {
-  must_consume(TokenKind::KW_FUN, "expected `fun`");
-
-  auto params =
-    consume(TokenKind::SYM_RD_OPEN)
-      ? parse_typed_fields(TokenKind::SYM_RD_CLOSE, TokenKind::SYM_COMMA)
-      : st::TypedFields{};
-
-  auto return_type = parse_typing();
-
-  auto body = consume(TokenKind::SYM_FATARROW)
-                ? make_node<st::StatementReturn>(nullptr, expression())
-                : statement();
-
+  auto [params, return_type] = parse_nameless_function_header();
+  auto body                  = parse_function_body();
   return make_node<st::ExpressionLambda>(std::move(params), std::move(body));
 }
 
