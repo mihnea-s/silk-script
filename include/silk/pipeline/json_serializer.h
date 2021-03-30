@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iomanip>
+
 #include <silk/language/syntax_tree.h>
 #include <silk/pipeline/stage.h>
 #include <silk/utility/cli.h>
@@ -12,6 +14,8 @@ private:
 
   void obj_beg();
   void obj_end();
+  void arr_beg();
+  void arr_end();
 
   void serialize(bool);
   void serialize(wchar_t);
@@ -36,31 +40,32 @@ private:
 
   template <class T>
   void keyval(std::string_view key, T &&value) {
-    _output << '"' << key << '"' << ':';
+    _output << std::quoted(key) << ':';
     serialize(value);
     _output << ',';
   }
 
   void keyval(std::string_view key, const char *value) {
-    _output << '"' << key << "\":\"" << value << "\",";
+    _output << std::quoted(key) << ':' << std::quoted(value) << ',';
   }
 
   template <class T>
   void keyval(std::string_view key, std::vector<T> &array) {
-    _output << '"' << key << '"';
-    _output << ":[";
+    _output << std::quoted(key) << ':';
+    arr_beg();
 
     for (auto &&elem : array) {
       serialize(elem);
       _output << ',';
     }
 
-    _output << "],";
+    arr_end();
+    _output << ',';
   }
 
   template <class K, class V>
   void keyval(std::string_view key, std::vector<std::pair<K, V>> &map) {
-    _output << '"' << key << '"' << ':';
+    _output << std::quoted(key) << ':';
     obj_beg();
 
     for (auto &&[key, val] : map) {
@@ -73,8 +78,8 @@ private:
 
   void keyval(
     std::string_view key, std::vector<std::pair<st::Node, st::Node>> &map) {
-    _output << '"' << key << '"' << ':';
-    _output << ":[";
+    _output << std::quoted(key) << ':';
+    arr_beg();
 
     for (auto &&[key, val] : map) {
       obj_beg();
@@ -83,7 +88,8 @@ private:
       obj_end();
     }
 
-    _output << "],";
+    arr_end();
+    _output << ',';
   }
 
   void handle(st::Node &, st::Comment &) override;

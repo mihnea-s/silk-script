@@ -16,6 +16,14 @@ void JsonSerializer::obj_end() {
   _output << '}';
 }
 
+void JsonSerializer::arr_beg() {
+  _output << '[';
+}
+
+void JsonSerializer::arr_end() {
+  _output << ']';
+}
+
 void JsonSerializer::serialize(double value) {
   _output << value;
 }
@@ -436,6 +444,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionString &data) {
   keyval("type", "expression");
   keyval("data", "string");
   keyval("value", data.value);
+  keyval("rawvalue", data.raw_value);
   obj_end();
 }
 
@@ -502,7 +511,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionDictionary &data) {
 void JsonSerializer::handle(st::Node &node, st::ExpressionAssignment &data) {
   obj_beg();
   keyval("type", "expression");
-  keyval("data", "dictionary");
+  keyval("data", "assignment");
   keyval("kind", data.kind);
   keyval("assignee", data.assignee);
   keyval("child", data.child);
