@@ -37,7 +37,7 @@ void JsonSerializer::serialize(std::int64_t value) {
 }
 
 void JsonSerializer::serialize(bool value) {
-  _output << value;
+  _output << (value ? "true" : "false");
 }
 
 void JsonSerializer::serialize(wchar_t value) {
