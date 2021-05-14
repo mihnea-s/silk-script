@@ -67,12 +67,13 @@ struct DeclarationFunction {
 // Enums are fp-like variants carrying one type
 //
 //    enum IPAddress {
-//       v4 :: nat,
+//       v4 :: bytes[4],
 //       v6 :: bytes[16],
 //    }
 //
 struct DeclarationEnum {
   std::string name;
+  TypedFields variants;
 };
 
 // TODO: incomplete
@@ -90,7 +91,10 @@ struct DeclarationEnum {
 //  Additional ideas: inheritence, vtable
 //
 struct DeclarationObject {
-  std::string name;
+  std::string       name;
+  Typing            super;
+  TypedFields       members;
+  std::vector<Node> children;
 };
 
 /// Declares functions available at run time thorugh the FFI.
