@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 cmake -G 2>&1 >/dev/null | grep -wq "$1" || {
     echo "Generator '$1' unsupported."
