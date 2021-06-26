@@ -1,5 +1,11 @@
 #pragma once
 
+#include <cmath>
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <type_traits>
+
 #include <silk/language/package.h>
 #include <silk/language/syntax_tree.h>
 #include <silk/pipeline/stage.h>
@@ -8,6 +14,46 @@ namespace silk {
 
 class Optimizer final : public Stage<Optimizer, Module, Module> {
 private:
+  auto nat_value(st::Node &) const -> std::optional<std::uint64_t>;
+  auto int_value(st::Node &) const -> std::optional<std::int64_t>;
+  auto real_value(st::Node &) const -> std::optional<double>;
+
+  auto is_const_expr(std::unique_ptr<st::Node>& ) const -> bool;
+  
+  template<class T, class A, class B>
+  auto make_const_bin_expr(st::ExpressionBinaryOp::Kind kind, A a, B b) -> T {
+    using OPv = decltype(T::value);
+
+    switch (kind) {
+      case st::ExpressionBinaryOp::ADD:
+        return T { static_cast<OPv>(a + b) };
+
+      case st::ExpressionBinaryOp::SUB:
+        return T { static_cast<OPv>(a - b) };
+
+      case st::ExpressionBinaryOp::MUL:
+        return T { static_cast<OPv>(a * b) };
+
+      case st::ExpressionBinaryOp::POW:
+        return T { static_cast<OPv>(std::pow(a, b)) };
+
+      case st::ExpressionBinaryOp::DIV:
+        return T { static_cast<OPv>(a / b) };
+
+      case st::ExpressionBinaryOp::RDIV:
+        return T { static_cast<OPv>(std::floor(a / b)) };
+
+      case st::ExpressionBinaryOp::MOD:
+        if constexpr (std::is_integral_v<A> && std::is_integral_v<B>)
+          return T { static_cast<OPv>(a % b) };
+        else
+          return T { static_cast<OPv>(std::fmod(a, b)) };
+
+      default:
+        throw report("invalid binary operation");
+    }
+  }
+
   auto handle(st::Node &, st::Comment &) -> void override;
   auto handle(st::Node &, st::ModuleMain &) -> void override;
   auto handle(st::Node &, st::ModuleDeclaration &) -> void override;
