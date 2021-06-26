@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <variant>
+#include <numeric>
 #include <vector>
 
 #include <silk/language/token.h>
@@ -463,6 +464,16 @@ struct Node {
     ExpressionLambda>
     data;
 };
+
+template<class... Ts>
+auto node_contains(const Node& node) -> bool {
+  return (std::holds_alternative<Ts>(node.data) || ...);
+}
+
+template<class... Ts>
+auto node_contains(const std::unique_ptr<Node>& node) -> bool {
+  return node_contains<Ts...>(*node);
+}
 
 } // namespace st
 
