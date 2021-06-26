@@ -57,6 +57,14 @@ static void mark_object(Object *obj) {
 
       break;
     }
+
+    case O_FFI_FUNCTION: {
+      break;
+    }
+
+    case O_FFI_POINTER: {
+      break;
+    }
   }
 }
 

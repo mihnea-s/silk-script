@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <moth/ffi.h>
 #include <moth/macros.h>
 #include <moth/mem.h>
 #include <moth/value.h>
@@ -56,6 +57,17 @@ void free_object(Object *obj) {
       obj_size = sizeof(ObjectHeapval);
       break;
     }
+
+    case O_FFI_FUNCTION: {
+      obj_size = sizeof(ObjectFFIFunction);
+      break;
+    }
+
+    case O_FFI_POINTER: {
+      obj_size = sizeof(ObjectFFIPointer);
+      obj_ffi_ptr_del(OBJ_FFI_PTR(obj));
+      break;
+    }
   }
 
   release(obj, obj_size);
@@ -95,7 +107,18 @@ bool equal_objects(Object *a, Object *b) {
     case O_DICTIONARY: // fallthrough
     case O_FUNCTION:   // fallthrough
     case O_CLOSURE: return a == b;
-    case O_HEAPVAL: return equal_values(OBJ_HPV(a)->val, OBJ_HPV(b)->val);
+    
+    case O_HEAPVAL: {
+      return equal_values(OBJ_HPV(a)->val, OBJ_HPV(b)->val);
+    }
+
+    case O_FFI_FUNCTION: {
+      return OBJ_FFI_FUN(a)->fun == OBJ_FFI_FUN(b)->fun;
+    }
+
+    case O_FFI_POINTER: {
+      return OBJ_FFI_PTR(a)->ptr == OBJ_FFI_PTR(b);
+    }
   }
 }
 
@@ -108,6 +131,8 @@ void print_object(Object *obj) {
     case O_FUNCTION: printf("{fun}"); break;
     case O_CLOSURE: printf("{closure}"); break;
     case O_HEAPVAL: print_value(OBJ_HPV(obj)->val); break;
+    case O_FFI_FUNCTION: printf("{ffi fun @ <%lxd>}", (long) OBJ_FFI_FUN(obj)->fun);
+    case O_FFI_POINTER: printf("{ffi ptr @ <%lxd>}", (long) OBJ_FFI_PTR(obj)->ptr);
   }
 }
 
