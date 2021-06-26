@@ -27,8 +27,10 @@ int main(const int argc, const char **argv) {
     return 1;
   }
 
-  auto pipeline = silk::Parser{} >> silk::TypeChecker{} >> silk::Optimizer{} >>
-                  silk::JsonSerializer{};
+  auto pipeline = silk::Parser{} 
+                    >> silk::TypeChecker{} 
+                    >> silk::Optimizer{}
+                    >> silk::JsonSerializer{};
 
   for (auto &file_name : flags.files()) {
     auto file = std::ifstream(file_name);
