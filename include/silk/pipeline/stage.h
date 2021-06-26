@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <silk/language/package.h>
 #include <silk/language/token.h>
 
@@ -133,6 +135,16 @@ protected:
   auto handle_node(st::Node &node) -> Nt {
     return std::visit(
       [this, &node](auto &&data) { this->handle(node, data); }, node.data);
+  }
+
+  auto handle_node(std::unique_ptr<st::Node>& ptr) -> Nt {
+    return handle_node(*ptr);
+  }
+
+  auto handle_nodes(std::vector<st::Node>& children) -> void {
+    for (auto& child : children) {
+      handle_node(child);
+    }
   }
 
   auto report(std::string &&msg, Location loc = {0, 0}) const -> const Error & {
