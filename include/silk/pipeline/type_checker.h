@@ -7,7 +7,7 @@
 namespace silk {
 
 class TypeChecker final :
-    public Stage<TypeChecker, Module, Module, st::Typing> {
+    public Stage<TypeChecker, Package, Package, st::Typing> {
 private:
   auto handle(st::Node &, st::Comment &) -> st::Typing override;
   auto handle(st::Node &, st::ModuleMain &) -> st::Typing override;
@@ -68,7 +68,8 @@ public:
   TypeChecker(const TypeChecker &) = delete;
   TypeChecker(TypeChecker &&)      = default;
 
-  auto execute(Module &&) noexcept -> Module override;
+  auto type_check(Module &) noexcept;
+  auto execute(Package &&) noexcept -> Package override;
 };
 
 } // namespace silk

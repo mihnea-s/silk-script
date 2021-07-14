@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <fstream>
 #include <istream>
 #include <optional>
 #include <string>
@@ -11,10 +12,19 @@
 
 namespace silk {
 
+template <class T>
+using std_str_map = std::unordered_map<std::string, T>;
+
 /// A single unparsed source file in a package tree.
 struct Source {
   std::string   path;
-  std::istream &source;
+  std::ifstream source;
+};
+
+/// Multiple source files make up one package source as a unit.
+struct PackageSource {
+  Source              main;
+  std_str_map<Source> sources;
 };
 
 /// A single parsed source file in a package tree.
@@ -26,14 +36,11 @@ struct Module {
   Module(Module &&)      = default;
 };
 
-/// Multiple source files make up one package as a unit.
+/// Multiple modules with a main module make up one package as a unit.
 struct Package {
-  std::string                             name;
-  std::unordered_map<std::string, Module> modules;
+  Module              main;
+  std_str_map<Module> modules;
 };
-
-/// Read the source folder of a package.
-auto read_package(std::filesystem::path) -> std::optional<Package>;
 
 /// User friendly token kind string
 auto token_kind_string(TokenKind) -> std::string_view;

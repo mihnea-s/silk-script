@@ -8,7 +8,8 @@
 
 namespace silk {
 
-class JsonSerializer final : public Stage<JsonSerializer, Module, std::string> {
+class JsonSerializer final :
+    public Stage<JsonSerializer, Package, std::string> {
 private:
   std::stringstream _output = {};
 
@@ -37,6 +38,8 @@ private:
   void serialize(st::ExpressionAssignment::Kind);
   void serialize(st::ExpressionUnaryOp::Kind);
   void serialize(st::ExpressionBinaryOp::Kind);
+
+  void serialize(Module&);
 
   template <class T>
   void keyval(std::string_view key, T &&value) {
@@ -148,7 +151,7 @@ public:
   JsonSerializer(const JsonSerializer &) = delete;
   JsonSerializer(JsonSerializer &&)      = default;
 
-  auto execute(Module &&) noexcept -> std::string override;
+  auto execute(Package &&) noexcept -> std::string override;
 };
 
 } // namespace silk

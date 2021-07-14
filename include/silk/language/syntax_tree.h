@@ -1,9 +1,9 @@
 #pragma once
 
 #include <memory>
+#include <numeric>
 #include <string>
 #include <variant>
-#include <numeric>
 #include <vector>
 
 #include <silk/language/token.h>
@@ -92,8 +92,8 @@ struct DeclarationEnum {
 //  Additional ideas: inheritence, vtable
 //
 struct DeclarationObject {
-  std::string       name;
-  Typing            super;
+  std::string name;
+  Typing      super;
   TypedFields       members;
   std::vector<Node> children;
 };
@@ -159,10 +159,11 @@ struct StatementCircuit {
 /// Define scoped variable at runtime, def for mutable variables,
 /// let for immutable variables.
 ///
-///   $kind $name = $child;
+///   $kind $name :: $typing = $child;
 ///
 struct StatementVariable {
   std::string           name;
+  Typing                typing;
   std::unique_ptr<Node> child;
   enum Kind {
     LET = (int)TokenKind::KW_LET,
@@ -172,10 +173,11 @@ struct StatementVariable {
 
 /// Define a compile time constant
 ///
-/// const $name = $child;
+/// const $name :: $typing = $child;
 ///
 struct StatementConstant {
   std::string           name;
+  Typing                typing;
   std::unique_ptr<Node> child;
 };
 
@@ -465,13 +467,13 @@ struct Node {
     data;
 };
 
-template<class... Ts>
-auto node_contains(const Node& node) -> bool {
+template <class... Ts>
+auto node_contains(const Node &node) -> bool {
   return (std::holds_alternative<Ts>(node.data) || ...);
 }
 
-template<class... Ts>
-auto node_contains(const std::unique_ptr<Node>& node) -> bool {
+template <class... Ts>
+auto node_contains(const std::unique_ptr<Node> &node) -> bool {
   return node_contains<Ts...>(*node);
 }
 

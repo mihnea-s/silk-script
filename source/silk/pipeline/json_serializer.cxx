@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <functional>
+#include <iterator>
 #include <silk/pipeline/json_serializer.h>
 
 #include <iomanip>
@@ -5,6 +8,7 @@
 
 #include <silk/language/syntax_tree.h>
 #include <silk/utility/cli.h>
+#include <vector>
 
 namespace silk {
 
@@ -144,7 +148,15 @@ void JsonSerializer::serialize(st::ExpressionBinaryOp::Kind kind) {
   }
 }
 
-void JsonSerializer::handle(st::Node &node, st::Comment &data) {
+void JsonSerializer::serialize(Module &mod) {
+  obj_beg();
+  keyval("type", "module");
+  keyval("path", mod.path);
+  keyval("tree", mod.tree);
+  obj_end();
+}
+
+void JsonSerializer::handle(st::Node &, st::Comment &data) {
   obj_beg();
   keyval("type", "comment");
   keyval("text", data.text);
@@ -153,14 +165,14 @@ void JsonSerializer::handle(st::Node &node, st::Comment &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ModuleMain &data) {
+void JsonSerializer::handle(st::Node &, st::ModuleMain &) {
   obj_beg();
   keyval("type", "module");
   keyval("data", "main");
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ModuleDeclaration &data) {
+void JsonSerializer::handle(st::Node &, st::ModuleDeclaration &data) {
   obj_beg();
   keyval("type", "module");
   keyval("data", "declaration");
@@ -168,7 +180,7 @@ void JsonSerializer::handle(st::Node &node, st::ModuleDeclaration &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ModuleImport &data) {
+void JsonSerializer::handle(st::Node &, st::ModuleImport &data) {
   obj_beg();
   keyval("type", "module");
   keyval("data", "import");
@@ -183,7 +195,7 @@ void JsonSerializer::handle(st::Node &node, st::ModuleImport &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::DeclarationFunction &data) {
+void JsonSerializer::handle(st::Node &, st::DeclarationFunction &data) {
   obj_beg();
   keyval("type", "declaration");
   keyval("data", "function");
@@ -192,7 +204,7 @@ void JsonSerializer::handle(st::Node &node, st::DeclarationFunction &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::DeclarationEnum &data) {
+void JsonSerializer::handle(st::Node &, st::DeclarationEnum &data) {
   obj_beg();
   keyval("type", "declaration");
   keyval("data", "enum");
@@ -200,7 +212,7 @@ void JsonSerializer::handle(st::Node &node, st::DeclarationEnum &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::DeclarationObject &data) {
+void JsonSerializer::handle(st::Node &, st::DeclarationObject &data) {
   obj_beg();
   keyval("type", "declaration");
   keyval("data", "obj");
@@ -208,8 +220,7 @@ void JsonSerializer::handle(st::Node &node, st::DeclarationObject &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(
-  st::Node &node, st::DeclarationExternLibrary &data) {
+void JsonSerializer::handle(st::Node &, st::DeclarationExternLibrary &data) {
   obj_beg();
   keyval("type", "declaration");
   keyval("data", "externlibrary");
@@ -218,8 +229,7 @@ void JsonSerializer::handle(
   obj_end();
 }
 
-void JsonSerializer::handle(
-  st::Node &node, st::DeclarationExternFunction &data) {
+void JsonSerializer::handle(st::Node &, st::DeclarationExternFunction &data) {
   obj_beg();
   keyval("type", "declaration");
   keyval("data", "externfunction");
@@ -228,7 +238,7 @@ void JsonSerializer::handle(
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::DeclarationMacro &data) {
+void JsonSerializer::handle(st::Node &, st::DeclarationMacro &data) {
   obj_beg();
   keyval("type", "declaration");
   keyval("data", "macro");
@@ -236,14 +246,14 @@ void JsonSerializer::handle(st::Node &node, st::DeclarationMacro &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::StatementEmpty &data) {
+void JsonSerializer::handle(st::Node &, st::StatementEmpty &) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "empty");
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::StatementExpression &data) {
+void JsonSerializer::handle(st::Node &, st::StatementExpression &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "expression");
@@ -251,7 +261,7 @@ void JsonSerializer::handle(st::Node &node, st::StatementExpression &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::StatementBlock &data) {
+void JsonSerializer::handle(st::Node &, st::StatementBlock &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "block");
@@ -259,7 +269,7 @@ void JsonSerializer::handle(st::Node &node, st::StatementBlock &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::StatementCircuit &data) {
+void JsonSerializer::handle(st::Node &, st::StatementCircuit &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "circuit");
@@ -268,7 +278,7 @@ void JsonSerializer::handle(st::Node &node, st::StatementCircuit &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::StatementVariable &data) {
+void JsonSerializer::handle(st::Node &, st::StatementVariable &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "variable");
@@ -278,7 +288,7 @@ void JsonSerializer::handle(st::Node &node, st::StatementVariable &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::StatementConstant &data) {
+void JsonSerializer::handle(st::Node &, st::StatementConstant &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "constant");
@@ -287,7 +297,7 @@ void JsonSerializer::handle(st::Node &node, st::StatementConstant &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::StatementReturn &data) {
+void JsonSerializer::handle(st::Node &, st::StatementReturn &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "return");
@@ -296,7 +306,7 @@ void JsonSerializer::handle(st::Node &node, st::StatementReturn &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::StatementSwitch &data) {
+void JsonSerializer::handle(st::Node &, st::StatementSwitch &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "switch");
@@ -304,8 +314,7 @@ void JsonSerializer::handle(st::Node &node, st::StatementSwitch &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(
-  st::Node &node, st::StatementIterationControl &data) {
+void JsonSerializer::handle(st::Node &, st::StatementIterationControl &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "iterationcontrol");
@@ -313,7 +322,7 @@ void JsonSerializer::handle(
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::StatementIf &data) {
+void JsonSerializer::handle(st::Node &, st::StatementIf &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "if");
@@ -323,7 +332,7 @@ void JsonSerializer::handle(st::Node &node, st::StatementIf &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::StatementWhile &data) {
+void JsonSerializer::handle(st::Node &, st::StatementWhile &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "while");
@@ -332,7 +341,7 @@ void JsonSerializer::handle(st::Node &node, st::StatementWhile &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::StatementLoop &data) {
+void JsonSerializer::handle(st::Node &, st::StatementLoop &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "loop");
@@ -340,7 +349,7 @@ void JsonSerializer::handle(st::Node &node, st::StatementLoop &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::StatementFor &data) {
+void JsonSerializer::handle(st::Node &, st::StatementFor &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "for");
@@ -351,7 +360,7 @@ void JsonSerializer::handle(st::Node &node, st::StatementFor &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::StatementForeach &data) {
+void JsonSerializer::handle(st::Node &, st::StatementForeach &data) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "foreach");
@@ -362,14 +371,14 @@ void JsonSerializer::handle(st::Node &node, st::StatementForeach &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::StatementMatch &data) {
+void JsonSerializer::handle(st::Node &, st::StatementMatch &) {
   obj_beg();
   keyval("type", "statement");
   keyval("data", "match");
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionIdentifier &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionIdentifier &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "identifier");
@@ -377,21 +386,21 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionIdentifier &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionVoid &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionVoid &) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "void");
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionContinuation &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionContinuation &) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "continuation");
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionBool &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionBool &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "boolean");
@@ -399,7 +408,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionBool &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionNat &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionNat &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "natural");
@@ -407,7 +416,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionNat &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionInt &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionInt &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "integer");
@@ -415,7 +424,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionInt &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionReal &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionReal &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "real");
@@ -423,7 +432,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionReal &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionRealKeyword &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionRealKeyword &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "realkeyword");
@@ -431,7 +440,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionRealKeyword &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionChar &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionChar &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "charac");
@@ -439,7 +448,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionChar &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionString &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionString &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "string");
@@ -448,7 +457,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionString &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionTuple &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionTuple &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "tuple");
@@ -456,7 +465,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionTuple &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionUnaryOp &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionUnaryOp &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "unaryoperation");
@@ -465,7 +474,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionUnaryOp &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionBinaryOp &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionBinaryOp &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "binaryoperation");
@@ -475,7 +484,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionBinaryOp &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionRange &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionRange &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "range");
@@ -484,7 +493,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionRange &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionVector &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionVector &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "vector");
@@ -492,7 +501,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionVector &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionArray &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionArray &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "array");
@@ -500,7 +509,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionArray &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionDictionary &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionDictionary &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "dictionary");
@@ -508,7 +517,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionDictionary &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionAssignment &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionAssignment &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "assignment");
@@ -518,7 +527,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionAssignment &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionCall &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionCall &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "call");
@@ -527,7 +536,7 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionCall &data) {
   obj_end();
 }
 
-void JsonSerializer::handle(st::Node &node, st::ExpressionLambda &data) {
+void JsonSerializer::handle(st::Node &, st::ExpressionLambda &data) {
   obj_beg();
   keyval("type", "expression");
   keyval("data", "lambda");
@@ -536,14 +545,23 @@ void JsonSerializer::handle(st::Node &node, st::ExpressionLambda &data) {
   obj_end();
 }
 
-auto JsonSerializer::execute(Module &&mod) noexcept -> std::string {
+auto JsonSerializer::execute(Package &&pkg) noexcept -> std::string {
   _output.clear();
   _output << std::fixed;
 
+  auto modules = std::vector<std::reference_wrapper<Module>>{};
+  modules.reserve(pkg.modules.size());
+
+  std::transform(
+    std::begin(pkg.modules),
+    std::end(pkg.modules),
+    std::back_inserter(modules),
+    [](auto &entry) -> Module & { return entry.second; });
+
   obj_beg();
-  keyval("type", "module");
-  keyval("path", mod.path);
-  keyval("tree", mod.tree);
+  keyval("type", "package");
+  keyval("main", pkg.main);
+  keyval("modules", modules);
   obj_end();
 
   return _output.str();

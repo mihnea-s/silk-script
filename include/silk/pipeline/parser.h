@@ -8,7 +8,7 @@
 
 namespace silk {
 
-class Parser final : public NonSyntaxTreeStage<Parser, Source, Module> {
+class Parser final : public NonSyntaxTreeStage<Parser, PackageSource, Package> {
 private:
   std::optional<Scanner> _scanner;
   std::vector<Token>     _tokens;
@@ -173,7 +173,8 @@ public:
   Parser(const Parser &) = delete;
   Parser(Parser &&)      = default;
 
-  auto execute(Source &&source) noexcept -> Module override;
+  auto parse(Source && source) noexcept -> Module;
+  auto execute(PackageSource &&source) noexcept -> Package override;
 };
 
 } // namespace silk

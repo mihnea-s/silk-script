@@ -46,7 +46,7 @@ auto Compiler::emit(std::uint8_t byte) -> void {
   }
 }
 
-auto Compiler::emit_arg(std::uint32_t arg, std::size_t size) -> void {
+auto Compiler::emit_varbyte_arg(std::uint32_t arg, std::size_t size) -> void {
   if constexpr (IS_BIG_ENDIAN) arg = SWAP_BYTES(arg);
 
   for (int i = size - 1; i >= 0; i--) {
@@ -54,7 +54,8 @@ auto Compiler::emit_arg(std::uint32_t arg, std::size_t size) -> void {
   }
 }
 
-auto Compiler::emit_op_arg(std::uint8_t base_op, std::uint32_t id) -> void {
+auto Compiler::emit_varbyte_op_arg(std::uint8_t base_op, std::uint32_t id)
+  -> void {
   constexpr auto BYTE_MAX = std::numeric_limits<std::uint8_t>::max();
 
   if (id <= BYTE_MAX) {
@@ -62,13 +63,13 @@ auto Compiler::emit_op_arg(std::uint8_t base_op, std::uint32_t id) -> void {
     emit(id & 0xff);
   } else if (id <= BYTE_MAX * 2) {
     emit(base_op + 1);
-    emit_arg(id, 2);
+    emit_varbyte_arg(id, 2);
   } else if (id <= BYTE_MAX * 3) {
     emit(base_op + 2);
-    emit_arg(id, 3);
+    emit_varbyte_arg(id, 3);
   } else {
     emit(base_op + 3);
-    emit_arg(id, 4);
+    emit_varbyte_arg(id, 4);
   }
 }
 
@@ -280,12 +281,12 @@ auto Compiler::get_stack_var(std::string_view name)
 
 auto Compiler::load_stack_var(std::uint16_t slot) -> void {
   emit(VM_PSH);
-  emit_arg(slot, 2);
+  emit_varbyte_arg(slot, 2);
 }
 
 auto Compiler::store_stack_var(std::uint16_t slot) -> void {
   emit(VM_STR);
-  emit_arg(slot, 2);
+  emit_varbyte_arg(slot, 2);
 }
 
 auto Compiler::encode_rodata(Value value) -> std::uint32_t {
@@ -293,7 +294,7 @@ auto Compiler::encode_rodata(Value value) -> std::uint32_t {
 }
 
 auto Compiler::load_rodata(std::uint32_t id) -> void {
-  emit_op_arg(VM_VAL, id);
+  emit_varbyte_op_arg(VM_VAL, id);
 }
 
 auto Compiler::encode_symbol(std::string_view str) -> std::uint32_t {
@@ -317,15 +318,15 @@ auto Compiler::encode_symbol(std::string_view str) -> std::uint32_t {
 }
 
 auto Compiler::define_symbol(std::uint32_t id) -> void {
-  emit_op_arg(VM_DEF, id);
+  emit_varbyte_op_arg(VM_DEF, id);
 }
 
 auto Compiler::load_symbol(std::uint32_t id) -> void {
-  emit_op_arg(VM_SYM, id);
+  emit_varbyte_op_arg(VM_SYM, id);
 }
 
 auto Compiler::assign_symbol(std::uint32_t id) -> void {
-  emit_op_arg(VM_ASN, id);
+  emit_varbyte_op_arg(VM_ASN, id);
 }
 
 auto Compiler::jmp_insert(std::uint8_t jmp_type) -> std::uint32_t {
@@ -390,46 +391,46 @@ auto Compiler::logical_and(st::Node &left, st::Node &right) -> void {
   jmp_finish(andjmp);
 }
 
-auto Compiler::handle(st::Node &node, st::Comment &) -> void {
+auto Compiler::handle(st::Node &, st::Comment &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ModuleMain &) -> void {
+auto Compiler::handle(st::Node &, st::ModuleMain &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ModuleDeclaration &) -> void {
+auto Compiler::handle(st::Node &, st::ModuleDeclaration &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ModuleImport &) -> void {
+auto Compiler::handle(st::Node &, st::ModuleImport &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::DeclarationFunction &) -> void {
+auto Compiler::handle(st::Node &, st::DeclarationFunction &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::DeclarationEnum &) -> void {
+auto Compiler::handle(st::Node &, st::DeclarationEnum &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::DeclarationObject &) -> void {
+auto Compiler::handle(st::Node &, st::DeclarationObject &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::DeclarationExternLibrary &) -> void {
+auto Compiler::handle(st::Node &, st::DeclarationExternLibrary &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::DeclarationExternFunction &) -> void {
+auto Compiler::handle(st::Node &, st::DeclarationExternFunction &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::DeclarationMacro &) -> void {
+auto Compiler::handle(st::Node &, st::DeclarationMacro &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementEmpty &) -> void {
+auto Compiler::handle(st::Node &, st::StatementEmpty &) -> void {
   emit(VM_NOP);
 }
 
-auto Compiler::handle(st::Node &node, st::StatementExpression &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementExpression &data) -> void {
   handle_node(*data.child);
   emit(VM_POP);
 }
 
-auto Compiler::handle(st::Node &node, st::StatementBlock &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementBlock &data) -> void {
   push_scope();
 
   try {

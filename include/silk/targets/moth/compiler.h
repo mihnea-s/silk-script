@@ -67,8 +67,8 @@ private:
 
   // bytecode functions
   auto emit(std::uint8_t) -> void;
-  auto emit_arg(std::uint32_t, std::size_t) -> void;
-  auto emit_op_arg(std::uint8_t, std::uint32_t) -> void;
+  auto emit_varbyte_arg(std::uint32_t, std::size_t) -> void;
+  auto emit_varbyte_op_arg(std::uint8_t, std::uint32_t) -> void;
 
   auto get_offset() -> std::uint32_t;
   auto get_buffer() -> std::uint8_t *;

@@ -411,10 +411,10 @@ auto Parser::precendece(Precedence prec) -> std::unique_ptr<st::Node> {
   for (auto rule = get_rule(peek());
        rule && rule->get().infix && prec <= rule->get().precedence;
        rule = get_rule(peek())) {
-    prefix = std::move((this->*(rule->get().infix))(std::move(prefix)));
+    prefix = (this->*(rule->get().infix))(std::move(prefix));
   }
 
-  return std::move(prefix);
+  return prefix;
 }
 
 auto Parser::parse_identifier() -> std::string {
@@ -554,19 +554,26 @@ auto Parser::declaration_enum() -> std::unique_ptr<st::Node> {
   auto name = parse_identifier();
 
   must_consume(TokenKind::SYM_BR_OPEN, "open object body");
-  must_consume(TokenKind::SYM_BR_CLOSE, "close object body");
+  auto variants =
+    parse_typed_fields(TokenKind::SYM_BR_CLOSE, TokenKind::SYM_SEMICOLON);
 
-  return make_node<st::DeclarationEnum>(std::move(name));
+  return make_node<st::DeclarationEnum>(std::move(name), std::move(variants));
 }
 
 auto Parser::declaration_object() -> std::unique_ptr<st::Node> {
   must_consume(TokenKind::KW_OBJ, "object declaration");
-  auto name = parse_identifier();
+  auto name  = parse_identifier();
+  auto super = parse_typing();
 
   must_consume(TokenKind::SYM_BR_OPEN, "open object body");
   must_consume(TokenKind::SYM_BR_CLOSE, "close object body");
 
-  return make_node<st::DeclarationObject>(std::move(name));
+  return make_node<st::DeclarationObject>(
+    std::move(name),
+    std::move(super),
+    st::TypedFields{},      // TODO
+    std::vector<st::Node>{} // TODO
+  );
 }
 
 auto Parser::declaration_library() -> std::unique_ptr<st::Node> {
@@ -687,7 +694,7 @@ auto Parser::statement_variable() -> std::unique_ptr<st::Node> {
 
   must_consume(TokenKind::SYM_SEMICOLON, "expected `;`");
   return make_node<st::StatementVariable>(
-    std::move(name), std::move(init), kind);
+    std::move(name), std::move(typing), std::move(init), kind);
 }
 
 auto Parser::statement_constant() -> std::unique_ptr<st::Node> {
@@ -701,7 +708,8 @@ auto Parser::statement_constant() -> std::unique_ptr<st::Node> {
   auto init = expression();
 
   must_consume(TokenKind::SYM_SEMICOLON, "expected `;`");
-  return make_node<st::StatementConstant>(std::move(name), std::move(init));
+  return make_node<st::StatementConstant>(
+    std::move(name), std::move(typing), std::move(init));
 }
 
 auto Parser::statement_return() -> std::unique_ptr<st::Node> {
@@ -1048,7 +1056,7 @@ auto Parser::expression_lambda() -> std::unique_ptr<st::Node> {
   return make_node<st::ExpressionLambda>(std::move(params), std::move(body));
 }
 
-auto Parser::execute(Source &&source) noexcept -> Module {
+auto Parser::parse(Source &&source) noexcept -> Module {
   _scanner.emplace(source.source);
   _tokens = std::vector<Token>{_scanner->scan()};
 
@@ -1067,6 +1075,20 @@ auto Parser::execute(Source &&source) noexcept -> Module {
   return Module{
     .path = std::move(source.path),
     .tree = std::move(tree),
+  };
+}
+
+auto Parser::execute(PackageSource &&pkg_src) noexcept -> Package {
+  auto main_mod = parse(std::move(pkg_src.main));
+  auto imports  = std::unordered_map<std::string, Module>{};
+
+  for (auto &[path, src] : pkg_src.sources) {
+    imports.emplace(path, parse(std::move(src)));
+  }
+
+  return {
+    .main    = std::move(main_mod),
+    .modules = std::move(imports),
   };
 }
 

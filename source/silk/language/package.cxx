@@ -4,11 +4,6 @@
 
 namespace silk {
 
-auto read_package(std::filesystem::path root_path) -> std::optional<Package> {
-  // TODO: implement
-  return std::nullopt;
-}
-
 auto token_kind_string(TokenKind kind) -> std::string_view {
   switch (kind) {
     case TokenKind::IDENTIFIER: return "identifier";

@@ -1,68 +1,29 @@
 #pragma once
 
-#include <cmath>
-#include <cstdint>
-#include <memory>
-#include <optional>
-#include <type_traits>
-
 #include <silk/language/package.h>
 #include <silk/language/syntax_tree.h>
 #include <silk/pipeline/stage.h>
 
 namespace silk {
 
-class Optimizer final : public Stage<Optimizer, Package, Package> {
+namespace js {
+
+using JsSource = std::string;
+
+class Transpiler final : public Stage<Transpiler, Package, JsSource> {
 private:
-  auto nat_value(st::Node &) const -> std::optional<std::uint64_t>;
-  auto int_value(st::Node &) const -> std::optional<std::int64_t>;
-  auto real_value(st::Node &) const -> std::optional<double>;
-
-  auto is_const_expr(std::unique_ptr<st::Node> &) const -> bool;
-
-  template <class T, class A, class B>
-  auto make_const_bin_expr(st::ExpressionBinaryOp::Kind kind, A a, B b) -> T {
-    using OPv = decltype(T::value);
-
-    switch (kind) {
-      case st::ExpressionBinaryOp::ADD: // Numeric addition
-        return T{static_cast<OPv>(a + b)};
-
-      case st::ExpressionBinaryOp::SUB: // Numeric subtraction
-        return T{static_cast<OPv>(a - b)};
-
-      case st::ExpressionBinaryOp::MUL: // Numeric multiplication
-        return T{static_cast<OPv>(a * b)};
-
-      case st::ExpressionBinaryOp::POW: // Power
-        return T{static_cast<OPv>(std::pow(a, b))};
-
-      case st::ExpressionBinaryOp::DIV: // Division to float
-        return T{static_cast<OPv>(a / b)};
-
-      case st::ExpressionBinaryOp::RDIV: // Division to floored int
-        return T{static_cast<OPv>(std::floor(a / b))};
-
-      case st::ExpressionBinaryOp::MOD: // Modulus
-        if constexpr (std::is_integral_v<A> && std::is_integral_v<B>)
-          return T{static_cast<OPv>(a % b)};
-        else
-          return T{static_cast<OPv>(std::fmod(a, b))};
-
-      default: throw report("invalid binary operation");
-    }
-  }
-
   auto handle(st::Node &, st::Comment &) -> void override;
   auto handle(st::Node &, st::ModuleMain &) -> void override;
   auto handle(st::Node &, st::ModuleDeclaration &) -> void override;
   auto handle(st::Node &, st::ModuleImport &) -> void override;
+
   auto handle(st::Node &, st::DeclarationFunction &) -> void override;
   auto handle(st::Node &, st::DeclarationEnum &) -> void override;
   auto handle(st::Node &, st::DeclarationObject &) -> void override;
   auto handle(st::Node &, st::DeclarationExternLibrary &) -> void override;
   auto handle(st::Node &, st::DeclarationExternFunction &) -> void override;
   auto handle(st::Node &, st::DeclarationMacro &) -> void override;
+
   auto handle(st::Node &, st::StatementEmpty &) -> void override;
   auto handle(st::Node &, st::StatementExpression &) -> void override;
   auto handle(st::Node &, st::StatementBlock &) -> void override;
@@ -78,6 +39,7 @@ private:
   auto handle(st::Node &, st::StatementFor &) -> void override;
   auto handle(st::Node &, st::StatementForeach &) -> void override;
   auto handle(st::Node &, st::StatementMatch &) -> void override;
+
   auto handle(st::Node &, st::ExpressionIdentifier &) -> void override;
   auto handle(st::Node &, st::ExpressionVoid &) -> void override;
   auto handle(st::Node &, st::ExpressionContinuation &) -> void override;
@@ -100,17 +62,18 @@ private:
   auto handle(st::Node &, st::ExpressionLambda &) -> void override;
 
 public:
-  Optimizer() {
+  Transpiler() {
   }
 
-  ~Optimizer() {
+  ~Transpiler() {
   }
 
-  Optimizer(const Optimizer &) = delete;
-  Optimizer(Optimizer &&)      = default;
+  Transpiler(const Transpiler &) = delete;
+  Transpiler(Transpiler &&)      = default;
 
-  auto optimize(Module &) noexcept -> void;
-  auto execute(Package &&) noexcept -> Package override;
+  auto execute(Package &&) noexcept -> JsSource override;
 };
+
+} // namespace js
 
 } // namespace silk

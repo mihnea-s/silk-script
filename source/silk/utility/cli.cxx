@@ -76,6 +76,8 @@ constexpr auto CLIFlags::flag_aliases(Flag flag)
   switch (flag) {
     case Flag::HELP: return {"-h", "--help"};
     case Flag::COMPILE: return {"-c", "--compile"};
+    case Flag::WASM: return {"-w", "--wasm"};
+    case Flag::JAVASCRIPT: return {"-j", "--js"};
     case Flag::RUN: return {"-r", "--run"};
     case Flag::DEBUG: return {"-d", "--debug"};
     case Flag::INTERACTIVE: return {"-i", "--interactive"};
@@ -87,6 +89,8 @@ constexpr auto CLIFlags::flag_usage(Flag flag) -> std::string_view {
   switch (flag) {
     case Flag::HELP: return "shows the help page";
     case Flag::COMPILE: return "compile the source to a moth executable";
+    case Flag::WASM: return "compile the source to a wasm binary";
+    case Flag::JAVASCRIPT: return "transpile the source to a js bundle";
     case Flag::DEBUG: return "debug the files with the debug tool";
     case Flag::INTERACTIVE: return "open a repl session";
     case Flag::RUN: return "compile and run the source (default behaviour)";

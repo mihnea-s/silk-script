@@ -1,13 +1,18 @@
+#include "silk/targets/wasm/compiler.h"
 #include <fstream>
 
+#include <iterator>
 #include <silk/tools/debugger.h>
 #include <silk/tools/repl.h>
 #include <silk/utility/cli.h>
 
+#include <silk/pipeline/context_builder.h>
 #include <silk/pipeline/json_serializer.h>
 #include <silk/pipeline/optimizer.h>
 #include <silk/pipeline/parser.h>
 #include <silk/pipeline/type_checker.h>
+#include <silk/targets/moth/compiler.h>
+#include <utility>
 
 int main(const int argc, const char **argv) {
   const auto flags = silk::CLIFlags{argc, argv};
@@ -22,35 +27,37 @@ int main(const int argc, const char **argv) {
     return repl.run(std::cin, std::cout);
   }
 
-  if (!flags.files().size()) {
+  auto file_paths = flags.files();
+
+  if (!file_paths.size()) {
     silk::print_error(std::cout, "no files");
     return 1;
   }
 
-  auto pipeline = silk::Parser{} 
-                    >> silk::TypeChecker{} 
-                    >> silk::Optimizer{}
-                    >> silk::JsonSerializer{};
+  // Main source file is last in argument list
+  auto main_path = file_paths.back();
+  file_paths.pop_back();
 
-  for (auto &file_name : flags.files()) {
-    auto file = std::ifstream(file_name);
+  // Rest of the arguments are added to the include paths
+  auto include_paths = std::vector<std::filesystem::path>{};
+  std::move(begin(file_paths), end(file_paths), back_inserter(include_paths));
 
-    if (!file) {
-      silk::print_error(std::cerr, "file not found `{}`", file_name);
-      return 1;
-    }
+  // Create a compilation pipeline
+  auto pipeline = silk::ContextBuilder{std::move(include_paths)} >>
+                  silk::Parser{} >> silk::TypeChecker{} >> silk::Optimizer{} >>
+                  silk::JsonSerializer{} // >> silk::moth::Compiler{}
+  ;
 
-    auto source = silk::Source{file_name, file};
-    auto result = pipeline.execute(std::move(source));
+  std::cout << pipeline.execute({
+    .path   = main_path,
+    .source = std::ifstream{main_path},
+  });
 
-    if (pipeline.has_errors()) {
-      std::cerr << "pipeline errors." << std::endl;
+  if (pipeline.has_errors()) {
+    std::cerr << "pipeline errors." << std::endl;
 
-      for (auto &&err : pipeline.errors()) {
-        err.print(std::cerr);
-      }
-    } else {
-      std::cout << result;
+    for (auto &&err : pipeline.errors()) {
+      err.print(std::cerr);
     }
   }
 

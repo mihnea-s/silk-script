@@ -115,7 +115,7 @@ auto TypeChecker::handle(st::Node &, st::ExpressionVoid &) -> st::Typing {
   return nullptr;
 }
 
-auto TypeChecker::handle(st::Node &node, st::ExpressionContinuation &data)
+auto TypeChecker::handle(st::Node &, st::ExpressionContinuation &)
   -> st::Typing {
   return nullptr;
 }
@@ -189,8 +189,17 @@ auto TypeChecker::handle(st::Node &, st::ExpressionLambda &) -> st::Typing {
   return nullptr;
 }
 
-auto TypeChecker::execute(Module &&mod) noexcept -> Module {
-  return std::move(mod);
+auto TypeChecker::type_check(Module &) noexcept {
+}
+
+auto TypeChecker::execute(Package &&pkg) noexcept -> Package {
+  type_check(pkg.main);
+
+  for (auto &[_, mod] : pkg.modules) {
+    type_check(mod);
+  }
+
+  return std::move(pkg);
 }
 
 } // namespace silk

@@ -110,7 +110,9 @@ add_executable(${SILK_COMPILER}
   "source/silk/pipeline/optimizer.cxx"
   "source/silk/pipeline/json_serializer.cxx"
   "source/silk/pipeline/json_deserializer.cxx"
+  "source/silk/pipeline/context_builder.cxx"
 
+  "source/silk/targets/js/transpiler.cxx"
   "source/silk/targets/moth/compiler.cxx"
   "source/silk/targets/wasm/compiler.cxx"
 )

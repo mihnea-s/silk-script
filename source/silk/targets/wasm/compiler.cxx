@@ -6,146 +6,146 @@ namespace silk {
 
 namespace wasm {
 
-auto Compiler::handle(st::Node &node, st::Comment &data) -> void {
+auto Compiler::handle(st::Node &, st::Comment &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ModuleMain &data) -> void {
+auto Compiler::handle(st::Node &, st::ModuleMain &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ModuleDeclaration &data) -> void {
+auto Compiler::handle(st::Node &, st::ModuleDeclaration &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ModuleImport &data) -> void {
+auto Compiler::handle(st::Node &, st::ModuleImport &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::DeclarationFunction &data) -> void {
+auto Compiler::handle(st::Node &, st::DeclarationFunction &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::DeclarationEnum &data) -> void {
+auto Compiler::handle(st::Node &, st::DeclarationEnum &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::DeclarationObject &data) -> void {
+auto Compiler::handle(st::Node &, st::DeclarationObject &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::DeclarationExternLibrary &data)
+auto Compiler::handle(st::Node &, st::DeclarationExternLibrary &)
   -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::DeclarationExternFunction &data)
+auto Compiler::handle(st::Node &, st::DeclarationExternFunction &)
   -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::DeclarationMacro &data) -> void {
+auto Compiler::handle(st::Node &, st::DeclarationMacro &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementEmpty &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementEmpty &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementExpression &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementExpression &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementBlock &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementBlock &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementCircuit &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementCircuit &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementVariable &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementVariable &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementConstant &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementConstant &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementReturn &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementReturn &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementSwitch &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementSwitch &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementIterationControl &data)
+auto Compiler::handle(st::Node &, st::StatementIterationControl &)
   -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementIf &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementIf &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementWhile &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementWhile &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementLoop &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementLoop &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementFor &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementFor &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementForeach &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementForeach &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::StatementMatch &data) -> void {
+auto Compiler::handle(st::Node &, st::StatementMatch &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionIdentifier &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionIdentifier &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionVoid &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionVoid &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionContinuation &data)
+auto Compiler::handle(st::Node &, st::ExpressionContinuation &)
   -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionBool &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionBool &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionNat &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionNat &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionInt &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionInt &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionReal &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionReal &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionRealKeyword &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionRealKeyword &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionChar &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionChar &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionString &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionString &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionTuple &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionTuple &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionUnaryOp &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionUnaryOp &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionBinaryOp &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionBinaryOp &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionRange &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionRange &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionVector &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionVector &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionArray &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionArray &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionDictionary &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionDictionary &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionAssignment &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionAssignment &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionCall &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionCall &) -> void {
 }
 
-auto Compiler::handle(st::Node &node, st::ExpressionLambda &data) -> void {
+auto Compiler::handle(st::Node &, st::ExpressionLambda &) -> void {
 }
 
-auto Compiler::execute(Package &&pkg) noexcept -> void {
+auto Compiler::execute(Package &&) noexcept -> void {
 }
 
 } // namespace wasm

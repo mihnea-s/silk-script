@@ -14,7 +14,7 @@ protected:
 
 public:
   Error(const Location location, const std::string message) noexcept :
-      _message(std::move(message)), _location(std::move(location)) {
+      _location(std::move(location)), _message(std::move(message)) {
   }
 
   virtual ~Error() {
@@ -137,12 +137,12 @@ protected:
       [this, &node](auto &&data) { this->handle(node, data); }, node.data);
   }
 
-  auto handle_node(std::unique_ptr<st::Node>& ptr) -> Nt {
+  auto handle_node(std::unique_ptr<st::Node> &ptr) -> Nt {
     return handle_node(*ptr);
   }
 
-  auto handle_nodes(std::vector<st::Node>& children) -> void {
-    for (auto& child : children) {
+  auto handle_nodes(std::vector<st::Node> &children) -> void {
+    for (auto &child : children) {
       handle_node(child);
     }
   }

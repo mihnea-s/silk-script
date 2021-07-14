@@ -45,6 +45,8 @@ private:
   enum class Flag {
     HELP,
     COMPILE,
+    WASM,
+    JAVASCRIPT,
     DEBUG,
     INTERACTIVE,
     RUN,
@@ -65,6 +67,8 @@ private:
 public:
   static constexpr auto HELP        = Flag::HELP;
   static constexpr auto COMPILE     = Flag::COMPILE;
+  static constexpr auto WASM        = Flag::WASM;
+  static constexpr auto JAVASCRIPT  = Flag::JAVASCRIPT;
   static constexpr auto DEBUG       = Flag::DEBUG;
   static constexpr auto INTERACTIVE = Flag::INTERACTIVE;
   static constexpr auto RUN         = Flag::RUN;
