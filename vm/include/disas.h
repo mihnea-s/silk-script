@@ -1,0 +1,16 @@
+#ifndef MOTHVM_DISAS_H
+#define MOTHVM_DISAS_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <silk/mothvm/program.h>
+
+void disassemble(const char*, const Program*);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
