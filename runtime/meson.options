@@ -1,0 +1,2 @@
+option('sbt_meson', type : 'boolean', value : false)
+option('sbt_generated_includedir', type : 'string', value : 'include-generated', description : 'An option')

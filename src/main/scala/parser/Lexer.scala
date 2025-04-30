@@ -1,30 +1,107 @@
 package silkscript.parser
 
+import silkscript.repr._
+
 import scala.util.parsing.combinator._
 import scala.util.matching.Regex
 
-object Lexer extends RegexParsers {
+case object Lexer extends RegexParsers {
+  override def skipWhitespace = true
+  override val whiteSpace = """[^\S\n]+""".r
 
-  def ident = """[_\p{L}][_\p{N}\p{L}]*""".r ^^ { Ident(_) }
-  def number = """-?\d+(\.\d+)?""".r ^^ { _.toFloat } ^^ { Number(_) }
+  private def ident = """[_\p{L}][_\p{N}\p{L}]*""".r ^^ { TokenIdent(_) }
 
-  def symPlus = "+" ^^^ SymPlus
+  private def boolean = {
+    "true" ^^^ TokenBoolean(true)
+      | "false" ^^^ TokenBoolean(false)
+  }
 
-  def kwLet = "let" ^^ (_ => KwLet)
-  def kwDef = "def" ^^ (_ => KwDef)
+  private def trite = {
+    "yes" ^^^ TokenTrite(Trite.Yes)
+      | "zero" ^^^ TokenTrite(Trite.Zero)
+      | "no" ^^^ TokenTrite(Trite.No)
+  }
 
-  def kwOr = "or" ^^ (_ => KwOr)
-  def kwAnd = "and" ^^ (_ => KwAnd)
-  def kwNot = "not" ^^ (_ => KwNot)
+  private def numberWhole = {
+    """0x([a-fA-F\d]+)""".r ^^ { s => TokenNumberWhole(NumberWhole(s)) }
+      | """(\d+)""".r ^^ { s => TokenNumberWhole(NumberWhole(s)) }
+  }
 
-  def tokens(in: CharSequence): ParseResult[List[Token]] = {
+  private def numberFract = {
+    """(\d*[.])?[0-9]+""".r ^^ {
+      // TODO
+      _ => TokenNumberFrac(NumberFract("", "", ""))
+    }
+  }
 
-    val literals = ident | number
+  private def keywords = Array(
+    // Meta keywords
+    ("let", TokenKeywordLet),
+    ("fun", TokenKeywordFun),
+    ("type", TokenKeywordType),
+    ("use", TokenKeywordUse),
 
-    val symbols = symPlus
+    // Operator keywords
+    ("or", TokenOperatorOr),
+    ("and", TokenOperatorAnd),
+    ("not", TokenOperatorNot),
+    ("if", TokenOperatorIf),
+    ("else", TokenOperatorElse),
+    ("case", TokenOperatorCase),
+    ("match", TokenOperatorMatch),
+    ("while", TokenOperatorWhile),
+    ("for", TokenOperatorFor),
+    ("loop", TokenOperatorLoop),
 
-    val keywords = kwLet | kwDef | kwOr | kwAnd | kwNot
+    // Control keywords
+    ("break", TokenControlBreak),
+    ("continue", TokenControlContinue),
+    ("return", TokenControlReturn)
+  )
+    .map((a, b) => a ^^^ b)
+    .reduce((a, b) => a | b)
 
-    return parse(phrase(rep1(symbols | keywords | literals)), in)
+  private def symbols = Array(
+    // Symbols
+    ("+", TokenSymPlus),
+    ("-", TokenSymMinus),
+    ("**", TokenSymStarStar),
+    ("*", TokenSymStar),
+    ("//", TokenSymSlash),
+    ("/", TokenSymSlashSlash),
+    ("=", TokenSymEqual),
+    (":=", TokenSymColonEqual),
+    ("%", TokenSymPercent),
+    (",", TokenSymComma),
+    (":", TokenSymColon),
+    (";", TokenSymSemicolon),
+    ("|", TokenSymVertBar),
+    ("(", TokenSymRoundL),
+    (")", TokenSymRoundR),
+    ("[", TokenSymSquareL),
+    ("]", TokenSymSquareR),
+    ("{", TokenSymBracketL),
+    ("}", TokenSymBracketR)
+  )
+    .map((a, b) => a ^^^ b)
+    .reduceLeft((a, b) => a | b)
+
+  private def comments = opt("""#\.*(\n|$)""".r)
+
+  private def literals =
+    boolean
+      | trite
+      | numberFract
+      | numberWhole
+      | ident
+
+  private def newline = "\n+" ^^^ TokenNewLine
+
+  private def other = """.""".r ^^^ TokenInvalid
+
+  def token = comments ~> (keywords | literals | symbols | other)
+
+  def tokens(in: CharSequence): List[Token] = {
+    return parse(phrase(rep(token)), in).get
   }
 }

@@ -1,0 +1,83 @@
+use 'std:io'
+
+# some primitive types:
+# - byte                      # obvious
+# - nat(8, 16, 32, 64, 128 ?) # default: bignat
+# - int(8, 16, 32, 64, 128 ?) # default: bigint
+# - int8 = int[-2**8 - 1, +2**7]
+# - real(8, 16, 32, 64)       # default: fixedpoint
+# - index                     # basically size_t
+# - err                       # includes position information, bt
+# - str, str[] 'value type'   # string, string with length information, value typed string
+# - rune, char                # haven't decided, will see, probably unicode32 rune
+# - opt[type], val[type, err] # some good types to have
+# - data[type, columns...]    # n-dim array, columns can be named
+# - set[type]                 # simple set type
+# - dict[keytype, valtype]    # simple dictionary type
+# - fun[return, arguments...] # function type
+# - (:type1, :type2, ...)     # tuples
+# - (field1: type1, ...)      # named tuples (structs)
+# - {enumfield1, enumfield2}  # enums
+# - {enumfield1: type1}       # typed enums
+
+# Some common compute operations
+# - Map, Filter
+# - Project, Lift (dimensionality reduction/expansion)
+# - Slide (overflowing), Shift (saturating)
+# - Transpose
+# - Convolve
+# - Math Stuff: SVD, Eig, Norm, Rotate, Invert, Unitary-ize
+# - Other Stuff: I like the "under keep" uiuism
+
+operator `*`[T, U < number](a: T, b: U): max_by_norm(T, U)
+operator `*`[I, T, U](a: fun(I): T, b: fun(T): U): fun(I):U
+
+type Metadata = (
+    coordiantes: (real, real),
+)
+
+type VideoFormat = 'auto'
+
+type AudioTrack = enum {
+    mono: data[int16, index],
+    stereo: data[int16, index, 'l' | 'r'],
+}
+
+fun panic(err: err): void {
+    print('something, err', err)
+    os_exit(1)
+}
+
+fun read_video(path: Path, format: VideoFormat): (Metadata, VisualTrack, AudioTrack) {
+    let x = {
+        panic % () {
+
+        }
+        parse_format(format)
+    }
+}
+
+@test.unit
+fun test_adder(ctx: test.Unit) {
+    ctx.assertEqual(add(1, 2), 3);
+}
+
+@test.property
+fun test_prop_adder(ctx: test.Property) {
+    let a = ctx.Real();
+    let b = ctx.Real();
+    ctx.assertEqual(add(a, b), a + b);
+}
+
+@test.benchmark
+fun test_adder_bench(ctx: test.Benchmark) {
+    ctx.Record();
+    add(5, 6);
+    let perf = ctx.Finish();
+    ctx.assertLess(perf.totalTime.asNano(), 4);
+}
+
+@test.process
+fun test_adder_proccess(ctx: test.Process) {
+    # todo
+}

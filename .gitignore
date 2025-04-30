@@ -1,7 +1,43 @@
-.direnv/
-.bloop/
-.bsp/
-.metals/
-.vscode/
-project/
+.DS_Store
+*.class
+*.log
+*~
+
+# sbt specific
+dist/*
 target/
+lib_managed/
+src_managed/
+project/metals.sbt
+project/project
+project/boot/
+project/plugins/project/
+project/local-plugins.sbt
+.history
+.bsp
+
+# Scala-IDE specific
+.bloop/
+.metals/
+.scala_dependencies
+.cache
+.classpath
+.project
+.settings
+classes/
+
+# idea
+.idea
+.idea_modules
+/.worksheet/
+
+# Dotty-IDE
+.dotty-ide-artifact
+.dotty-ide.json
+
+# Visual Studio Code
+.vscode
+
+# Meson wraps
+runtime/subprojects/*
+!runtime/subprojects/*.wrap
